@@ -33,6 +33,7 @@ import PhotosUploader from './components/PhotosUploader';
 import FloorPlanUploader from './components/FloorPlanUploader';
 import VRPanoramaUploader from './components/VRPanoramaUploader';
 import CommissionForm from './components/CommissionForm';
+import SeasonalPricing from './components/SeasonalPricing';
 import { PROPERTY_FEATURES } from './constants/features';
 import dayjs from 'dayjs';
 
@@ -118,11 +119,15 @@ const PropertyForm = () => {
         ...property,
         renovation_date: property.renovation_date ? dayjs(property.renovation_date) : null,
         features: parsedFeatures,
-        translations: translations
+        translations: translations,
+        seasonalPricing: property.pricing || []
       });
 
-      if (property.year_price) {
+      // Определяем тип ценообразования
+      if (property.year_price && property.year_price > 0) {
         setPricingType('constant');
+      } else if (property.pricing && property.pricing.length > 0) {
+        setPricingType('seasonal');
       }
 
       if (property.renovation_type) {
@@ -183,7 +188,7 @@ const PropertyForm = () => {
       message.error('Необходимо заполнить название хотя бы на одном языке');
       return;
     }
-
+  
     // Проверяем что хотя бы одно описание заполнено
     const hasAnyDescription = values.translations.ru?.description || 
                               values.translations.en?.description || 
@@ -193,7 +198,7 @@ const PropertyForm = () => {
       message.error('Необходимо заполнить описание хотя бы на одном языке');
       return;
     }
-
+  
     setLoading(true);
     try {
       const formData = {
@@ -201,10 +206,19 @@ const PropertyForm = () => {
         renovation_date: values.renovation_date 
           ? dayjs(values.renovation_date).format('YYYY-MM-01')
           : null,
-        features: JSON.stringify(values.features || {}),
-        translations: values.translations
+        // Преобразуем features в правильный формат для бэкенда
+        propertyFeatures: values.features?.property || [],
+        outdoorFeatures: values.features?.outdoor || [],
+        rentalFeatures: values.features?.rental || [],
+        locationFeatures: values.features?.location || [],
+        views: values.features?.views || [],
+        translations: values.translations,
+        seasonalPricing: pricingType === 'seasonal' ? values.seasonalPricing : undefined
       };
-
+    
+      // Удаляем features из formData
+      delete formData.features;
+    
       if (isEdit) {
         await propertiesApi.update(Number(id), formData);
         message.success(t('properties.updateSuccess'));
@@ -212,7 +226,8 @@ const PropertyForm = () => {
       } else {
         const { data } = await propertiesApi.create(formData);
         message.success(t('properties.createSuccess'));
-        navigate(`/properties/edit/${data.data.id}`);
+        // Автоматически переходим на страницу редактирования где доступна загрузка медиа
+        navigate(`/properties/edit/${data.data.propertyId}`);
       }
     } catch (error: any) {
       message.error(error.response?.data?.message || t('errors.generic'));
@@ -232,6 +247,20 @@ const PropertyForm = () => {
     } else {
       setShowRenovationDate(false);
       form.setFieldValue('renovation_date', null);
+    }
+  };
+
+  const handlePricingTypeChange = (e: any) => {
+    const newPricingType = e.target.value;
+    setPricingType(newPricingType);
+    
+    // Очищаем противоположное поле
+    if (newPricingType === 'constant') {
+      // Если выбрали постоянную цену, очищаем сезонные цены
+      form.setFieldValue('seasonalPricing', []);
+    } else {
+      // Если выбрали сезонные цены, очищаем постоянную цену
+      form.setFieldValue('year_price', null);
     }
   };
 
@@ -256,7 +285,8 @@ const PropertyForm = () => {
             ru: { property_name: '', description: '' },
             en: { property_name: '', description: '' },
             th: { property_name: '', description: '' }
-          }
+          },
+          seasonalPricing: []
         }}
       >
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
@@ -277,7 +307,7 @@ const PropertyForm = () => {
                 <Form.Item
                   name="deal_type"
                   label={t('properties.dealType')}
-                  rules={[{ required: true }]}
+                  rules={[{ required: true, message: t('validation.required') }]}
                 >
                   <Select onChange={handleDealTypeChange}>
                     <Select.Option value="sale">{t('properties.dealTypes.sale')}</Select.Option>
@@ -291,7 +321,7 @@ const PropertyForm = () => {
                 <Form.Item
                   name="property_type"
                   label={t('properties.propertyType')}
-                  rules={[{ required: true }]}
+                  rules={[{ required: true, message: t('validation.required') }]}
                 >
                   <Select>
                     <Select.Option value="villa">{t('properties.propertyTypes.villa')}</Select.Option>
@@ -308,17 +338,50 @@ const PropertyForm = () => {
                 <Form.Item
                   name="region"
                   label={t('properties.region')}
-                  rules={[{ required: true }]}
+                  rules={[{ required: true, message: t('validation.required') }]}
                 >
                   <Select>
-                    {['bangtao', 'kamala', 'surin', 'layan', 'rawai', 'patong', 'kata', 'karon'].map(region => (
-                      <Select.Option key={region} value={region}>
-                        {t(`properties.regions.${region}`)}
-                      </Select.Option>
-                    ))}
+                    <Select.Option value="bangtao">{t('properties.regions.bangtao')}</Select.Option>
+                    <Select.Option value="kamala">{t('properties.regions.kamala')}</Select.Option>
+                    <Select.Option value="surin">{t('properties.regions.surin')}</Select.Option>
+                    <Select.Option value="layan">{t('properties.regions.layan')}</Select.Option>
+                    <Select.Option value="rawai">{t('properties.regions.rawai')}</Select.Option>
+                    <Select.Option value="patong">{t('properties.regions.patong')}</Select.Option>
+                    <Select.Option value="kata">{t('properties.regions.kata')}</Select.Option>
+                    <Select.Option value="karon">{t('properties.regions.karon')}</Select.Option>
                   </Select>
                 </Form.Item>
               </Col>
+
+              {(dealType === 'sale' || dealType === 'both') && (
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="building_ownership"
+                    label={t('properties.buildingOwnership')}
+                  >
+                    <Select placeholder={t('common.select')}>
+                      <Select.Option value="freehold">{t('properties.ownershipTypes.freehold')}</Select.Option>
+                      <Select.Option value="leasehold">{t('properties.ownershipTypes.leasehold')}</Select.Option>
+                      <Select.Option value="company">{t('properties.ownershipTypes.company')}</Select.Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              )}
+
+              {(dealType === 'sale' || dealType === 'both') && (
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="land_ownership"
+                    label={t('properties.landOwnership')}
+                  >
+                    <Select placeholder={t('common.select')}>
+                      <Select.Option value="freehold">{t('properties.ownershipTypes.freehold')}</Select.Option>
+                      <Select.Option value="leasehold">{t('properties.ownershipTypes.leasehold')}</Select.Option>
+                      <Select.Option value="company">{t('properties.ownershipTypes.company')}</Select.Option>
+                    </Select>
+                  </Form.Item>
+              </Col>
+              )}
 
               {(dealType === 'sale' || dealType === 'both') && (
                 <Col xs={24} sm={12}>
@@ -374,20 +437,23 @@ const PropertyForm = () => {
                   name="google_maps_link"
                   label={t('properties.googleMapsLink')}
                 >
-                  <Space.Compact style={{ width: '100%' }}>
-                    <Input 
-                      placeholder="https://maps.app.goo.gl/..."
+                  <Input.Group compact>
+                    <Input
+                      style={{ width: 'calc(100% - 200px)' }}
+                      placeholder="https://maps.google.com/..."
+                      value={googleMapsLink}
                       onChange={(e) => setGoogleMapsLink(e.target.value)}
                     />
                     <Button
+                      type="primary"
                       icon={<EnvironmentOutlined />}
                       onClick={handleAutoDetectCoordinates}
                       loading={detectingCoords}
-                      disabled={!googleMapsLink}
+                      style={{ width: 200 }}
                     >
-                      Авто
+                      Определить координаты
                     </Button>
-                  </Space.Compact>
+                  </Input.Group>
                 </Form.Item>
               </Col>
 
@@ -605,6 +671,7 @@ const PropertyForm = () => {
                 </Form.Item>
               </Card>
 
+              {/* Условия аренды */}
               {(dealType === 'rent' || dealType === 'both') && (
                 <Card title={t('properties.features.rentalFeatures')} size="small">
                   <Form.Item name={['features', 'rental']}>
@@ -663,48 +730,59 @@ const PropertyForm = () => {
           <Tabs.TabPane tab={t('properties.tabs.pricing')} key="pricing">
             <Space direction="vertical" style={{ width: '100%' }} size="large">
               {(dealType === 'sale' || dealType === 'both') && (
-                <Card title={t('properties.dealTypes.sale')} size="small">
+                <Card title={t('properties.pricing.salePrice')} size="small">
                   <Form.Item
                     name="sale_price"
                     label={t('properties.price')}
                   >
-                    <InputNumber
+                    <InputNumber<number>
                       style={{ width: '100%' }}
                       min={0}
                       addonAfter="฿"
-                      placeholder="0"
+                      formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={value => Number(value!.replace(/,/g, ''))}
                     />
                   </Form.Item>
                 </Card>
               )}
 
               {(dealType === 'rent' || dealType === 'both') && (
-                <Card title={t('properties.dealTypes.rent')} size="small">
-                  <Radio.Group
-                    value={pricingType}
-                    onChange={(e) => setPricingType(e.target.value)}
-                    style={{ marginBottom: 16 }}
-                  >
-                    <Radio value="seasonal">{t('properties.pricingOptions.seasonal')}</Radio>
-                    <Radio value="constant">{t('properties.pricingOptions.constant')}</Radio>
-                  </Radio.Group>
+                <Card title={t('properties.pricing.rentalPrices')} size="small">
+                  {isEdit ? (
+                    <>
+                      <Form.Item label="Тип ценообразования">
+                        <Radio.Group value={pricingType} onChange={handlePricingTypeChange}>
+                          <Radio value="seasonal">Сезонные цены</Radio>
+                          <Radio value="constant">Постоянная цена</Radio>
+                        </Radio.Group>
+                      </Form.Item>
 
-                  {pricingType === 'constant' ? (
-                    <Form.Item
-                      name="year_price"
-                      label={t('properties.pricingOptions.constantPrice')}
-                    >
-                      <InputNumber
-                        style={{ width: '100%' }}
-                        min={0}
-                        addonAfter="฿"
-                        placeholder="0"
-                      />
-                    </Form.Item>
+                      {pricingType === 'constant' ? (
+                        <Form.Item
+                          name="year_price"
+                          label={t('properties.pricingOptions.constantPrice')}
+                        >
+                          <InputNumber<number>
+                            style={{ width: '100%' }}
+                            min={0}
+                            addonAfter="฿"
+                            placeholder="0"
+                            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                            parser={value => Number(value!.replace(/,/g, ''))}
+                          />
+                        </Form.Item>
+                      ) : (
+                        <Form.Item name="seasonalPricing">
+                          <SeasonalPricing />
+                        </Form.Item>
+                      )}
+                    </>
                   ) : (
                     <Alert
-                      message="Сезонные цены настраиваются после создания объекта"
+                      message="Настройка цен будет доступна после создания объекта"
+                      description="Вы сможете настроить как постоянную годовую цену, так и гибкие сезонные цены с разными периодами и тарифами."
                       type="info"
+                      showIcon
                     />
                   )}
                 </Card>
@@ -715,8 +793,8 @@ const PropertyForm = () => {
           </Tabs.TabPane>
 
           {/* ТАБ 6: МЕДИА */}
-          {isEdit && (
-            <Tabs.TabPane tab={t('properties.tabs.media')} key="media">
+          <Tabs.TabPane tab={t('properties.tabs.media')} key="media">
+            {isEdit ? (
               <Tabs>
                 <Tabs.TabPane tab={t('properties.media.photos')} key="photos">
                   <PhotosUploader 
@@ -742,8 +820,32 @@ const PropertyForm = () => {
                   />
                 </Tabs.TabPane>
               </Tabs>
-            </Tabs.TabPane>
-          )}
+            ) : (
+              <Card>
+                <Alert
+                  message="Загрузка медиа-файлов станет доступна после создания объекта"
+                  description={
+                    <div style={{ marginTop: 12 }}>
+                      <Paragraph>
+                        Чтобы загрузить фотографии, планировки и VR-туры, сначала необходимо сохранить основную информацию об объекте.
+                      </Paragraph>
+                      <Paragraph style={{ marginBottom: 0 }}>
+                        После сохранения вы автоматически перейдете на страницу редактирования, где будут доступны все функции работы с медиа:
+                      </Paragraph>
+                      <ul style={{ marginTop: 8, marginBottom: 0 }}>
+                        <li>Загрузка и управление фотографиями (разные категории)</li>
+                        <li>Загрузка планировок</li>
+                        <li>Создание VR-туров (360° панорамы)</li>
+                      </ul>
+                    </div>
+                  }
+                  type="info"
+                  showIcon
+                  style={{ marginTop: 16 }}
+                />
+              </Card>
+            )}
+          </Tabs.TabPane>
         </Tabs>
 
         {/* Кнопки сохранения */}
@@ -758,7 +860,7 @@ const PropertyForm = () => {
               icon={<SaveOutlined />}
               loading={loading}
             >
-              {t('common.save')}
+              {isEdit ? t('common.save') : t('common.create')}
             </Button>
           </Space>
         </div>
