@@ -1,0 +1,45 @@
+/* frontend/src/modules/Properties/PropertiesList.css */
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .ant-card-head {
+    padding: 12px 16px !important;
+  }
+
+  .ant-card-head-title {
+    padding: 0 !important;
+  }
+
+  .ant-card-extra {
+    padding: 0 !important;
+  }
+
+  .ant-space-item {
+    width: 100%;
+  }
+}
+
+/* Компактные фильтры на мобильных */
+@media (max-width: 576px) {
+  .ant-select-selector,
+  .ant-input {
+    font-size: 14px !important;
+  }
+
+  .ant-btn {
+    font-size: 14px !important;
+  }
+}
+
+/* Smooth transitions */
+.ant-card {
+  transition: all 0.3s ease;
+}
+
+.ant-image {
+  transition: transform 0.3s ease;
+}
+
+.ant-image:hover {
+  transform: scale(1.05);
+}

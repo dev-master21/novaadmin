@@ -1,0 +1,432 @@
+{
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "view": "Просмотр",
+    "add": "Добавить",
+    "back": "Назад",
+    "yes": "Да",
+    "no": "Нет",
+    "total": "Всего: {{total}}",
+    "reset": "Сбросить",
+    "logout": "Выйти",
+    "search": "Поиск",
+    "actions": "Действия",
+    "characters": "символов",
+    "confirmDelete": "Вы уверены что хотите удалить?",
+    "loading": "Загрузка...",
+    "previous": "Назад",
+    "next": "Вперед"
+  },
+  
+  "validation": {
+    "required": "Это поле обязательно",
+    "email": "Неверный формат email",
+    "minLength": "Минимум {{min}} символов"
+  },
+
+  "errors": {
+    "generic": "Произошла ошибка"
+  },
+
+  "auth": {
+    "login": "Вход",
+    "loginSubtitle": "Войдите в панель администратора",
+    "username": "Имя пользователя",
+    "password": "Пароль",
+    "loginButton": "Войти",
+    "loggingIn": "Вход...",
+    "loginSuccess": "Вход выполнен успешно",
+    "loginError": "Ошибка входа"
+  },
+
+  "nav": {
+    "dashboard": "Панель управления",
+    "properties": "Недвижимость",
+    "users": "Пользователи",
+    "roles": "Роли",
+    "addProperty": "Добавить объект",
+    "propertiesList": "Список объектов",
+    "addUser": "Добавить пользователя"
+  },
+
+  "dashboard": {
+    "welcome": "Добро пожаловать",
+    "stats": {
+      "totalProperties": "Всего объектов",
+      "publishedProperties": "Опубликовано",
+      "draftProperties": "Черновики",
+      "hiddenProperties": "Скрыто"
+    },
+    "recentProperties": "Недавние объекты",
+    "quickActions": "Быстрые действия"
+  },
+
+  "properties": {
+    "title": "Недвижимость",
+    "list": "Список объектов",
+    "add": "Добавить объект",
+    "edit": "Редактировать объект",
+    "createSuccess": "Объект успешно создан",
+    "updateSuccess": "Объект успешно обновлен",
+    "deleteSuccess": "Объект успешно удален",
+    "confirmDelete": "Вы уверены что хотите удалить этот объект?",
+    "search": "Поиск по названию или номеру",
+    
+    "photo": "Фото",
+    "propertyNumber": "Номер объекта",
+    "propertyName": "Название объекта",
+    "name": "Название",
+    "dealType": "Тип сделки",
+    "propertyType": "Тип недвижимости",
+    "type": "Тип",
+    "region": "Регион",
+    "address": "Адрес",
+    "googleMapsLink": "Ссылка на Google Maps",
+    "latitude": "Широта",
+    "longitude": "Долгота",
+    "complexName": "Название комплекса",
+    "complexNamePlaceholder": "Например: Laguna Village",
+    "bedrooms": "Спальни",
+    "bathrooms": "Ванные",
+    "price": "Цена",
+    "indoorArea": "Внутренняя площадь",
+    "outdoorArea": "Внешняя площадь",
+    "plotSize": "Размер участка",
+    "constructionYear": "Год постройки",
+    "furnitureStatus": "Меблировка",
+    "parkingSpaces": "Парковочных мест",
+    "status": "Статус",
+    "creator": "Создатель",
+    "createdAt": "Дата создания",
+    "ownerName": "Имя владельца",
+    "ownerPhone": "Телефон владельца",
+    "ownerEmail": "Email владельца",
+    "ownerTelegram": "Telegram владельца",
+    "ownerInstagram": "Instagram владельца",
+    "ownerNotes": "Примечания о владельце",
+    "ownerInfo": "Информация о владельце",
+
+    "sale": "Продажа",
+    "rent": "Аренда",
+    "published": "Опубликовано",
+    "draft": "Черновик",
+  "source": "Источник",
+  "addedBy": "Добавил",
+  "prices": "Цены",
+  "calendar": {
+    "title": "Календарь занятости",
+    "button": "Календарь",
+    "blocked": "Заблокировано",
+    "booked": "Забронировано",
+    "today": "Сегодня",
+    "blockedDay": "Занято",
+    "noSync": "Нет синхронизации с календарём",
+    "noSyncDescription": "Календарь занятости не настроен для этого объекта"
+  },
+    "dealTypes": {
+      "sale": "Продажа",
+      "rent": "Аренда",
+      "both": "Продажа и аренда"
+    },
+
+    "propertyTypes": {
+      "villa": "Вилла",
+      "apartment": "Апартаменты",
+      "condo": "Кондоминиум",
+      "penthouse": "Пентхаус",
+      "house": "Дом",
+      "land": "Участок"
+    },
+
+    "regions": {
+      "bangtao": "Бангтао",
+      "kamala": "Камала",
+      "surin": "Сурин",
+      "layan": "Лаян",
+      "rawai": "Раваи",
+      "patong": "Патонг",
+      "kata": "Ката",
+      "karon": "Карон"
+    },
+
+    "statuses": {
+      "draft": "Черновик",
+      "published": "Опубликовано",
+      "hidden": "Скрыто",
+      "archived": "Архив"
+    },
+
+    "furnitureStatuses": {
+      "furnished": "Меблировано",
+      "unfurnished": "Не меблировано",
+      "partially": "Частично меблировано"
+    },
+
+    "filters": {
+      "search": "Поиск по названию или номеру",
+      "byStatus": "По статусу",
+      "byType": "По типу"
+    },
+
+    "visibility": {
+      "publishSuccess": "Объект опубликован",
+      "hideSuccess": "Объект скрыт",
+      "showOnSite": "Показать на сайте",
+      "hideFromSite": "Скрыть с сайта"
+    },
+
+    "tabs": {
+      "basic": "Основная информация",
+      "owner": "Владелец",
+      "translations": "Переводы",
+      "features": "Особенности",
+      "pricing": "Ценообразование",
+      "media": "Медиа"
+    },
+
+    "translations": {
+      "title": "Переводы и описания",
+      "namePlaceholder": "Введите название объекта",
+      "descriptionPlaceholder": "Введите полное описание объекта..."
+    },
+
+    "features": {
+      "title": "Особенности объекта",
+      "propertyFeatures": "Особенности объекта",
+      "outdoorFeatures": "Внешние особенности",
+      "rentalFeatures": "Условия аренды",
+      "locationFeatures": "Расположение",
+      "views": "Виды",
+      
+      "mediaRoom": "Медиа-комната",
+      "privateGym": "Частный спортзал",
+      "privateLift": "Частный лифт",
+      "privateSauna": "Частная сауна",
+      "jacuzzi": "Джакузи",
+      "cornerUnit": "Угловая квартира",
+      "maidsQuarters": "Комната прислуги",
+      "duplex": "Дуплекс",
+      "balcony": "Балкон",
+      "westernKitchen": "Западная кухня",
+      "bathtub": "Ванна",
+      "smartHome": "Умный дом",
+      "privatePool": "Частный бассейн",
+      "sharedPool": "Общий бассейн",
+      "securitySystem": "Система безопасности",
+      "airConditioning": "Кондиционер",
+      "heating": "Отопление",
+      "fireplace": "Камин",
+      "solarPanels": "Солнечные панели",
+      "waterHeater": "Водонагреватель",
+      
+      "garden": "Сад",
+      "terrace": "Терраса",
+      "rooftop": "Крыша",
+      "bbqArea": "Зона барбекю",
+      "outdoorShower": "Уличный душ",
+      "garage": "Гараж",
+      "coveredParking": "Крытая парковка",
+      "carport": "Навес для машины",
+      "poolBar": "Бар у бассейна",
+      "summerKitchen": "Летняя кухня",
+      "outdoorDining": "Обеденная зона на улице",
+      "playground": "Детская площадка",
+      "petArea": "Зона для животных",
+      "storageRoom": "Кладовая",
+      "laundryRoom": "Прачечная",
+      
+      "maidService": "Услуги горничной",
+      "chefService": "Услуги повара",
+      "airportTransfer": "Трансфер из аэропорта",
+      "carRental": "Аренда автомобиля",
+      "breakfastIncluded": "Завтрак включен",
+      "cleaning": "Уборка",
+      "linenChange": "Смена белья",
+      "utilitiesIncluded": "Коммунальные услуги включены",
+      "wifiIncluded": "WiFi включен",
+      "cableTv": "Кабельное ТВ",
+      "conciergeService": "Консьерж",
+      "securityGuard": "Охрана",
+      "management": "Управление",
+      
+      "beachAccess": "Доступ к пляжу",
+      "beachFront": "Первая линия пляжа",
+      "nearSchool": "Рядом школа",
+      "nearHospital": "Рядом больница",
+      "nearSupermarket": "Рядом супермаркет",
+      "nearRestaurant": "Рядом рестораны",
+      "nearGolfCourse": "Рядом гольф-поле",
+      "nearMarina": "Рядом марина",
+      "nearAirport": "Рядом аэропорт",
+      "nearBusStop": "Рядом автобусная остановка",
+      "quietArea": "Тихий район",
+      "gatedCommunity": "Закрытый комплекс",
+      "cityCentre": "Центр города",
+      
+      "seaView": "Вид на море",
+      "mountainView": "Вид на горы",
+      "poolView": "Вид на бассейн",
+      "gardenView": "Вид на сад",
+      "cityView": "Вид на город",
+      "panoramicView": "Панорамный вид",
+      "partialSeaView": "Частичный вид на море",
+      "lakeView": "Вид на озеро",
+      "forestView": "Вид на лес"
+    },
+
+    "pricing": {
+      "title": "Цены",
+      "addPeriod": "Добавить период",
+      "seasonType": "Тип сезона",
+      "period": "Период",
+      "seasonalPricing": "Сезонное ценообразование",
+      "pricePerNight": "Цена за ночь",
+      "noPricing": "Цены не указаны",
+      "sourcePricePerNight": "Исходная цена за ночь",
+      "minimumNights": "Минимум ночей",
+      "periodAdded": "Период добавлен",
+      "periodDeleted": "Период удален",
+      "periodUpdated": "Период обновлен",
+      "seasonTypes": {
+        "high": "Высокий сезон",
+        "low": "Низкий сезон",
+        "peak": "Пиковый сезон",
+        "mid": "Средний сезон",
+        "holiday": "Праздники",
+        "custom": "Пользовательский"
+      }
+    }
+  },
+
+  "vr": {
+    "title": "360° Виртуальный тур",
+    "editor": {
+      "title": "360° Виртуальные туры",
+      "panoramasCount": "{{count}} панорам",
+      "newPanorama": "Новая VR панорама",
+      "locationType": "Тип локации",
+      "locationNumber": "Номер комнаты",
+      "selectLocation": "Выберите локацию...",
+      "uploadImages": "Загрузите 6 изображений",
+      "uploadHint": "Каждая панорама требует 6 изображений: спереди, сзади, слева, справа, сверху и снизу. Максимум 50MB на изображение.",
+      "uploading": "Загрузка...",
+      "create": "Создать панораму",
+      "imagesCount": "{{count}} изображений"
+    },
+    
+    "locations": {
+      "bedroom": "Спальня",
+      "bathroom": "Ванная",
+      "living_room": "Гостиная",
+      "kitchen": "Кухня",
+      "pool": "Бассейн",
+      "terrace": "Терраса",
+      "wardrobe": "Гардероб",
+      "gym": "Спортзал",
+      "sauna": "Сауна",
+      "balcony": "Балкон",
+      "dining_room": "Столовая",
+      "office": "Офис",
+      "laundry": "Прачечная",
+      "garage": "Гараж",
+      "entrance": "Вход"
+    },
+    
+    "directions": {
+      "front": "Спереди",
+      "back": "Сзади",
+      "left": "Слева",
+      "right": "Справа",
+      "top": "Сверху",
+      "bottom": "Снизу"
+    },
+    
+    "errors": {
+      "loadFailed": "Не удалось загрузить VR панорамы",
+      "invalidFileType": "Разрешены только файлы изображений",
+      "fileTooLarge": "Размер файла не должен превышать 50MB",
+      "fillAllFields": "Заполните все обязательные поля и загрузите все 6 изображений",
+      "createFailed": "Не удалось создать VR панораму",
+      "deleteFailed": "Не удалось удалить VR панораму"
+    },
+    
+    "success": {
+      "created": "VR панорама успешно создана",
+      "deleted": "VR панорама успешно удалена"
+    },
+    
+    "confirm": {
+      "delete": "Вы уверены что хотите удалить эту VR панораму?"
+    }
+  },
+
+  "users": {
+    "title": "Пользователи",
+    "list": "Список пользователей",
+    "add": "Добавить пользователя",
+    "edit": "Редактировать пользователя",
+    "createSuccess": "Пользователь успешно создан",
+    "updateSuccess": "Пользователь успешно обновлен",
+    "deleteSuccess": "Пользователь успешно удален",
+    "confirmDelete": "Вы уверены что хотите удалить этого пользователя?",
+    "onlyAdminCanCreate": "Только суперадминистратор может создавать пользователей",
+    "search": "Поиск по имени пользователя",
+    "noRoles": "Нет ролей",
+    
+    "username": "Имя пользователя",
+    "fullName": "Полное имя",
+    "email": "Email",
+    "password": "Пароль",
+    "newPassword": "Новый пароль (оставьте пустым чтобы не менять)",
+    "roles": "Роли",
+    "selectRoles": "Выберите роли",
+    "isActive": "Активен",
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "status": "Статус",
+    "lastLogin": "Последний вход",
+    "createdAt": "Дата создания"
+  },
+
+  "roles": {
+    "title": "Роли",
+    "list": "Список ролей",
+    "add": "Добавить роль",
+    "edit": "Редактировать роль",
+    "createSuccess": "Роль успешно создана",
+    "updateSuccess": "Роль успешно обновлена",
+    "deleteSuccess": "Роль успешно удалена",
+    "confirmDelete": "Вы уверены что хотите удалить эту роль?",
+    "cannotDeleteWithUsers": "Невозможно удалить роль с назначенными пользователями",
+    
+    "roleName": "Название роли",
+    "description": "Описание",
+    "permissions": "Права доступа",
+    "usersCount": "Пользователей",
+    
+    "modules": {
+      "properties": "Недвижимость",
+      "users": "Пользователи",
+      "roles": "Роли"
+    },
+    
+    "permissionsList": {
+      "properties.create": "Создание объектов",
+      "properties.read": "Просмотр объектов",
+      "properties.update": "Редактирование объектов",
+      "properties.delete": "Удаление объектов",
+      "properties.visibility": "Управление видимостью",
+      "users.create": "Создание пользователей",
+      "users.read": "Просмотр пользователей",
+      "users.update": "Редактирование пользователей",
+      "users.delete": "Удаление пользователей",
+      "roles.create": "Создание ролей",
+      "roles.read": "Просмотр ролей",
+      "roles.update": "Редактирование ролей",
+      "roles.delete": "Удаление ролей"
+    }
+  }
+}

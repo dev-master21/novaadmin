@@ -1,0 +1,415 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "add": "Add",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No",
+    "total": "Total: {{total}}",
+    "reset": "Reset",
+    "logout": "Logout",
+    "search": "Search",
+    "actions": "Actions",
+    "characters": "characters",
+    "confirmDelete": "Are you sure you want to delete?",
+    "loading": "Loading..."
+  },
+  
+  "validation": {
+    "required": "This field is required",
+    "email": "Invalid email format",
+    "minLength": "Minimum {{min}} characters"
+  },
+
+  "errors": {
+    "generic": "An error occurred"
+  },
+
+  "auth": {
+    "login": "Login",
+    "loginSubtitle": "Sign in to admin panel",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Sign In",
+    "loggingIn": "Signing in...",
+    "loginSuccess": "Successfully logged in",
+    "loginError": "Login error"
+  },
+
+  "nav": {
+    "dashboard": "Dashboard",
+    "properties": "Properties",
+    "users": "Users",
+    "roles": "Roles",
+    "addProperty": "Add Property",
+    "propertiesList": "Properties List",
+    "addUser": "Add User"
+  },
+
+  "dashboard": {
+    "welcome": "Welcome",
+    "stats": {
+      "totalProperties": "Total Properties",
+      "publishedProperties": "Published",
+      "draftProperties": "Drafts",
+      "hiddenProperties": "Hidden"
+    },
+    "recentProperties": "Recent Properties",
+    "quickActions": "Quick Actions"
+  },
+
+  "properties": {
+    "title": "Properties",
+    "list": "Properties List",
+    "add": "Add Property",
+    "edit": "Edit Property",
+    "createSuccess": "Property successfully created",
+    "updateSuccess": "Property successfully updated",
+    "deleteSuccess": "Property successfully deleted",
+    "confirmDelete": "Are you sure you want to delete this property?",
+    "search": "Search by name or number",
+    
+    "photo": "Photo",
+    "propertyNumber": "Property Number",
+    "propertyName": "Property Name",
+    "name": "Name",
+    "dealType": "Deal Type",
+    "propertyType": "Property Type",
+    "type": "Type",
+    "region": "Region",
+    "address": "Address",
+    "googleMapsLink": "Google Maps Link",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "complexName": "Complex Name",
+    "complexNamePlaceholder": "e.g., Laguna Village",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "price": "Price",
+    "indoorArea": "Indoor Area",
+    "outdoorArea": "Outdoor Area",
+    "plotSize": "Plot Size",
+    "constructionYear": "Construction Year",
+    "furnitureStatus": "Furniture Status",
+    "parkingSpaces": "Parking Spaces",
+    "status": "Status",
+    "creator": "Creator",
+    "createdAt": "Created At",
+    "ownerName": "Owner Name",
+    "ownerPhone": "Owner Phone",
+    "ownerEmail": "Owner Email",
+    "ownerTelegram": "Owner Telegram",
+    "ownerInstagram": "Owner Instagram",
+    "ownerNotes": "Owner Notes",
+    "ownerInfo": "Owner Information",
+
+    "sale": "Sale",
+    "rent": "Rent",
+    "published": "Published",
+    "draft": "Draft",
+
+    "dealTypes": {
+      "sale": "Sale",
+      "rent": "Rent",
+      "both": "Sale & Rent"
+    },
+
+    "propertyTypes": {
+      "villa": "Villa",
+      "apartment": "Apartment",
+      "condo": "Condominium",
+      "penthouse": "Penthouse",
+      "house": "House",
+      "land": "Land"
+    },
+
+    "regions": {
+      "bangtao": "Bang Tao",
+      "kamala": "Kamala",
+      "surin": "Surin",
+      "layan": "Layan",
+      "rawai": "Rawai",
+      "patong": "Patong",
+      "kata": "Kata",
+      "karon": "Karon"
+    },
+
+    "statuses": {
+      "draft": "Draft",
+      "published": "Published",
+      "hidden": "Hidden",
+      "archived": "Archived"
+    },
+
+    "furnitureStatuses": {
+      "furnished": "Furnished",
+      "unfurnished": "Unfurnished",
+      "partially": "Partially Furnished"
+    },
+
+    "filters": {
+      "search": "Search by name or number",
+      "byStatus": "By Status",
+      "byType": "By Type"
+    },
+
+    "visibility": {
+      "publishSuccess": "Property published",
+      "hideSuccess": "Property hidden",
+      "showOnSite": "Show on website",
+      "hideFromSite": "Hide from website"
+    },
+
+    "tabs": {
+      "basic": "Basic Information",
+      "owner": "Owner",
+      "translations": "Translations",
+      "features": "Features",
+      "pricing": "Pricing",
+      "media": "Media"
+    },
+
+    "translations": {
+      "title": "Translations and Descriptions",
+      "namePlaceholder": "Enter property name",
+      "descriptionPlaceholder": "Enter full property description..."
+    },
+
+    "features": {
+      "title": "Property Features",
+      "propertyFeatures": "Property Features",
+      "outdoorFeatures": "Outdoor Features",
+      "rentalFeatures": "Rental Conditions",
+      "locationFeatures": "Location",
+      "views": "Views",
+      
+      "mediaRoom": "Media Room",
+      "privateGym": "Private Gym",
+      "privateLift": "Private Lift",
+      "privateSauna": "Private Sauna",
+      "jacuzzi": "Jacuzzi",
+      "cornerUnit": "Corner Unit",
+      "maidsQuarters": "Maid's Quarters",
+      "duplex": "Duplex",
+      "balcony": "Balcony",
+      "westernKitchen": "Western Kitchen",
+      "bathtub": "Bathtub",
+      "smartHome": "Smart Home",
+      "privatePool": "Private Pool",
+      "sharedPool": "Shared Pool",
+      "securitySystem": "Security System",
+      "airConditioning": "Air Conditioning",
+      "heating": "Heating",
+      "fireplace": "Fireplace",
+      "solarPanels": "Solar Panels",
+      "waterHeater": "Water Heater",
+      
+      "garden": "Garden",
+      "terrace": "Terrace",
+      "rooftop": "Rooftop",
+      "bbqArea": "BBQ Area",
+      "outdoorShower": "Outdoor Shower",
+      "garage": "Garage",
+      "coveredParking": "Covered Parking",
+      "carport": "Carport",
+      "poolBar": "Pool Bar",
+      "summerKitchen": "Summer Kitchen",
+      "outdoorDining": "Outdoor Dining",
+      "playground": "Playground",
+      "petArea": "Pet Area",
+      "storageRoom": "Storage Room",
+      "laundryRoom": "Laundry Room",
+      
+      "maidService": "Maid Service",
+      "chefService": "Chef Service",
+      "airportTransfer": "Airport Transfer",
+      "carRental": "Car Rental",
+      "breakfastIncluded": "Breakfast Included",
+      "cleaning": "Cleaning",
+      "linenChange": "Linen Change",
+      "utilitiesIncluded": "Utilities Included",
+      "wifiIncluded": "WiFi Included",
+      "cableTv": "Cable TV",
+      "conciergeService": "Concierge Service",
+      "securityGuard": "Security Guard",
+      "management": "Management",
+      
+      "beachAccess": "Beach Access",
+      "beachFront": "Beach Front",
+      "nearSchool": "Near School",
+      "nearHospital": "Near Hospital",
+      "nearSupermarket": "Near Supermarket",
+      "nearRestaurant": "Near Restaurant",
+      "nearGolfCourse": "Near Golf Course",
+      "nearMarina": "Near Marina",
+      "nearAirport": "Near Airport",
+      "nearBusStop": "Near Bus Stop",
+      "quietArea": "Quiet Area",
+      "gatedCommunity": "Gated Community",
+      "cityCentre": "City Centre",
+      
+      "seaView": "Sea View",
+      "mountainView": "Mountain View",
+      "poolView": "Pool View",
+      "gardenView": "Garden View",
+      "cityView": "City View",
+      "panoramicView": "Panoramic View",
+      "partialSeaView": "Partial Sea View",
+      "lakeView": "Lake View",
+      "forestView": "Forest View"
+    },
+
+    "pricing": {
+      "title": "Seasonal Pricing",
+      "addPeriod": "Add Period",
+      "seasonType": "Season Type",
+      "period": "Period",
+      "pricePerNight": "Price per Night",
+      "sourcePricePerNight": "Source Price per Night",
+      "minimumNights": "Minimum Nights",
+      "periodAdded": "Period added",
+      "periodDeleted": "Period deleted",
+      "periodUpdated": "Period updated",
+      
+      "seasonTypes": {
+        "high": "High Season",
+        "low": "Low Season",
+        "peak": "Peak Season",
+        "custom": "Custom"
+      }
+    }
+  },
+
+  "vr": {
+    "title": "360° Virtual Tour",
+    "editor": {
+      "title": "360° Virtual Tours",
+      "panoramasCount": "{{count}} panoramas",
+      "newPanorama": "New VR Panorama",
+      "locationType": "Location Type",
+      "locationNumber": "Room Number",
+      "selectLocation": "Select location...",
+      "uploadImages": "Upload 6 images",
+      "uploadHint": "Each panorama requires 6 images: front, back, left, right, top and bottom. Maximum 50MB per image.",
+      "uploading": "Uploading...",
+      "create": "Create panorama",
+      "imagesCount": "{{count}} images"
+    },
+    
+    "locations": {
+      "bedroom": "Bedroom",
+      "bathroom": "Bathroom",
+      "living_room": "Living Room",
+      "kitchen": "Kitchen",
+      "pool": "Pool",
+      "terrace": "Terrace",
+      "wardrobe": "Wardrobe",
+      "gym": "Gym",
+      "sauna": "Sauna",
+      "balcony": "Balcony",
+      "dining_room": "Dining Room",
+      "office": "Office",
+      "laundry": "Laundry",
+      "garage": "Garage",
+      "entrance": "Entrance"
+    },
+    
+    "directions": {
+      "front": "Front",
+      "back": "Back",
+      "left": "Left",
+      "right": "Right",
+      "top": "Top",
+      "bottom": "Bottom"
+    },
+    
+    "errors": {
+      "loadFailed": "Failed to load VR panoramas",
+      "invalidFileType": "Only image files are allowed",
+      "fileTooLarge": "File size must not exceed 50MB",
+      "fillAllFields": "Fill all required fields and upload all 6 images",
+      "createFailed": "Failed to create VR panorama",
+      "deleteFailed": "Failed to delete VR panorama"
+    },
+    
+    "success": {
+      "created": "VR panorama successfully created",
+      "deleted": "VR panorama successfully deleted"
+    },
+    
+    "confirm": {
+      "delete": "Are you sure you want to delete this VR panorama?"
+    }
+  },
+
+  "users": {
+    "title": "Users",
+    "list": "Users List",
+    "add": "Add User",
+    "edit": "Edit User",
+    "createSuccess": "User successfully created",
+    "updateSuccess": "User successfully updated",
+    "deleteSuccess": "User successfully deleted",
+    "confirmDelete": "Are you sure you want to delete this user?",
+    "onlyAdminCanCreate": "Only super admin can create users",
+    "search": "Search by username",
+    "noRoles": "No roles",
+    
+    "username": "Username",
+    "fullName": "Full Name",
+    "email": "Email",
+    "password": "Password",
+    "newPassword": "New Password (leave empty to keep current)",
+    "roles": "Roles",
+    "selectRoles": "Select roles",
+    "isActive": "Active",
+    "active": "Active",
+    "inactive": "Inactive",
+    "status": "Status",
+    "lastLogin": "Last Login",
+    "createdAt": "Created At"
+  },
+
+  "roles": {
+    "title": "Roles",
+    "list": "Roles List",
+    "add": "Add Role",
+    "edit": "Edit Role",
+    "createSuccess": "Role successfully created",
+    "updateSuccess": "Role successfully updated",
+    "deleteSuccess": "Role successfully deleted",
+    "confirmDelete": "Are you sure you want to delete this role?",
+    "cannotDeleteWithUsers": "Cannot delete role with assigned users",
+    
+    "roleName": "Role Name",
+    "description": "Description",
+    "permissions": "Permissions",
+    "usersCount": "Users",
+    
+    "modules": {
+      "properties": "Properties",
+      "users": "Users",
+      "roles": "Roles"
+    },
+    
+    "permissionsList": {
+      "properties.create": "Create properties",
+      "properties.read": "View properties",
+      "properties.update": "Edit properties",
+      "properties.delete": "Delete properties",
+      "properties.visibility": "Manage visibility",
+      "users.create": "Create users",
+      "users.read": "View users",
+      "users.update": "Edit users",
+      "users.delete": "Delete users",
+      "roles.create": "Create roles",
+      "roles.read": "View roles",
+      "roles.update": "Edit roles",
+      "roles.delete": "Delete roles"
+    }
+  }
+}
