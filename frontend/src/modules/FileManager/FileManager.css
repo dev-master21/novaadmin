@@ -1,112 +1,6 @@
 /* frontend/src/modules/FileManager/FileManager.css */
 .file-manager-container {
   padding: 16px;
-}
-
-.file-manager-breadcrumbs {
-  margin-bottom: 16px;
-  padding: 12px;
-  background: #fafafa;
-  border-radius: 4px;
-}
-
-.file-manager-table .ant-table-cell {
-  padding: 12px 8px;
-}
-
-/* Мобильная адаптация */
-@media (max-width: 768px) {
-  .file-manager-container {
-    padding: 8px;
-  }
-
-  .file-manager-container .ant-card-head-title {
-    font-size: 16px;
-  }
-
-  .file-manager-container .ant-card-extra {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .file-manager-container .ant-card-extra .ant-space {
-    width: 100%;
-  }
-
-  .file-manager-container .ant-card-extra .ant-btn {
-    width: 100%;
-  }
-
-  .file-manager-breadcrumbs {
-    padding: 8px;
-    font-size: 12px;
-  }
-
-  .file-manager-table {
-    font-size: 12px;
-  }
-
-  .file-manager-table .ant-table-cell {
-    padding: 8px 4px;
-  }
-
-  /* Скрываем некоторые колонки на мобильных */
-  .file-manager-table .ant-table-thead > tr > th:nth-child(3),
-  .file-manager-table .ant-table-tbody > tr > td:nth-child(3),
-  .file-manager-table .ant-table-thead > tr > th:nth-child(4),
-  .file-manager-table .ant-table-tbody > tr > td:nth-child(4),
-  .file-manager-table .ant-table-thead > tr > th:nth-child(5),
-  .file-manager-table .ant-table-tbody > tr > td:nth-child(5) {
-    display: none;
-  }
-}
-
-@media (max-width: 576px) {
-  .file-manager-container .ant-space-item {
-    width: 100%;
-  }
-
-  .file-manager-table .ant-btn {
-    padding: 4px 8px;
-  }
-
-  .file-manager-table .ant-table-cell {
-    padding: 6px 2px;
-  }
-}
-
-/* Стили для таблицы */
-.file-manager-table .ant-table-tbody > tr:hover {
-  cursor: default;
-}
-
-.file-manager-table .ant-table-tbody > tr > td:nth-child(2) {
-  font-weight: 500;
-}
-
-/* Иконки файлов */
-.file-manager-table .ant-space {
-  align-items: center;
-}
-
-/* Responsive модальные окна */
-@media (max-width: 768px) {
-  .ant-modal {
-    max-width: 95vw !important;
-    margin: 8px auto;
-  }
-
-  .ant-modal-body {
-    padding: 16px;
-  }
-
-  .ant-table-wrapper {
-    overflow-x: auto;
-  }
-}
-
-.file-manager-container {
   width: 100%;
 }
 
@@ -152,22 +46,76 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+.file-manager-table .ant-table-cell {
+  padding: 12px 8px;
+}
+
+/* Стили для названий файлов - одна строка */
+.file-name-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Мобильная адаптация */
 @media (max-width: 768px) {
+  .file-manager-container {
+    padding: 8px;
+  }
+
   .file-manager-breadcrumbs {
     padding: 8px 12px;
     font-size: 12px;
   }
 
-  .file-manager-table .ant-table {
+  .file-manager-table {
     font-size: 12px;
   }
 
-  .file-manager-table .ant-table-thead > tr > th {
-    padding: 8px 4px;
+  .file-manager-table .ant-table-cell {
+    padding: 8px 4px !important;
   }
 
-  .file-manager-table .ant-table-tbody > tr > td {
-    padding: 8px 4px;
+  /* ВАЖНО: На мобильных показываем только чекбокс, название и кнопки */
+  /* Скрываем колонки: Размер, Дата, Автор */
+  .file-manager-table .ant-table-thead > tr > th:nth-child(3),
+  .file-manager-table .ant-table-tbody > tr > td:nth-child(3),
+  .file-manager-table .ant-table-thead > tr > th:nth-child(4),
+  .file-manager-table .ant-table-tbody > tr > td:nth-child(4),
+  .file-manager-table .ant-table-thead > tr > th:nth-child(5),
+  .file-manager-table .ant-table-tbody > tr > td:nth-child(5) {
+    display: none !important;
+  }
+
+  /* Колонка с кнопками (6-я) остается видимой */
+  .file-manager-table .ant-table-thead > tr > th:last-child,
+  .file-manager-table .ant-table-tbody > tr > td:last-child {
+    display: table-cell !important;
+    position: sticky !important;
+    right: 0 !important;
+    background: #141414 !important;
+    z-index: 1 !important;
+  }
+
+  /* Уменьшаем отступы для кнопок */
+  .file-manager-table .ant-btn-sm {
+    padding: 2px 4px !important;
+    font-size: 14px !important;
+  }
+
+  /* Название файла на мобильных - одна строка */
+  .file-name-cell {
+    max-width: 120px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .file-manager-table .ant-table-cell {
+    padding: 6px 2px !important;
+  }
+
+  .file-name-cell {
+    max-width: 100px !important;
   }
 }

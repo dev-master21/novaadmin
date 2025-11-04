@@ -176,4 +176,13 @@ export const fileManagerApi = {
   // Установить права доступа к папке
   setFolderPermissions: (folderId: number, permissions: Omit<FolderPermission, 'id' | 'folder_id' | 'username' | 'full_name'>[]) =>
     api.post(`/file-manager/folders/${folderId}/permissions`, { permissions }),
+
+    // Импорт из Google Drive
+  importFromGoogleDrive: (googleDriveUrl: string, folderId?: number) =>
+    api.post('/file-manager/import-from-google-drive', { googleDriveUrl, folderId }),
+
+  // Массовое удаление файлов
+  deleteMultipleFiles: (fileIds: number[]) =>
+    api.post('/file-manager/delete-multiple', { fileIds }),
+  
 };

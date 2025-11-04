@@ -2,46 +2,51 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Card,
+  Table,
   Button,
   Space,
-  Table,
   message,
   Breadcrumb,
   Modal,
   Input,
   Popconfirm,
-  Progress,
-  Checkbox,
-  Empty,
-  Tooltip,
   Tag,
+  Checkbox,
+  Progress,
+  Tooltip,
+  Empty,
   Drawer,
-  Spin
+  Spin,
+  Descriptions,
+  Typography
 } from 'antd';
+import type { TableColumnsType } from 'antd';
 import {
   FolderOutlined,
+  FolderOpenOutlined,
   PlusOutlined,
   UploadOutlined,
   DownloadOutlined,
-  DeleteOutlined,
   EditOutlined,
+  DeleteOutlined,
+  EyeOutlined,
   HomeOutlined,
-  FolderOpenOutlined,
   SettingOutlined,
   CloseSquareOutlined,
-  EyeOutlined,
-  MoreOutlined
+  CloudDownloadOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
-import { fileManagerApi, FileItem, FolderItem } from '@/api/fileManager.api';
 import { useAuthStore } from '@/store/authStore';
-import type { TableColumnsType } from 'antd';
-import dayjs from 'dayjs';
+import { fileManagerApi, FileItem, FolderItem } from '@/api/fileManager.api';
 import FolderPermissionsModal from './components/FolderPermissionsModal';
+import dayjs from 'dayjs';
+import axios from 'axios';
 import './FileManager.css';
 
+const { Text } = Typography;
 
-// Компонент для загрузки изображений с авторизацией
-const ImageWithAuth = ({ fileId, alt }: { fileId: number; filePath: string; alt: string }) => {
+// Компонент для предпросмотра изображений с авторизацией
+const SecureImage = ({ fileId, alt }: { fileId: number; alt: string }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -49,26 +54,14 @@ const ImageWithAuth = ({ fileId, alt }: { fileId: number; filePath: string; alt:
   useEffect(() => {
     const loadImage = async () => {
       try {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-        
-        // ИСПРАВЛЕНО: используем ID вместо пути
-        const fileUrl = `${baseUrl}/file-manager/file/${fileId}`;
-        
-        console.log('Loading image by ID:', fileId);
-        console.log('URL:', fileUrl);
-
-        const response = await fetch(fileUrl, {
+        const response = await axios.get(`/api/file-manager/file/${fileId}`, {
+          responseType: 'blob',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
           }
         });
 
-        if (!response.ok) {
-          console.error('Response error:', response.status, response.statusText);
-          throw new Error('Failed to load image');
-        }
-
-        const blob = await response.blob();
+        const blob = new Blob([response.data]);
         const url = URL.createObjectURL(blob);
         setImageUrl(url);
         setLoading(false);
@@ -101,6 +94,212 @@ const ImageWithAuth = ({ fileId, alt }: { fileId: number; filePath: string; alt:
   }
 
   return <img src={imageUrl} alt={alt} style={{ width: '100%' }} />;
+};
+
+// Компонент для предпросмотра текстовых файлов
+const TextFilePreview = ({ fileId }: { fileId: number }) => {
+  const [content, setContent] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadText = async () => {
+      try {
+        const response = await axios.get(`/api/file-manager/file/${fileId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        setContent(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading text:', err);
+        setContent('Ошибка загрузки текста');
+        setLoading(false);
+      }
+    };
+    loadText();
+  }, [fileId]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ 
+      padding: '20px', 
+      backgroundColor: '#fff', 
+      color: '#000',
+      maxHeight: '70vh',
+      overflow: 'auto',
+      whiteSpace: 'pre-wrap',
+      fontFamily: 'monospace',
+      fontSize: '14px'
+    }}>
+      {content}
+    </div>
+  );
+};
+
+// Компонент для предпросмотра PDF через Blob URL
+const SecurePDFPreview = ({ fileId, fileName }: { fileId: number; fileName: string }) => {
+  const [pdfUrl, setPdfUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadPDF = async () => {
+      try {
+        const response = await axios.get(`/api/file-manager/file/${fileId}`, {
+          responseType: 'blob',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        setPdfUrl(url);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading PDF:', err);
+        setError(true);
+        setLoading(false);
+      }
+    };
+
+    loadPDF();
+
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [fileId]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <Spin size="large" />
+        <div style={{ marginTop: 16 }}>Загрузка PDF...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div style={{ textAlign: 'center', padding: '40px', color: 'red' }}>Ошибка загрузки PDF</div>;
+  }
+
+  return (
+    <iframe
+      src={pdfUrl}
+      style={{ width: '100%', height: '70vh', border: 'none' }}
+      title={fileName}
+    />
+  );
+};
+
+// Компонент для видео с авторизацией
+const SecureVideoPreview = ({ fileId, mimeType }: { fileId: number; fileName: string; mimeType: string }) => {
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadVideo = async () => {
+      try {
+        const response = await axios.get(`/api/file-manager/file/${fileId}`, {
+          responseType: 'blob',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+
+        const blob = new Blob([response.data], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        setVideoUrl(url);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading video:', err);
+        setLoading(false);
+      }
+    };
+    loadVideo();
+
+    return () => {
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+    };
+  }, [fileId]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  return (
+    <video controls style={{ width: '100%' }}>
+      <source src={videoUrl} type={mimeType} />
+      Ваш браузер не поддерживает видео.
+    </video>
+  );
+};
+
+// Компонент для аудио с авторизацией
+const SecureAudioPreview = ({ fileId, mimeType }: { fileId: number; fileName: string; mimeType: string }) => {
+  const [audioUrl, setAudioUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAudio = async () => {
+      try {
+        const response = await axios.get(`/api/file-manager/file/${fileId}`, {
+          responseType: 'blob',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+
+        const blob = new Blob([response.data], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading audio:', err);
+        setLoading(false);
+      }
+    };
+    loadAudio();
+
+    return () => {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [fileId]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '40px', textAlign: 'center' }}>
+      <audio controls style={{ width: '100%' }}>
+        <source src={audioUrl} type={mimeType} />
+        Ваш браузер не поддерживает аудио.
+      </audio>
+    </div>
+  );
 };
 
 const FileManager = () => {
@@ -148,6 +347,17 @@ const FileManager = () => {
     type: 'file'
   });
 
+  const [googleDriveModal, setGoogleDriveModal] = useState(false);
+  const [googleDriveUrl, setGoogleDriveUrl] = useState('');
+  const [importingFromDrive, setImportingFromDrive] = useState(false);
+
+  const [fileInfoModal, setFileInfoModal] = useState<{ visible: boolean; file: FileItem | null }>({
+    visible: false,
+    file: null
+  });
+
+  const pollingIntervalRef = useRef<number | null>(null);
+
   useEffect(() => {
     loadContent();
   }, [currentFolderId]);
@@ -159,6 +369,14 @@ const FileManager = () => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
   }, []);
 
   const loadContent = async () => {
@@ -289,6 +507,86 @@ const FileManager = () => {
     }
   };
 
+  const handleDeleteSelectedFiles = async () => {
+    if (selectedFiles.length === 0) {
+      message.warning('Выберите файлы для удаления');
+      return;
+    }
+
+    try {
+      await fileManagerApi.deleteMultipleFiles(selectedFiles);
+      message.success(`Удалено файлов: ${selectedFiles.length}`);
+      setSelectedFiles([]);
+      loadContent();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Ошибка удаления файлов');
+    }
+  };
+
+  const handleImportFromGoogleDrive = async () => {
+    if (!googleDriveUrl.trim()) {
+      message.error('Введите ссылку на Google Drive');
+      return;
+    }
+
+    setImportingFromDrive(true);
+    try {
+      await fileManagerApi.importFromGoogleDrive(googleDriveUrl, currentFolderId || undefined);
+      
+      message.success('Загрузка из Google Drive начата...', 2);
+      setGoogleDriveModal(false);
+      setGoogleDriveUrl('');
+
+      setUploading(true);
+      setUploadProgress(0);
+
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += 5;
+        if (progress >= 90) {
+          clearInterval(progressInterval);
+        }
+        setUploadProgress(Math.min(progress, 90));
+      }, 1000);
+
+      let pollCount = 0;
+      const maxPolls = 30;
+      
+      pollingIntervalRef.current = window.setInterval(async () => {
+        pollCount++;
+        
+        try {
+          const { data } = await fileManagerApi.browse(currentFolderId || undefined);
+          setFiles(data.data.files);
+          setFolders(data.data.folders);
+          
+          if (pollCount >= maxPolls) {
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              clearInterval(progressInterval);
+            }
+            setUploading(false);
+            setUploadProgress(100);
+            message.success('Загрузка завершена!');
+            
+            setTimeout(() => {
+              loadContent();
+            }, 500);
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }, 2000);
+
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Ошибка импорта из Google Drive');
+      setUploading(false);
+      setUploadProgress(0);
+    } finally {
+      setImportingFromDrive(false);
+    }
+  };
+
   const handleRename = async () => {
     if (!newName.trim()) {
       message.error('Введите новое имя');
@@ -325,78 +623,114 @@ const FileManager = () => {
     setPreviewModal({ visible: false, file: null });
   };
 
-  // Функция для сокращения имени файла на мобильных
-  const truncateFileName = (name: string, maxLength: number = 15): string => {
-    if (!isMobile || name.length <= maxLength) return name;
+  const openFileInfo = (file: FileItem) => {
+    setFileInfoModal({ visible: true, file });
+    setActionsDrawer({ visible: false, item: null, type: 'file' });
+  };
+
+  const truncateFileName = (name: string, maxLength: number = 20): string => {
+    if (name.length <= maxLength) return name;
     
-    const ext = name.substring(name.lastIndexOf('.'));
-    const nameWithoutExt = name.substring(0, name.lastIndexOf('.'));
+    const dotIndex = name.lastIndexOf('.');
+    if (dotIndex === -1) {
+      return name.substring(0, maxLength - 3) + '...';
+    }
     
-    if (nameWithoutExt.length <= maxLength - ext.length) return name;
+    const ext = name.substring(dotIndex);
+    const nameWithoutExt = name.substring(0, dotIndex);
     
-    return nameWithoutExt.substring(0, maxLength - ext.length - 3) + '...' + ext;
+    const maxNameLength = maxLength - ext.length - 3;
+    if (maxNameLength <= 0) {
+      return name.substring(0, maxLength - 3) + '...';
+    }
+    
+    return nameWithoutExt.substring(0, maxNameLength) + '...' + ext;
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return '0 B';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const getFileIcon = (mimeType: string) => {
+  const getFileIcon = (mimeType: string): string => {
     if (mimeType.startsWith('image/')) return '🖼️';
     if (mimeType.startsWith('video/')) return '🎥';
     if (mimeType.startsWith('audio/')) return '🎵';
-    if (mimeType.includes('pdf')) return '📄';
-    if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+    if (mimeType === 'application/pdf') return '📄';
+    if (mimeType.includes('word')) return '📝';
     if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '📊';
     if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('archive')) return '📦';
-    return '📁';
+    if (mimeType === 'text/plain') return '📄';
+    return '📎';
   };
 
-  const canPreview = (mimeType: string) => {
-    return mimeType.startsWith('image/') || 
-           mimeType.startsWith('video/') || 
-           mimeType === 'application/pdf';
+  const canPreview = (mimeType: string): boolean => {
+    return (
+      mimeType.startsWith('image/') ||
+      mimeType.startsWith('video/') ||
+      mimeType.startsWith('audio/') ||
+      mimeType === 'application/pdf' ||
+      mimeType === 'text/plain' ||
+      mimeType.includes('word') ||
+      mimeType.includes('document') ||
+      mimeType.includes('excel') ||
+      mimeType.includes('spreadsheet') ||
+      mimeType.includes('powerpoint') ||
+      mimeType.includes('presentation')
+    );
   };
 
   const renderPreview = () => {
     if (!previewModal.file) return null;
 
     const file = previewModal.file;
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
     if (file.mime_type.startsWith('image/')) {
-      return (
-        <ImageWithAuth 
-          fileId={file.id}
-          filePath={file.file_path}
-          alt={file.original_name}
-        />
-      );
+      return <SecureImage fileId={file.id} alt={file.original_name} />;
     }
 
-    // Для видео и PDF используем ID
-    const fileUrl = `${baseUrl}/file-manager/file/${file.id}`;
-
     if (file.mime_type.startsWith('video/')) {
-      return (
-        <video controls style={{ width: '100%', maxHeight: '70vh' }}>
-          <source src={fileUrl} type={file.mime_type} />
-          Ваш браузер не поддерживает видео.
-        </video>
-      );
+      return <SecureVideoPreview fileId={file.id} fileName={file.original_name} mimeType={file.mime_type} />;
+    }
+
+    if (file.mime_type.startsWith('audio/')) {
+      return <SecureAudioPreview fileId={file.id} fileName={file.original_name} mimeType={file.mime_type} />;
     }
 
     if (file.mime_type === 'application/pdf') {
+      return <SecurePDFPreview fileId={file.id} fileName={file.original_name} />;
+    }
+
+    if (file.mime_type === 'text/plain') {
+      return <TextFilePreview fileId={file.id} />;
+    }
+
+    if (
+      file.mime_type.includes('word') ||
+      file.mime_type.includes('document') ||
+      file.mime_type.includes('excel') ||
+      file.mime_type.includes('spreadsheet') ||
+      file.mime_type.includes('powerpoint') ||
+      file.mime_type.includes('presentation')
+    ) {
+      const fileUrl = `/api/file-manager/file/${file.id}`;
+      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(window.location.origin + fileUrl)}&embedded=true`;
+      
       return (
-        <iframe
-          src={fileUrl}
-          style={{ width: '100%', height: '70vh', border: 'none' }}
-          title={file.original_name}
-        />
+        <div style={{ width: '100%', height: '70vh' }}>
+          <iframe
+            src={viewerUrl}
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            title={file.original_name}
+          />
+          <div style={{ marginTop: 8, textAlign: 'center', color: '#888', fontSize: '12px' }}>
+            Если предпросмотр не работает, скачайте файл для просмотра
+          </div>
+        </div>
       );
     }
 
@@ -440,7 +774,6 @@ const FileManager = () => {
   const canDelete = getCurrentFolderPermissions().can_delete || hasPermission('file_manager.delete');
   const canManagePermissions = hasPermission('file_manager.manage_permissions') || isSuperAdmin();
 
-  // Мобильное меню действий
   const openActionsDrawer = (item: FileItem | FolderItem, type: 'file' | 'folder') => {
     setActionsDrawer({ visible: true, item, type });
   };
@@ -460,6 +793,16 @@ const FileManager = () => {
         height="auto"
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
+          {!isFolder && (
+            <Button
+              block
+              icon={<InfoCircleOutlined />}
+              onClick={() => openFileInfo(item as FileItem)}
+            >
+              Информация
+            </Button>
+          )}
+          
           {!isFolder && canPreview((item as FileItem).mime_type) && (
             <Button
               block
@@ -567,9 +910,9 @@ const FileManager = () => {
         >
           <FolderOpenOutlined style={{ fontSize: '20px', color: '#faad14' }} />
           <Tooltip title={record.folder_name}>
-            <span style={{ fontWeight: 500 }}>
-              {truncateFileName(record.folder_name, 15)}
-            </span>
+            <div className="file-name-cell">
+              {isMobile ? truncateFileName(record.folder_name, 15) : record.folder_name}
+            </div>
           </Tooltip>
         </div>
       ),
@@ -578,44 +921,36 @@ const FileManager = () => {
       title: 'Создана',
       dataIndex: 'created_at',
       key: 'created_at',
-      responsive: ['lg'],
+      responsive: ['lg'] as any,
       render: (date: string) => dayjs(date).format('DD.MM.YYYY HH:mm'),
     },
     {
       title: 'Автор',
       dataIndex: 'created_by_name',
       key: 'created_by_name',
-      responsive: ['xl'],
+      responsive: ['xl'] as any,
     },
     {
       title: '',
       key: 'actions',
       width: isMobile ? 60 : 180,
-      fixed: isMobile ? 'right' : undefined,
       render: (_: any, record: FolderItem) => {
         if (isMobile) {
           return (
             <Button
-              type="primary"
-              icon={<MoreOutlined />}
+              type="text"
+              icon={<SettingOutlined />}
               onClick={(e) => {
                 e.stopPropagation();
                 openActionsDrawer(record, 'folder');
-              }}
-              style={{ 
-                minWidth: '44px',
-                height: '44px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
               }}
             />
           );
         }
 
         return (
-          <Space size="small">
-            {(canDownload || record.permissions.can_download) && (
+          <Space size="small" onClick={(e) => e.stopPropagation()}>
+            {canDownload && (
               <Tooltip title="Скачать папку">
                 <Button
                   type="text"
@@ -628,7 +963,7 @@ const FileManager = () => {
                 />
               </Tooltip>
             )}
-            {(canEdit || record.permissions.can_edit) && (
+            {canEdit && (
               <Tooltip title="Переименовать">
                 <Button
                   type="text"
@@ -642,7 +977,7 @@ const FileManager = () => {
               </Tooltip>
             )}
             {canManagePermissions && (
-              <Tooltip title="Настроить права">
+              <Tooltip title="Права доступа">
                 <Button
                   type="text"
                   size="small"
@@ -654,7 +989,7 @@ const FileManager = () => {
                 />
               </Tooltip>
             )}
-            {(canDelete || record.permissions.can_delete) && (
+            {canDelete && (
               <Popconfirm
                 title="Удалить папку?"
                 description="Все файлы и подпапки будут удалены"
@@ -706,7 +1041,9 @@ const FileManager = () => {
         <Space>
           <span style={{ fontSize: '18px' }}>{getFileIcon(record.mime_type)}</span>
           <Tooltip title={record.original_name}>
-            <span>{truncateFileName(record.original_name)}</span>
+            <div className="file-name-cell">
+              {isMobile ? truncateFileName(record.original_name, 15) : record.original_name}
+            </div>
           </Tooltip>
         </Space>
       ),
@@ -716,50 +1053,37 @@ const FileManager = () => {
       dataIndex: 'file_size',
       key: 'file_size',
       width: 80,
-      responsive: ['md'],
+      responsive: ['md'] as any,
       render: (size: number) => formatFileSize(size),
     },
     {
       title: 'Загружен',
       dataIndex: 'created_at',
       key: 'created_at',
-      responsive: ['lg'],
+      responsive: ['lg'] as any,
       render: (date: string) => dayjs(date).format('DD.MM.YYYY HH:mm'),
     },
     {
       title: 'Автор',
       dataIndex: 'created_by_name',
       key: 'created_by_name',
-      responsive: ['xl'],
+      responsive: ['xl'] as any,
     },
     {
       title: '',
       key: 'actions',
-      width: isMobile ? 60 : 180,
-      fixed: isMobile ? 'right' : undefined,
+      width: isMobile ? 200 : 200,
       render: (_: any, record: FileItem) => {
-        if (isMobile) {
-          return (
-            <Button
-              type="primary"
-              icon={<MoreOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                openActionsDrawer(record, 'file');
-              }}
-              style={{ 
-                minWidth: '44px',
-                height: '44px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            />
-          );
-        }
-
         return (
-          <Space size="small">
+          <Space size={isMobile ? 2 : 'small'}>
+            <Tooltip title="Информация">
+              <Button
+                type="text"
+                size="small"
+                icon={<InfoCircleOutlined />}
+                onClick={() => openFileInfo(record)}
+              />
+            </Tooltip>
             {canPreview(record.mime_type) && (
               <Tooltip title="Просмотр">
                 <Button
@@ -834,6 +1158,23 @@ const FileManager = () => {
                   >
                     Скачать выбранные
                   </Button>
+                  {canDelete && (
+                    <Popconfirm
+                      title="Удалить выбранные файлы?"
+                      description={`Будет удалено файлов: ${selectedFiles.length}`}
+                      onConfirm={handleDeleteSelectedFiles}
+                      okText="Да"
+                      cancelText="Нет"
+                    >
+                      <Button
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined />}
+                      >
+                        Удалить выбранные
+                      </Button>
+                    </Popconfirm>
+                  )}
                   <Button
                     size="small"
                     onClick={() => setSelectedFiles([])}
@@ -856,6 +1197,13 @@ const FileManager = () => {
                 <>
                   <Button
                     type="primary"
+                    icon={<CloudDownloadOutlined />}
+                    onClick={() => setGoogleDriveModal(true)}
+                  >
+                    Из Google Drive
+                  </Button>
+                  <Button
+                    type="primary"
                     icon={<UploadOutlined />}
                     onClick={() => fileInputRef.current?.click()}
                     loading={uploading}
@@ -875,7 +1223,6 @@ const FileManager = () => {
           )
         }
       >
-        {/* Breadcrumbs */}
         <div className="file-manager-breadcrumbs">
           <Breadcrumb>
             <Breadcrumb.Item>
@@ -905,7 +1252,6 @@ const FileManager = () => {
           </Breadcrumb>
         </div>
 
-        {/* Мобильные кнопки */}
         {isMobile && (
           <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }} size="small">
             {canEdit && (
@@ -920,6 +1266,14 @@ const FileManager = () => {
             )}
             {canUpload && (
               <>
+                <Button
+                  block
+                  type="primary"
+                  icon={<CloudDownloadOutlined />}
+                  onClick={() => setGoogleDriveModal(true)}
+                >
+                  Загрузить из Google Drive
+                </Button>
                 <Button
                   block
                   type="primary"
@@ -949,6 +1303,23 @@ const FileManager = () => {
                 >
                   Скачать выбранные
                 </Button>
+                {canDelete && (
+                  <Popconfirm
+                    title="Удалить выбранные файлы?"
+                    description={`Будет удалено файлов: ${selectedFiles.length}`}
+                    onConfirm={handleDeleteSelectedFiles}
+                    okText="Да"
+                    cancelText="Нет"
+                  >
+                    <Button
+                      block
+                      danger
+                      icon={<DeleteOutlined />}
+                    >
+                      Удалить выбранные
+                    </Button>
+                  </Popconfirm>
+                )}
                 <Button
                   block
                   onClick={() => setSelectedFiles([])}
@@ -961,14 +1332,15 @@ const FileManager = () => {
           </Space>
         )}
 
-        {/* Upload Progress */}
         {uploading && (
           <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 8 }}>
+              <Text>Загрузка файлов...</Text>
+            </div>
             <Progress percent={uploadProgress} status="active" />
           </div>
         )}
 
-        {/* Folders */}
         {folders.length > 0 && (
           <div style={{ marginBottom: 24 }}>
             <Table
@@ -984,7 +1356,6 @@ const FileManager = () => {
           </div>
         )}
 
-        {/* Files */}
         {files.length > 0 ? (
           <Table
             columns={fileColumns}
@@ -1006,7 +1377,6 @@ const FileManager = () => {
         )}
       </Card>
 
-      {/* Create Folder Modal */}
       <Modal
         title="Создать папку"
         open={createFolderModal}
@@ -1028,7 +1398,64 @@ const FileManager = () => {
         />
       </Modal>
 
-      {/* Rename Modal */}
+      <Modal
+        title="Загрузить из Google Drive"
+        open={googleDriveModal}
+        onOk={handleImportFromGoogleDrive}
+        onCancel={() => {
+          setGoogleDriveModal(false);
+          setGoogleDriveUrl('');
+        }}
+        confirmLoading={importingFromDrive}
+        okText="Загрузить"
+        cancelText="Отмена"
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <p>Вставьте ссылку на папку или файл Google Drive:</p>
+          <Input
+            placeholder="https://drive.google.com/drive/folders/..."
+            value={googleDriveUrl}
+            onChange={(e) => setGoogleDriveUrl(e.target.value)}
+            onPressEnter={handleImportFromGoogleDrive}
+            autoFocus
+          />
+          <p style={{ fontSize: '12px', color: '#888' }}>
+            Примечание: Ссылка должна быть публичной или вам нужно настроить Google API Key
+          </p>
+        </Space>
+      </Modal>
+
+      <Modal
+        title="Информация о файле"
+        open={fileInfoModal.visible}
+        onCancel={() => setFileInfoModal({ visible: false, file: null })}
+        footer={[
+          <Button key="close" onClick={() => setFileInfoModal({ visible: false, file: null })}>
+            Закрыть
+          </Button>
+        ]}
+      >
+        {fileInfoModal.file && (
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="Название">
+              {fileInfoModal.file.original_name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Размер">
+              {formatFileSize(fileInfoModal.file.file_size)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Тип">
+              {fileInfoModal.file.mime_type}
+            </Descriptions.Item>
+            <Descriptions.Item label="Загружен">
+              {dayjs(fileInfoModal.file.created_at).format('DD.MM.YYYY HH:mm:ss')}
+            </Descriptions.Item>
+            <Descriptions.Item label="Автор">
+              {fileInfoModal.file.created_by_name}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+
       <Modal
         title={`Переименовать ${renameModal.type === 'file' ? 'файл' : 'папку'}`}
         open={renameModal.visible}
@@ -1049,7 +1476,6 @@ const FileManager = () => {
         />
       </Modal>
 
-      {/* Preview Modal */}
       <Modal
         title={previewModal.file?.original_name}
         open={previewModal.visible}
@@ -1062,7 +1488,6 @@ const FileManager = () => {
         {renderPreview()}
       </Modal>
 
-      {/* Folder Permissions Modal */}
       <FolderPermissionsModal
         visible={permissionsModal.visible}
         folderId={permissionsModal.folderId}
@@ -1070,7 +1495,6 @@ const FileManager = () => {
         onSuccess={loadContent}
       />
 
-      {/* Mobile Actions Drawer */}
       {renderMobileActions()}
     </div>
   );

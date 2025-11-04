@@ -89,4 +89,10 @@ router.post('/folders/:folderId/permissions', requirePermission('file_manager.ma
 // Раздача файлов по ID (более надежный способ)
 router.get('/file/:fileId', authenticate, requirePermission('file_manager.view'), fileManagerController.serveFileById.bind(fileManagerController));
 
+// Импорт из Google Drive
+router.post('/import-from-google-drive', requirePermission('file_manager.upload'), fileManagerController.importFromGoogleDrive.bind(fileManagerController));
+
+// Массовое удаление файлов
+router.post('/delete-multiple', requirePermission('file_manager.delete'), fileManagerController.deleteMultipleFiles.bind(fileManagerController));
+
 export default router;

@@ -371,6 +371,462 @@ class FileManagerController {
       }
     }
   }
+  // backend/src/controllers/fileManager.controller.ts (добавить в конец класса перед закрывающей скобкой)
+
+  /**
+   * Загрузить содержимое из Google Drive
+   * POST /api/file-manager/import-from-google-drive
+   */
+  async importFromGoogleDrive(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { googleDriveUrl, folderId } = req.body;
+      const userId = req.admin!.id;
+
+      if (!googleDriveUrl) {
+        res.status(400).json({
+          success: false,
+          message: 'URL Google Drive не предоставлен'
+        });
+        return;
+      }
+
+      logger.info(`Starting Google Drive import from: ${googleDriveUrl}`);
+
+      // Извлекаем ID папки/файла из URL
+      const driveId = this.extractGoogleDriveId(googleDriveUrl);
+      
+      if (!driveId) {
+        res.status(400).json({
+          success: false,
+          message: 'Не удалось извлечь ID из ссылки Google Drive'
+        });
+        return;
+      }
+
+      // Определяем целевую папку
+      let targetPath = this.fileManagerPath;
+      let targetFolderId = folderId || null;
+
+      if (folderId) {
+        const folder = await db.queryOne<any>(
+          'SELECT full_path FROM file_manager_folders WHERE id = ?',
+          [folderId]
+        );
+        if (folder) {
+          targetPath = path.join(this.fileManagerPath, folder.full_path);
+        }
+      }
+
+      // Отправляем первоначальный ответ
+      res.json({
+        success: true,
+        message: 'Начата загрузка из Google Drive. Это может занять некоторое время...',
+        data: { jobId: driveId }
+      });
+
+      // Запускаем асинхронную загрузку в фоне
+      this.processGoogleDriveImport(driveId, targetPath, targetFolderId, userId).catch(err => {
+        logger.error('Background Google Drive import failed:', err);
+      });
+
+    } catch (error) {
+      logger.error('Import from Google Drive error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка импорта из Google Drive'
+      });
+    }
+  }
+
+  /**
+   * Извлечь ID из ссылки Google Drive
+   */
+  private extractGoogleDriveId(url: string): string | null {
+    // Паттерны для разных типов ссылок Google Drive
+    const patterns = [
+      /\/folders\/([a-zA-Z0-9_-]+)/,
+      /\/file\/d\/([a-zA-Z0-9_-]+)/,
+      /id=([a-zA-Z0-9_-]+)/,
+      /^([a-zA-Z0-9_-]{25,})$/  // Прямой ID
+    ];
+
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Обработка импорта из Google Drive (асинхронно)
+   */
+  private async processGoogleDriveImport(
+    driveId: string,
+    targetPath: string,
+    targetFolderId: number | null,
+    userId: number
+  ): Promise<void> {
+    try {
+      const axios = require('axios');
+      
+      // Получаем информацию о ресурсе
+      const metaUrl = `https://www.googleapis.com/drive/v3/files/${driveId}?fields=id,name,mimeType&key=${process.env.GOOGLE_API_KEY || ''}`;
+      
+      let response;
+      try {
+        response = await axios.get(metaUrl);
+      } catch (err: any) {
+        logger.error('Google Drive API error:', err.response?.data || err.message);
+        
+        // Пытаемся использовать публичный доступ через прямую ссылку
+        return await this.downloadGoogleDrivePublic(driveId, targetPath, targetFolderId, userId);
+      }
+
+      const resource = response.data;
+
+      if (resource.mimeType === 'application/vnd.google-apps.folder') {
+        // Это папка - загружаем рекурсивно
+        await this.downloadGoogleDriveFolder(driveId, targetPath, targetFolderId, userId, resource.name);
+      } else {
+        // Это файл - загружаем один файл
+        await this.downloadGoogleDriveFile(driveId, targetPath, targetFolderId, userId, resource.name, resource.mimeType);
+      }
+
+      logger.info(`Google Drive import completed for: ${driveId}`);
+    } catch (error) {
+      logger.error('Process Google Drive import error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Загрузка публичной папки Google Drive (альтернативный метод)
+   */
+  private async downloadGoogleDrivePublic(
+    driveId: string,
+    targetPath: string,
+    targetFolderId: number | null,
+    userId: number
+  ): Promise<void> {
+    try {
+      // Альтернатива: используем gdown или подобную библиотеку
+      logger.warn('Using public folder download method with gdown');
+      
+      await this.downloadWithGdown(driveId, targetPath, targetFolderId, userId);
+
+    } catch (error) {
+      logger.error('Download public Google Drive error:', error);
+      throw new Error('Невозможно загрузить из Google Drive. Убедитесь, что ссылка публичная или используйте Google API Key');
+    }
+  }
+
+  /**
+   * Загрузка с использованием gdown (требует установки: pip install gdown)
+   */
+  private async downloadWithGdown(
+    driveId: string,
+    targetPath: string,
+    targetFolderId: number | null,
+    userId: number
+  ): Promise<void> {
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execPromise = util.promisify(exec);
+
+    try {
+      // Создаем временную папку для загрузки
+      const tempDownloadPath = path.join(targetPath, `temp_${driveId}`);
+      await fs.ensureDir(tempDownloadPath);
+
+      // Загружаем папку с помощью gdown
+      logger.info(`Downloading with gdown to: ${tempDownloadPath}`);
+      
+      const command = `gdown --folder https://drive.google.com/drive/folders/${driveId} -O "${tempDownloadPath}" --remaining-ok`;
+      
+      const { stdout, stderr } = await execPromise(command, { maxBuffer: 10 * 1024 * 1024 });
+      
+      if (stderr) {
+        logger.warn('gdown stderr:', stderr);
+      }
+      
+      logger.info('gdown stdout:', stdout);
+
+      // Обрабатываем загруженные файлы
+      await this.processDownloadedFolder(tempDownloadPath, targetPath, targetFolderId, userId);
+
+      // Удаляем временную папку
+      await fs.remove(tempDownloadPath);
+
+      logger.info('Google Drive download with gdown completed');
+    } catch (error: any) {
+      logger.error('Download with gdown error:', error);
+      throw new Error(`Ошибка загрузки через gdown: ${error.message}. Убедитесь, что gdown установлен: pip install gdown`);
+    }
+  }
+
+  /**
+   * Обработка загруженной папки
+   */
+  private async processDownloadedFolder(
+    sourcePath: string,
+    targetBasePath: string,
+    parentFolderId: number | null,
+    userId: number,
+    relativePath: string = ''
+  ): Promise<void> {
+    try {
+      const items = await fs.readdir(sourcePath);
+
+      for (const item of items) {
+        const itemPath = path.join(sourcePath, item);
+        const stats = await fs.stat(itemPath);
+
+        if (stats.isDirectory()) {
+          // Создаем папку в БД
+          const folderName = item;
+          let fullPath = relativePath ? `${relativePath}/${folderName}` : folderName;
+          
+          if (parentFolderId) {
+            const parentFolder = await db.queryOne<any>(
+              'SELECT full_path FROM file_manager_folders WHERE id = ?',
+              [parentFolderId]
+            );
+            if (parentFolder) {
+              fullPath = `${parentFolder.full_path}/${folderName}`;
+            }
+          }
+
+          const physicalPath = path.join(targetBasePath, relativePath, folderName);
+          await fs.ensureDir(physicalPath);
+
+          const result: any = await db.query(
+            `INSERT INTO file_manager_folders (folder_name, parent_id, full_path, created_by)
+             VALUES (?, ?, ?, ?)`,
+            [folderName, parentFolderId || null, fullPath, userId]
+          );
+
+          const newFolderId = Array.isArray(result) && result[0] ? result[0].insertId : result.insertId;
+
+          logger.info(`Created folder: ${fullPath}`);
+
+          // Рекурсивно обрабатываем содержимое папки
+          await this.processDownloadedFolder(
+            itemPath,
+            targetBasePath,
+            newFolderId,
+            userId,
+            relativePath ? `${relativePath}/${folderName}` : folderName
+          );
+        } else {
+          // Копируем файл
+          const fileName = item;
+          const targetFilePath = path.join(targetBasePath, relativePath, fileName);
+          
+          await fs.copy(itemPath, targetFilePath);
+
+          // Добавляем в БД
+          const fileSize = stats.size;
+          const mimeType = this.getMimeType(fileName);
+
+          await db.query(
+            `INSERT INTO file_manager_files (folder_id, file_name, original_name, file_path, file_size, mime_type, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [parentFolderId || null, fileName, fileName, targetFilePath.replace(/\\/g, '/'), fileSize, mimeType, userId]
+          );
+
+          logger.info(`Copied file: ${fileName}`);
+        }
+      }
+    } catch (error) {
+      logger.error('Process downloaded folder error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Загрузка папки Google Drive через API
+   */
+  private async downloadGoogleDriveFolder(
+    folderId: string,
+    targetPath: string,
+    parentFolderId: number | null,
+    userId: number,
+    folderName: string
+  ): Promise<void> {
+    const axios = require('axios');
+
+    try {
+      // Создаем папку
+      const fullPath = parentFolderId
+        ? `${(await db.queryOne<any>('SELECT full_path FROM file_manager_folders WHERE id = ?', [parentFolderId]))?.full_path}/${folderName}`
+        : folderName;
+
+      const physicalPath = path.join(targetPath, folderName);
+      await fs.ensureDir(physicalPath);
+
+      const result: any = await db.query(
+        `INSERT INTO file_manager_folders (folder_name, parent_id, full_path, created_by)
+         VALUES (?, ?, ?, ?)`,
+        [folderName, parentFolderId || null, fullPath, userId]
+      );
+
+      const newFolderId = Array.isArray(result) && result[0] ? result[0].insertId : result.insertId;
+
+      // Получаем список файлов в папке
+      const listUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&fields=files(id,name,mimeType,size)&key=${process.env.GOOGLE_API_KEY}`;
+      const response = await axios.get(listUrl);
+      const files = response.data.files || [];
+
+      for (const file of files) {
+        if (file.mimeType === 'application/vnd.google-apps.folder') {
+          // Рекурсивно загружаем вложенную папку
+          await this.downloadGoogleDriveFolder(file.id, physicalPath, newFolderId, userId, file.name);
+        } else {
+          // Загружаем файл
+          await this.downloadGoogleDriveFile(file.id, physicalPath, newFolderId, userId, file.name, file.mimeType);
+        }
+      }
+
+      logger.info(`Downloaded folder: ${folderName}`);
+    } catch (error) {
+      logger.error('Download Google Drive folder error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Загрузка файла Google Drive через API
+   */
+  private async downloadGoogleDriveFile(
+    fileId: string,
+    targetPath: string,
+    folderId: number | null,
+    userId: number,
+    fileName: string,
+    mimeType: string
+  ): Promise<void> {
+    const axios = require('axios');
+
+    try {
+      const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${process.env.GOOGLE_API_KEY}`;
+      
+      const response = await axios.get(downloadUrl, {
+        responseType: 'arraybuffer'
+      });
+
+      const filePath = path.join(targetPath, fileName);
+      await fs.writeFile(filePath, response.data);
+
+      const fileSize = response.data.length;
+
+      await db.query(
+        `INSERT INTO file_manager_files (folder_id, file_name, original_name, file_path, file_size, mime_type, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [folderId || null, fileName, fileName, filePath.replace(/\\/g, '/'), fileSize, mimeType, userId]
+      );
+
+      logger.info(`Downloaded file: ${fileName}`);
+    } catch (error) {
+      logger.error('Download Google Drive file error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Получить MIME тип файла по расширению
+   */
+  private getMimeType(filename: string): string {
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.ppt': 'application/vnd.ms-powerpoint',
+      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      '.txt': 'text/plain',
+      '.mp4': 'video/mp4',
+      '.avi': 'video/x-msvideo',
+      '.mov': 'video/quicktime',
+      '.zip': 'application/zip',
+      '.rar': 'application/x-rar-compressed'
+    };
+
+    return mimeTypes[ext] || 'application/octet-stream';
+  }
+
+  /**
+   * Массовое удаление файлов
+   * POST /api/file-manager/delete-multiple
+   */
+  async deleteMultipleFiles(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { fileIds } = req.body;
+
+      if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: 'Не указаны файлы для удаления'
+        });
+        return;
+      }
+
+      logger.info(`Deleting ${fileIds.length} files`);
+
+      let deletedCount = 0;
+      const errors: string[] = [];
+
+      for (const fileId of fileIds) {
+        try {
+          const file = await db.queryOne<any>(
+            'SELECT * FROM file_manager_files WHERE id = ?',
+            [fileId]
+          );
+
+          if (file) {
+            // Удаляем физический файл
+            if (await fs.pathExists(file.file_path)) {
+              await fs.remove(file.file_path);
+            }
+
+            // Удаляем из БД
+            await db.query('DELETE FROM file_manager_files WHERE id = ?', [fileId]);
+            deletedCount++;
+            logger.info(`File deleted: ${file.original_name}`);
+          }
+        } catch (err: any) {
+          logger.error(`Error deleting file ${fileId}:`, err);
+          errors.push(`Ошибка удаления файла ID ${fileId}: ${err.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Удалено файлов: ${deletedCount}${errors.length > 0 ? `, ошибок: ${errors.length}` : ''}`,
+        data: {
+          deletedCount,
+          errors: errors.length > 0 ? errors : undefined
+        }
+      });
+    } catch (error) {
+      logger.error('Delete multiple files error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка массового удаления файлов'
+      });
+    }
+  }
+  
   /**
    * Получить содержимое папки
    * GET /api/file-manager/browse?folderId=1

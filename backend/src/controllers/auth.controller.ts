@@ -39,23 +39,27 @@ class AuthController {
         return;
       }
 
-      // Получаем роли и права пользователя
+      // Получаем роли пользователя
       const roles = await db.query<any>(
-        `SELECT r.role_name 
+        `SELECT r.id, r.role_name, r.description
          FROM roles r
          INNER JOIN user_roles ur ON r.id = ur.role_id
          WHERE ur.user_id = ?`,
         [user.id]
       );
 
-      const permissions = await db.query<any>(
-        `SELECT DISTINCT p.permission_name
-         FROM permissions p
-         INNER JOIN role_permissions rp ON p.id = rp.permission_id
-         INNER JOIN user_roles ur ON rp.role_id = ur.role_id
-         WHERE ur.user_id = ?`,
-        [user.id]
-      );
+      // Получаем права для каждой роли
+      for (const role of roles) {
+        const permissions = await db.query<any>(
+          `SELECT p.id, p.permission_name, p.module, p.description
+           FROM permissions p
+           INNER JOIN role_permissions rp ON p.id = rp.permission_id
+           WHERE rp.role_id = ?
+           ORDER BY p.module, p.permission_name`,
+          [role.id]
+        );
+        role.permissions = permissions;
+      }
 
       // Генерация токенов
       const tokenPayload = {
@@ -89,9 +93,9 @@ class AuthController {
             username: user.username,
             full_name: user.full_name,
             email: user.email,
+            is_active: user.is_active,
             is_super_admin: user.is_super_admin,
-            roles: roles.map((r: any) => r.role_name),
-            permissions: permissions.map((p: any) => p.permission_name)
+            roles: roles
           },
           accessToken,
           refreshToken
@@ -211,23 +215,27 @@ class AuthController {
         return;
       }
 
-      // Получаем роли и права
+      // Получаем роли пользователя
       const roles = await db.query<any>(
-        `SELECT r.role_name 
+        `SELECT r.id, r.role_name, r.description
          FROM roles r
          INNER JOIN user_roles ur ON r.id = ur.role_id
          WHERE ur.user_id = ?`,
         [req.admin.id]
       );
 
-      const permissions = await db.query<any>(
-        `SELECT DISTINCT p.permission_name
-         FROM permissions p
-         INNER JOIN role_permissions rp ON p.id = rp.permission_id
-         INNER JOIN user_roles ur ON rp.role_id = ur.role_id
-         WHERE ur.user_id = ?`,
-        [req.admin.id]
-      );
+      // Получаем права для каждой роли
+      for (const role of roles) {
+        const permissions = await db.query<any>(
+          `SELECT p.id, p.permission_name, p.module, p.description
+           FROM permissions p
+           INNER JOIN role_permissions rp ON p.id = rp.permission_id
+           WHERE rp.role_id = ?
+           ORDER BY p.module, p.permission_name`,
+          [role.id]
+        );
+        role.permissions = permissions;
+      }
 
       res.json({
         success: true,
@@ -236,9 +244,9 @@ class AuthController {
           username: req.admin.username,
           full_name: req.admin.full_name,
           email: req.admin.email,
+          is_active: req.admin.is_active,
           is_super_admin: req.admin.is_super_admin,
-          roles: roles.map((r: any) => r.role_name),
-          permissions: permissions.map((p: any) => p.permission_name)
+          roles: roles
         }
       });
     } catch (error) {
