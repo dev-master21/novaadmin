@@ -10,6 +10,7 @@ import UsersList from '@/modules/Users/UsersList';
 import UserForm from '@/modules/Users/UserForm';
 import RolesList from '@/modules/Roles/RolesList';
 import RoleForm from '@/modules/Roles/RoleForm';
+import FileManager from '@/modules/FileManager/FileManager';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -80,7 +81,19 @@ const AppRoutes = () => {
           />
         </Route>
 
+        {/* File Manager */}
+        <Route path="file-manager">
+          <Route
+            index
+            element={
+              <ProtectedRoute permission="file_manager.view">
+                <FileManager />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
         {/* Users */}
+        
         <Route path="users">
           <Route
             index

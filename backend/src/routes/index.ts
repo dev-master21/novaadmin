@@ -5,6 +5,7 @@ import propertiesRoutes from './properties.routes';
 import usersRoutes from './users.routes';
 import rolesRoutes from './roles.routes';
 import mapsRoutes from './maps.routes';
+import fileManagerRoutes from './fileManager.routes';
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.use('/properties', propertiesRoutes);
 router.use('/users', usersRoutes);
 router.use('/roles', rolesRoutes);
 router.use('/maps', mapsRoutes);
+router.use('/file-manager', fileManagerRoutes);
 
 export default router;

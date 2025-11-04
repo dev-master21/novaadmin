@@ -9,7 +9,8 @@ import {
   UserOutlined,
   SafetyOutlined,
   LogoutOutlined,
-  GlobalOutlined
+  GlobalOutlined,
+  FolderOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -118,6 +119,15 @@ const MainLayout = () => {
       label: t('nav.roles'),
       onClick: () => {
         navigate('/roles');
+        if (isMobile) setDrawerVisible(false);
+      }
+    }] : []),
+    ...(hasPermission('file_manager.view') ? [{
+      key: '/file-manager',
+      icon: <FolderOutlined />,
+      label: t('menu.fileManager') || 'Файлообменник',
+      onClick: () => {
+        navigate('/file-manager');
         if (isMobile) setDrawerVisible(false);
       }
     }] : [])
