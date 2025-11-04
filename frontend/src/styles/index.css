@@ -149,3 +149,20 @@ html {
 .ant-layout-content {
   padding: 0 !important;
 }
+
+/* Стили для календаря в мобильной версии */
+@media (max-width: 768px) {
+  .seasonal-pricing-calendar {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999 !important;
+    max-width: 90vw !important;
+  }
+  
+  .seasonal-pricing-calendar .ant-picker-panel-container {
+    max-width: 90vw !important;
+    overflow-x: auto;
+  }
+}

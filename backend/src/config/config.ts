@@ -29,8 +29,8 @@ export const config = {
   // Upload
   upload: {
     basePath: process.env.UPLOAD_BASE_PATH || '../../novaestate.company/backend/uploads',
-    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '52428800', 10), // 50MB
-    maxVideoSize: parseInt(process.env.MAX_VIDEO_SIZE || '524288000', 10) // 500MB
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '5368709120', 10), // 50MB
+    maxVideoSize: parseInt(process.env.MAX_VIDEO_SIZE || '5368709120', 10) // 500MB
   },
 
   // CORS

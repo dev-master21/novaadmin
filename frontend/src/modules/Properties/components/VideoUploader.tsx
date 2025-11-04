@@ -1,32 +1,66 @@
 // frontend/src/modules/Properties/components/VideoUploader.tsx
-import { useState } from 'react';
-import { Card, Button, Progress, Space, message, Popconfirm } from 'antd';
-import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useState, useRef } from 'react';
+import {
+  Card,
+  Button,
+  Progress,
+  List,
+  Space,
+  message,
+  Popconfirm,
+  Input,
+  Modal,
+  Form
+} from 'antd';
+import {
+  UploadOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PlayCircleOutlined
+} from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { propertiesApi } from '@/api/properties.api';
+
+interface Video {
+  id: number;
+  video_url: string;
+  title?: string;
+  description?: string;
+  file_size: number;
+  sort_order: number;
+}
 
 interface VideoUploaderProps {
   propertyId: number;
-  videoUrl?: string | null;
+  videos?: Video[];
   onUpdate: () => void;
 }
 
-const VideoUploader = ({ propertyId, videoUrl, onUpdate }: VideoUploaderProps) => {
+const VideoUploader = ({ propertyId, videos = [], onUpdate }: VideoUploaderProps) => {
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<Video | null>(null);
+  const [form] = Form.useForm();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Проверка размера (макс 500MB)
-    if (file.size > 500 * 1024 * 1024) {
-      message.error('Размер видео не должен превышать 500MB');
-      return;
-    }
-
-    // Проверка типа
-    if (!file.type.startsWith('video/')) {
-      message.error('Разрешены только видео файлы');
+    // Проверка типов файлов
+    const invalidFiles = files.filter(file => !file.type.startsWith('video/'));
+    if (invalidFiles.length > 0) {
+      message.error(`Некоторые файлы не являются видео: ${invalidFiles.map(f => f.name).join(', ')}`);
       return;
     }
 
@@ -34,94 +68,183 @@ const VideoUploader = ({ propertyId, videoUrl, onUpdate }: VideoUploaderProps) =
       setUploading(true);
       setUploadProgress(0);
 
-      await propertiesApi.uploadVideo(propertyId, file, (progress) => {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('videos', file);
+      });
+
+      await propertiesApi.uploadVideos(propertyId, formData, (progress) => {
         setUploadProgress(progress);
       });
 
-      message.success('Видео успешно загружено');
+      message.success(`Загружено ${files.length} видео`);
       onUpdate();
     } catch (error: any) {
       message.error(error.response?.data?.message || 'Ошибка загрузки видео');
     } finally {
       setUploading(false);
       setUploadProgress(0);
-      e.target.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (videoId: number) => {
     try {
-      await propertiesApi.deleteVideo(propertyId);
-      message.success('Видео удалено');
+      await propertiesApi.deleteVideo(propertyId, videoId);
+      message.success(t('common.deleteSuccess'));
       onUpdate();
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Ошибка удаления видео');
+      message.error(error.response?.data?.message || t('errors.generic'));
+    }
+  };
+
+  const handleEdit = (video: Video) => {
+    setEditingVideo(video);
+    form.setFieldsValue({
+      title: video.title,
+      description: video.description
+    });
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const values = await form.validateFields();
+      await propertiesApi.updateVideo(propertyId, editingVideo!.id, values);
+      message.success(t('common.saveSuccess'));
+      setEditModalVisible(false);
+      onUpdate();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || t('errors.generic'));
     }
   };
 
   return (
-    <Card title="Видео объекта" size="small">
-      {videoUrl ? (
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <div style={{ position: 'relative', paddingTop: '56.25%', backgroundColor: '#000' }}>
-            <video
-              src={videoUrl}
-              controls
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%'
-              }}
-            />
-          </div>
-          <Popconfirm
-            title="Удалить видео?"
-            onConfirm={handleDelete}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button danger icon={<DeleteOutlined />} block>
-              Удалить видео
-            </Button>
-          </Popconfirm>
-        </Space>
-      ) : (
-        <Space direction="vertical" style={{ width: '100%' }}>
-          {uploading ? (
-            <>
-              <Progress percent={uploadProgress} status="active" />
-              <p style={{ textAlign: 'center', color: '#999' }}>
-                Загрузка видео... {uploadProgress}%
-              </p>
-            </>
-          ) : (
-            <>
-              <Button
-                type="primary"
-                icon={<UploadOutlined />}
-                onClick={() => document.getElementById('video-input')?.click()}
-                block
-              >
-                Загрузить видео
-              </Button>
-              <input
-                id="video-input"
-                type="file"
-                accept="video/*"
-                style={{ display: 'none' }}
-                onChange={handleFileSelect}
-              />
-              <p style={{ fontSize: 12, color: '#999', margin: 0 }}>
-                Максимальный размер: 500MB
-                <br />
-                Форматы: MP4, AVI, MOV, WMV, FLV, MKV, WEBM
-              </p>
-            </>
-          )}
-        </Space>
+    <Card 
+      title="Видео"
+      extra={
+        <Button
+          type="primary"
+          icon={<UploadOutlined />}
+          onClick={() => fileInputRef.current?.click()}
+          loading={uploading}
+          disabled={uploading}
+        >
+          Загрузить видео
+        </Button>
+      }
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        multiple
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+
+      {uploading && (
+        <div style={{ marginBottom: 24 }}>
+          <Progress percent={uploadProgress} status="active" />
+          <p style={{ textAlign: 'center', marginTop: 8, color: '#666' }}>
+            Загрузка видео... {uploadProgress}%
+          </p>
+        </div>
       )}
+
+      {videos.length === 0 && !uploading && (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '40px 0',
+          color: '#999'
+        }}>
+          <PlayCircleOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+          <p>Видео не загружено</p>
+          <p style={{ fontSize: 12 }}>
+            Поддерживаемые форматы: MP4, MOV, AVI, WebM<br />
+            Максимальный размер: 5 ГБ
+          </p>
+        </div>
+      )}
+
+      {videos.length > 0 && (
+        <List
+          dataSource={videos}
+          renderItem={(video) => (
+            <List.Item
+              actions={[
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => handleEdit(video)}
+                />,
+                <Popconfirm
+                  title={t('common.confirmDelete')}
+                  onConfirm={() => handleDelete(video.id)}
+                  okText={t('common.yes')}
+                  cancelText={t('common.no')}
+                >
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                  />
+                </Popconfirm>
+              ]}
+            >
+              <List.Item.Meta
+                avatar={
+                  <video
+                    src={`https://novaestate.company${video.video_url}`}
+                    style={{ 
+                      width: 120, 
+                      height: 68, 
+                      objectFit: 'cover',
+                      borderRadius: 4
+                    }}
+                  />
+                }
+                title={video.title || 'Без названия'}
+                description={
+                  <Space direction="vertical" size={0}>
+                    <span>{video.description || 'Описание отсутствует'}</span>
+                    <span style={{ fontSize: 12, color: '#999' }}>
+                      {formatFileSize(video.file_size)}
+                    </span>
+                  </Space>
+                }
+              />
+            </List.Item>
+          )}
+        />
+      )}
+
+      <Modal
+        title="Редактировать видео"
+        open={editModalVisible}
+        onOk={handleSaveEdit}
+        onCancel={() => setEditModalVisible(false)}
+        okText={t('common.save')}
+        cancelText={t('common.cancel')}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="title"
+            label="Название"
+          >
+            <Input placeholder="Введите название видео" />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="Описание"
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Введите описание видео"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Card>
   );
 };

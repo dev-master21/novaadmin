@@ -43,32 +43,31 @@ const PricingModal = ({ propertyId, visible, onClose }: PricingModalProps) => {
     }
   };
 
+  // Форматирование даты из "DD-MM" в "DD месяц"
+  const formatDate = (dateStr: string) => {
+    const [day, month] = dateStr.split('-');  // В БД формат DD-MM (день-месяц)
+    const monthNum = parseInt(month, 10);
+    const dayNum = parseInt(day, 10);
+  
+    const months = i18n.language === 'ru' 
+      ? ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+    return `${dayNum} ${months[monthNum - 1]}`;
+  };
 
-    // Форматирование даты из "DD-MM" в "DD месяц"
-    const formatDate = (dateStr: string) => {
-      const [day, month] = dateStr.split('-');  // В БД формат DD-MM (день-месяц)
-      const monthNum = parseInt(month, 10);
-      const dayNum = parseInt(day, 10);
-    
-      const months = i18n.language === 'ru' 
-        ? ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
-        : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-      return `${dayNum} ${months[monthNum - 1]}`;
-    };
-
-    // Сортировка по месяцам (январь -> декабрь), затем по дням
-    const sortByDate = (a: SeasonalPrice, b: SeasonalPrice) => {
-      const [aDay, aMonth] = a.start_date_recurring.split('-').map(Number);  // DD-MM
-      const [bDay, bMonth] = b.start_date_recurring.split('-').map(Number);  // DD-MM
-    
-      // Сначала сравниваем месяцы
-      if (aMonth !== bMonth) {
-        return aMonth - bMonth;
-      }
-      // Если месяцы одинаковые, сравниваем дни
-      return aDay - bDay;
-    };
+  // Сортировка по месяцам (январь -> декабрь), затем по дням
+  const sortByDate = (a: SeasonalPrice, b: SeasonalPrice) => {
+    const [aDay, aMonth] = a.start_date_recurring.split('-').map(Number);  // DD-MM
+    const [bDay, bMonth] = b.start_date_recurring.split('-').map(Number);  // DD-MM
+  
+    // Сначала сравниваем месяцы
+    if (aMonth !== bMonth) {
+      return aMonth - bMonth;
+    }
+    // Если месяцы одинаковые, сравниваем дни
+    return aDay - bDay;
+  };
 
   const columns: ColumnsType<SeasonalPrice> = [
     {
@@ -128,27 +127,46 @@ const PricingModal = ({ propertyId, visible, onClose }: PricingModalProps) => {
             </Descriptions>
           )}
 
-          {/* Сезонные цены аренды */}
+          {/* Цены аренды */}
           {(data.deal_type === 'rent' || data.deal_type === 'both') && (
             <>
-              <h3 style={{ marginBottom: 16 }}>
-                {t('properties.pricing.seasonalPricing')}
-              </h3>
-              {sortedPricing.length > 0 ? (
-                <Table
-                  columns={columns}
-                  dataSource={sortedPricing}
-                  rowKey={(record) => `${record.start_date_recurring}-${record.end_date_recurring}`}
-                  pagination={false}
-                  size="small"
-                />
-              ) : (
+              {/* Постоянная годовая цена */}
+              {data.year_price && data.year_price > 0 && (
+                <Descriptions column={1} bordered style={{ marginBottom: 24 }}>
+                  <Descriptions.Item label={t('properties.pricingOptions.constantPrice')}>
+                    <strong style={{ fontSize: 20, color: '#1890ff' }}>
+                      {Math.floor(data.year_price).toLocaleString()} ฿
+                    </strong>
+                  </Descriptions.Item>
+                </Descriptions>
+              )}
+
+              {/* Сезонные цены аренды */}
+              {sortedPricing.length > 0 && (
+                <>
+                  <h3 style={{ marginBottom: 16 }}>
+                    {t('properties.pricing.seasonalPricing')}
+                  </h3>
+                  <Table
+                    columns={columns}
+                    dataSource={sortedPricing}
+                    pagination={false}
+                    size="small"
+                    rowKey={(record, index) => `${record.start_date_recurring}-${index}`}
+                  />
+                </>
+              )}
+
+              {/* Если нет ни постоянной цены, ни сезонных цен */}
+              {(!data.year_price || data.year_price === 0) && sortedPricing.length === 0 && (
                 <Empty description={t('properties.pricing.noPricing')} />
               )}
             </>
           )}
         </>
-      ) : null}
+      ) : (
+        <Empty description={t('common.noData')} />
+      )}
     </Modal>
   );
 };

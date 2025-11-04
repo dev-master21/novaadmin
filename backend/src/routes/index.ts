@@ -12,6 +12,6 @@ router.use('/auth', authRoutes);
 router.use('/properties', propertiesRoutes);
 router.use('/users', usersRoutes);
 router.use('/roles', rolesRoutes);
-router.use('/api/maps', mapsRoutes);
+router.use('/maps', mapsRoutes);
 
 export default router;

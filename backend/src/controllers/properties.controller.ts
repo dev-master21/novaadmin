@@ -7,7 +7,6 @@ import { imageProcessorService } from '../services/imageProcessor.service';
 import fs from 'fs-extra';
 import path from 'path';
 import { getImageUrl } from '../utils/imageUrl';
-import { config } from '../config/config';
 
 class PropertiesController {
 /**
@@ -125,7 +124,7 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
 }
 
 /**
- * Получить один объект по ID
+ * Получить объект по ID
  * GET /api/properties/:id
  */
 async getById(req: AuthRequest, res: Response): Promise<void> {
@@ -151,28 +150,43 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
+    // Загружаем переводы
     const translations = await db.query(
       'SELECT language_code, property_name, description FROM property_translations WHERE property_id = ?',
       [id]
     );
 
+    // Загружаем фотографии
     const photos = await db.query(
       'SELECT * FROM property_photos WHERE property_id = ? ORDER BY sort_order ASC',
       [id]
     );
 
+    // Загружаем особенности
     const features = await db.query(
       'SELECT * FROM property_features WHERE property_id = ?',
       [id]
     );
 
+    // Загружаем ценообразование
     const pricing = await db.query(
       'SELECT * FROM property_pricing WHERE property_id = ? ORDER BY start_date_recurring ASC',
       [id]
     );
 
+    // Загружаем VR панорамы
     const vrPanoramas = await db.query(
       'SELECT * FROM property_vr_panoramas WHERE property_id = ? ORDER BY sort_order ASC',
+      [id]
+    );
+
+    // Загружаем видео
+    const videos = await db.query<any>(
+      `SELECT id, video_url, title, description, file_size, duration, 
+              mime_type, thumbnail_url, sort_order, created_at
+       FROM property_videos
+       WHERE property_id = ?
+       ORDER BY sort_order ASC`,
       [id]
     );
 
@@ -188,17 +202,24 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       panorama_url: getImageUrl(vr.panorama_url, false)
     }));
 
+    // Преобразуем URL видео
+    const videosWithUrls = (videos || []).map((video: any) => ({
+      ...video,
+      video_url: video.video_url,
+      thumbnail_url: video.thumbnail_url ? video.thumbnail_url : null
+    }));
+
     res.json({
       success: true,
       data: {
         ...property,
         floor_plan_url: getImageUrl(property.floor_plan_url, false),
-        video_url: property.video_url ? `${config.clientSiteUrl}${property.video_url}` : null,
         translations,
         photos: photosWithUrls,
         features,
         pricing,
-        vrPanoramas: vrPanoramasWithUrls
+        vrPanoramas: vrPanoramasWithUrls,
+        videos: videosWithUrls
       }
     });
   } catch (error) {
@@ -226,7 +247,7 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
         floors, floor, penthouse_floors, construction_year, construction_month,
         furniture_status, parking_spaces, pets_allowed, pets_custom,
         building_ownership, land_ownership, ownership_type,
-        sale_price, minimum_nights, ics_calendar_url, status, video_url,
+        sale_price, year_price, minimum_nights, ics_calendar_url, status, video_url,
         
         // Информация о владельце
         owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
@@ -250,9 +271,9 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
           floors, floor, penthouse_floors, construction_year, construction_month,
           furniture_status, parking_spaces, pets_allowed, pets_custom,
           building_ownership, land_ownership, ownership_type,
-          sale_price, minimum_nights, ics_calendar_url, video_url, status, created_by,
+          sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status, created_by,
           owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           deal_type, property_type, region, address, google_maps_link,
           latitude, longitude, property_number, complex_name,
@@ -260,7 +281,7 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
           floors, floor, penthouse_floors, construction_year, construction_month,
           furniture_status, parking_spaces, pets_allowed, pets_custom,
           building_ownership, land_ownership, ownership_type,
-          sale_price, minimum_nights, ics_calendar_url, video_url, status || 'draft',
+          sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status || 'draft',
           req.admin?.id,
           owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes
         ]
@@ -368,7 +389,6 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
         return;
       }
 
-      // Извлекаем специальные поля из updateData
       const {
         translations, 
         renovationDates, 
@@ -378,8 +398,24 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
         rentalFeatures,
         locationFeatures,
         views,
+        // Исключаем поля которые не должны обновляться напрямую
+        photos,
+        pricing,
+        vrPanoramas,
+        creator_name,
+        creator_username,
+        created_at,
+        updated_at,     // ← ДОБАВЬТЕ ЭТО
+        deleted_at,     // ← ДОБАВЬТЕ ЭТО
+        cover_photo,
+        features,
+        views_count,    // ← ДОБАВЬТЕ ЭТО
+        last_calendar_sync, // ← ДОБАВЬТЕ ЭТО
         ...mainData
       } = updateData;
+
+      // Удаляем id из mainData если он там есть
+      delete mainData.id;
 
       // Обновляем основные данные
       if (Object.keys(mainData).length > 0) {
@@ -603,7 +639,7 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
   }
 
 /**
- * Загрузка фотографий
+ * Загрузить фотографии для объекта
  * POST /api/properties/:id/photos
  */
 async uploadPhotos(req: AuthRequest, res: Response): Promise<void> {
@@ -612,10 +648,12 @@ async uploadPhotos(req: AuthRequest, res: Response): Promise<void> {
     const { category = 'general' } = req.body;
     const files = req.files as Express.Multer.File[];
 
+    logger.info(`Upload photos request: property=${id}, category=${category}, files=${files?.length || 0}`);
+
     if (!files || files.length === 0) {
       res.status(400).json({
         success: false,
-        message: 'Файлы не загружены'
+        message: 'Нет файлов для загрузки'
       });
       return;
     }
@@ -627,6 +665,11 @@ async uploadPhotos(req: AuthRequest, res: Response): Promise<void> {
     );
 
     if (!property) {
+      logger.warn(`Property not found: ${id}`);
+      for (const file of files) {
+        await fs.remove(file.path);
+      }
+      
       res.status(404).json({
         success: false,
         message: 'Объект не найден'
@@ -634,35 +677,84 @@ async uploadPhotos(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    // Обрабатываем изображения
-    const filePaths = files.map(file => file.path);
-    await imageProcessorService.processMultipleImages(filePaths);
-
     // Получаем максимальный sort_order для категории
-    const maxSortResult = await db.queryOne<any>(
-      'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM property_photos WHERE property_id = ? AND category = ?',
+    const maxOrder = await db.queryOne<any>(
+      'SELECT COALESCE(MAX(sort_order), -1) as max_order FROM property_photos WHERE property_id = ? AND category = ?',
       [id, category]
     );
-    let sortOrder = maxSortResult?.next_order || 0;
 
-    // Сохраняем информацию о фото в БД
-    for (const file of files) {
-      const relativePath = `/uploads/properties/photos/${file.filename}`;
-      await db.query(
-        'INSERT INTO property_photos (property_id, photo_url, category, sort_order, is_primary) VALUES (?, ?, ?, ?, ?)',
-        [id, relativePath, category, sortOrder++, false]
-      );
+    let currentOrder = (maxOrder?.max_order || -1) + 1;
+    logger.info(`Starting sort_order: ${currentOrder}`);
+
+    // ПАРАЛЛЕЛЬНАЯ обработка всех изображений
+    logger.info(`Starting parallel processing of ${files.length} images`);
+    
+    const filePaths = files.map(file => file.path);
+    const processedImages = await imageProcessorService.processMultipleImages(filePaths);
+    
+    logger.info(`Successfully processed ${processedImages.length} images`);
+
+    // Сохраняем информацию о фотографиях в БД
+    const photoIds: number[] = [];
+    for (let i = 0; i < processedImages.length; i++) {
+      const processed = processedImages[i];
+      
+      // Берем путь от /uploads включительно
+      const uploadsIndex = processed.path.indexOf('uploads');
+      const dbPath = uploadsIndex !== -1 
+        ? '/' + processed.path.substring(uploadsIndex).replace(/\\/g, '/')
+        : '/' + path.relative('/var/www/www-root/data/www/novaestate.company/backend', processed.path).replace(/\\/g, '/');
+
+      logger.info(`Saving to DB - File: ${processed.path}, DB path: ${dbPath}`);
+
+      try {
+        const result: any = await db.query(
+          `INSERT INTO property_photos (property_id, photo_url, category, sort_order, is_primary)
+           VALUES (?, ?, ?, ?, ?)`,
+          [id, dbPath, category, currentOrder + i, false]
+        );
+
+        let insertId: number | undefined;
+        if (Array.isArray(result)) {
+          insertId = result[0]?.insertId;
+        } else if (result?.insertId) {
+          insertId = result.insertId;
+        }
+
+        if (insertId) {
+          photoIds.push(insertId);
+          logger.info(`Successfully saved photo with ID: ${insertId}`);
+        } else {
+          logger.error(`Failed to get insertId for photo ${i + 1}`);
+        }
+      } catch (dbError: any) {
+        logger.error(`Database error for photo ${i + 1}:`, dbError);
+        throw dbError;
+      }
     }
 
-    logger.info(`Uploaded ${files.length} photos for property ${id}`);
+    logger.info(`Successfully uploaded and processed ${photoIds.length} photos for property ${id}`);
 
-    res.json({
+    res.status(201).json({
       success: true,
-      message: `Загружено ${files.length} фотографий`,
-      data: { count: files.length }
+      message: `Загружено ${photoIds.length} фото`,
+      data: { photoIds, count: photoIds.length }
     });
-  } catch (error) {
+
+  } catch (error: any) {
     logger.error('Upload photos error:', error);
+    
+    if (req.files) {
+      const files = req.files as Express.Multer.File[];
+      for (const file of files) {
+        try {
+          await fs.remove(file.path);
+        } catch (e) {
+          logger.error('Failed to remove file:', e);
+        }
+      }
+    }
+
     res.status(500).json({
       success: false,
       message: 'Ошибка загрузки фотографий'
@@ -676,11 +768,11 @@ async uploadPhotos(req: AuthRequest, res: Response): Promise<void> {
  */
 async deletePhoto(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { photoId } = req.params;
+    const { id, photoId } = req.params;
 
     const photo = await db.queryOne<any>(
-      'SELECT * FROM property_photos WHERE id = ?',
-      [photoId]
+      'SELECT photo_url FROM property_photos WHERE id = ? AND property_id = ?',
+      [photoId, id]
     );
 
     if (!photo) {
@@ -691,18 +783,14 @@ async deletePhoto(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    // Удаляем файлы
-    const uploadsBase = path.join(process.cwd(), '../../../novaestate.company/backend');
-    const originalPath = path.join(uploadsBase, photo.photo_url);
-    const thumbnailPath = originalPath.replace(/(\.[^.]+)$/, '_thumb$1');
-
-    await fs.remove(originalPath).catch(() => {});
-    await fs.remove(thumbnailPath).catch(() => {});
-
-    // Удаляем запись из БД
+    // Удаляем из БД
     await db.query('DELETE FROM property_photos WHERE id = ?', [photoId]);
 
-    logger.info(`Photo deleted: ${photoId}`);
+    // Удаляем файл и thumbnail через сервис
+    const filePath = path.join(process.cwd(), 'public', photo.photo_url);
+    await imageProcessorService.deleteImage(filePath);
+
+    logger.info(`Photo deleted: ${photoId} for property ${id}`);
 
     res.json({
       success: true,
@@ -1024,95 +1112,186 @@ async deleteVRPanorama(req: AuthRequest, res: Response): Promise<void> {
     });
   }
 }
-  /**
-   * Загрузка видео
-   * POST /api/properties/:id/video
-   */
-  async uploadVideo(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const file = req.file;
+/**
+ * Загрузить видео для объекта
+ * POST /api/properties/:id/videos
+ */
+async uploadVideos(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const files = req.files as Express.Multer.File[];
 
-      if (!file) {
-        res.status(400).json({
-          success: false,
-          message: 'Файл не загружен'
-        });
-        return;
+    if (!files || files.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Нет файлов для загрузки'
+      });
+      return;
+    }
+
+    // Проверяем существование объекта
+    const property = await db.queryOne(
+      'SELECT id FROM properties WHERE id = ? AND deleted_at IS NULL',
+      [id]
+    );
+
+    if (!property) {
+      for (const file of files) {
+        await fs.remove(file.path);
       }
+      
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден'
+      });
+      return;
+    }
 
-      const relativePath = `/uploads/properties/videos/${file.filename}`;
+    // Получаем максимальный sort_order
+    const maxOrder = await db.queryOne<any>(
+      'SELECT COALESCE(MAX(sort_order), -1) as max_order FROM property_videos WHERE property_id = ?',
+      [id]
+    );
 
-      await db.query(
-        'UPDATE properties SET video_url = ? WHERE id = ?',
-        [relativePath, id]
+    let currentOrder = (maxOrder?.max_order || -1) + 1;
+
+    // Сохраняем информацию о видео в БД
+    const videoIds: number[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const stats = await fs.stat(file.path);
+      
+      const uploadsIndex = file.path.indexOf('uploads');
+      const dbPath = uploadsIndex !== -1 
+        ? '/' + file.path.substring(uploadsIndex).replace(/\\/g, '/')
+        : '/' + path.relative('/var/www/www-root/data/www/novaestate.company/backend', file.path).replace(/\\/g, '/');
+
+      const result: any = await db.query(
+        `INSERT INTO property_videos (property_id, video_url, file_size, mime_type, sort_order)
+         VALUES (?, ?, ?, ?, ?)`,
+        [id, dbPath, stats.size, file.mimetype, currentOrder + i]
       );
 
-      logger.info(`Video uploaded for property ${id}, size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      let insertId: number | undefined;
+      if (Array.isArray(result)) {
+        insertId = result[0]?.insertId;
+      } else if (result?.insertId) {
+        insertId = result.insertId;
+      }
 
-      res.json({
-        success: true,
-        message: 'Видео загружено',
-        data: { 
-          url: relativePath,
-          size: file.size,
-          filename: file.filename
+      if (insertId) {
+        videoIds.push(insertId);
+      }
+    }
+
+    logger.info(`Uploaded ${videoIds.length} videos for property ${id}`);
+
+    res.status(201).json({
+      success: true,
+      message: `Загружено ${videoIds.length} видео`,
+      data: { videoIds, count: videoIds.length }
+    });
+
+  } catch (error: any) {
+    logger.error('Upload videos error:', error);
+    
+    if (req.files) {
+      const files = req.files as Express.Multer.File[];
+      for (const file of files) {
+        try {
+          await fs.remove(file.path);
+        } catch (e) {
+          logger.error('Failed to remove file:', e);
         }
-      });
-    } catch (error) {
-      logger.error('Upload video error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка загрузки видео'
-      });
-    }
-  }
-
-  /**
-   * Удаление видео
-   * DELETE /api/properties/:id/video
-   */
-  async deleteVideo(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-
-      const property = await db.queryOne<any>(
-        'SELECT video_url FROM properties WHERE id = ? AND deleted_at IS NULL',
-        [id]
-      );
-
-      if (!property) {
-        res.status(404).json({
-          success: false,
-          message: 'Объект не найден'
-        });
-        return;
       }
-
-      if (property.video_url) {
-        // Удаляем файл
-        const uploadsBase = path.join(process.cwd(), '../../../novaestate.company/backend');
-        const videoPath = path.join(uploadsBase, property.video_url);
-        await fs.remove(videoPath).catch(() => {});
-      }
-
-      // Очищаем поле в БД
-      await db.query('UPDATE properties SET video_url = NULL WHERE id = ?', [id]);
-
-      logger.info(`Video deleted for property ${id}`);
-
-      res.json({
-        success: true,
-        message: 'Видео удалено'
-      });
-    } catch (error) {
-      logger.error('Delete video error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка удаления видео'
-      });
     }
+
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка загрузки видео'
+    });
   }
+}
+
+/**
+ * Удалить видео
+ * DELETE /api/properties/:id/videos/:videoId
+ */
+async deleteVideo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id, videoId } = req.params;
+
+    const video = await db.queryOne<any>(
+      'SELECT video_url, thumbnail_url FROM property_videos WHERE id = ? AND property_id = ?',
+      [videoId, id]
+    );
+
+    if (!video) {
+      res.status(404).json({
+        success: false,
+        message: 'Видео не найдено'
+      });
+      return;
+    }
+
+    // Удаляем из БД
+    await db.query('DELETE FROM property_videos WHERE id = ?', [videoId]);
+
+    // Удаляем файлы
+    const videoPath = path.join('/var/www/www-root/data/www/novaestate.company/backend', video.video_url);
+    if (await fs.pathExists(videoPath)) {
+      await fs.remove(videoPath);
+    }
+
+    if (video.thumbnail_url) {
+      const thumbPath = path.join('/var/www/www-root/data/www/novaestate.company/backend', video.thumbnail_url);
+      if (await fs.pathExists(thumbPath)) {
+        await fs.remove(thumbPath);
+      }
+    }
+
+    logger.info(`Video deleted: ${videoId} for property ${id}`);
+
+    res.json({
+      success: true,
+      message: 'Видео удалено'
+    });
+  } catch (error) {
+    logger.error('Delete video error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка удаления видео'
+    });
+  }
+}
+/**
+ * Обновить информацию о видео
+ * PUT /api/properties/:id/videos/:videoId
+ */
+async updateVideo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id, videoId } = req.params;
+    const { title, description, sort_order } = req.body;
+
+    await db.query(
+      `UPDATE property_videos 
+       SET title = ?, description = ?, sort_order = ?
+       WHERE id = ? AND property_id = ?`,
+      [title || null, description || null, sort_order || 0, videoId, id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Информация о видео обновлена'
+    });
+  } catch (error) {
+    logger.error('Update video error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка обновления видео'
+    });
+  }
+}
   /**
  * Получить детальную информацию по ценам
  * GET /api/properties/:id/pricing-details
@@ -1123,7 +1302,7 @@ async deleteVRPanorama(req: AuthRequest, res: Response): Promise<void> {
     
       // Базовые цены
       const property = await db.queryOne<any>(
-        'SELECT sale_price, deal_type FROM properties WHERE id = ? AND deleted_at IS NULL',
+        'SELECT sale_price, year_price, deal_type FROM properties WHERE id = ? AND deleted_at IS NULL',
         [id]
       );
     
@@ -1150,14 +1329,15 @@ async deleteVRPanorama(req: AuthRequest, res: Response): Promise<void> {
         [id]
       );
     
-      res.json({
-        success: true,
-        data: {
-          sale_price: property.sale_price,
-          deal_type: property.deal_type,
-          seasonal_pricing: seasonalPricing
-        }
-      });
+    res.json({
+      success: true,
+      data: {
+        sale_price: property.sale_price,
+        year_price: property.year_price,
+        deal_type: property.deal_type,
+        seasonal_pricing: seasonalPricing
+      }
+    });
     } catch (error) {
       logger.error('Get pricing details error:', error);
       res.status(500).json({

@@ -212,8 +212,15 @@ const PropertiesList = () => {
 
                   {/* Теги */}
                   <Space wrap size={4}>
-                    <Tag color="blue" style={{ fontSize: 11, margin: 0 }}>
-                      {property.deal_type === 'sale' ? t('properties.sale') : t('properties.rent')}
+                    <Tag 
+                      color={property.deal_type === 'sale' ? 'green' : property.deal_type === 'rent' ? 'blue' : 'purple'} 
+                      style={{ fontSize: 11, margin: 0 }}
+                    >
+                      {property.deal_type === 'sale' 
+                        ? t('properties.dealTypes.sale') 
+                        : property.deal_type === 'rent'
+                        ? t('properties.dealTypes.rent')
+                        : t('properties.dealTypes.both')}
                     </Tag>
                     {property.status === 'published' ? (
                       <Tag color="success" icon={<EyeOutlined />} style={{ fontSize: 11, margin: 0 }}>
@@ -373,12 +380,17 @@ const PropertiesList = () => {
       title: t('properties.dealType'),
       dataIndex: 'deal_type',
       key: 'deal_type',
-      width: 100,
-      render: (type: string) => (
-        <Tag color="blue">
-          {type === 'sale' ? t('properties.sale') : t('properties.rent')}
-        </Tag>
-      )
+      width: 120,
+      render: (type: string) => {
+        if (type === 'sale') {
+          return <Tag color="green">{t('properties.dealTypes.sale')}</Tag>;
+        } else if (type === 'rent') {
+          return <Tag color="blue">{t('properties.dealTypes.rent')}</Tag>;
+        } else if (type === 'both') {
+          return <Tag color="purple">{t('properties.dealTypes.both')}</Tag>;
+        }
+        return <Tag>{type}</Tag>;
+      }
     },
     {
       title: t('properties.status'),

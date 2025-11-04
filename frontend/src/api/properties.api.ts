@@ -58,17 +58,40 @@ export const propertiesApi = {
   toggleVisibility: (id: number, status: string) => 
     api.patch(`/properties/${id}/visibility`, { status }),
 
-  uploadPhotos: (id: number, formData: FormData, onProgress?: (progress: number) => void) => 
-    api.post(`/properties/${id}/photos`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+  uploadPhotos: (id: number, formData: FormData, onProgress?: (progress: number) => void) => {
+    return api.post(`/properties/${id}/photos`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
       onUploadProgress: (progressEvent) => {
-        if (onProgress && progressEvent.total) {
+        if (progressEvent.total && onProgress) {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           onProgress(progress);
         }
-      }
-    }),
+      },
+    });
+  },
+  uploadVideos: (id: number, formData: FormData, onProgress?: (progress: number) => void) => {
+    return api.post(`/properties/${id}/videos`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(progress);
+        }
+      },
+    });
+  },
 
+  deleteVideo: (propertyId: number, videoId: number) => {
+    return api.delete(`/properties/${propertyId}/videos/${videoId}`);
+  },
+
+  updateVideo: (propertyId: number, videoId: number, data: any) => {
+    return api.put(`/properties/${propertyId}/videos/${videoId}`, data);
+  },
   deletePhoto: (photoId: number) => api.delete(`/properties/photos/${photoId}`),
 
   updatePhotosOrder: (id: number, photos: any[]) => 
@@ -120,6 +143,4 @@ export const propertiesApi = {
        }
      });
    },
-   
-   deleteVideo: (id: number) => api.delete(`/properties/${id}/video`),
 };

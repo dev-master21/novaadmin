@@ -189,35 +189,45 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-
+  
+    // Проверка размера каждого файла
     const oversizedFiles = files.filter(file => file.size > 50 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
-      message.error('Размер файла не должен превышать 50MB');
+      message.error(`Некоторые файлы превышают 50MB: ${oversizedFiles.map(f => f.name).join(', ')}`);
       return;
     }
-
+  
+    // Проверка типов файлов
+    const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
+    if (invalidFiles.length > 0) {
+      message.error(`Некоторые файлы не являются изображениями: ${invalidFiles.map(f => f.name).join(', ')}`);
+      return;
+    }
+  
     try {
       setUploading(true);
       setUploadProgress(0);
-
+    
       const formData = new FormData();
-      files.forEach(file => formData.append('photos', file));
+      files.forEach(file => {
+        formData.append('photos', file);
+      });
       formData.append('category', selectedCategory);
-
+    
+      // Загружаем все файлы одним запросом (обработка на сервере будет параллельной)
       await propertiesApi.uploadPhotos(propertyId, formData, (progress) => {
         setUploadProgress(progress);
       });
-
+    
       message.success(`Загружено ${files.length} фото`);
       onUpdate();
+      setSelectedCategory('general');
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Ошибка загрузки');
+      message.error(error.response?.data?.message || 'Ошибка загрузки фотографий');
     } finally {
       setUploading(false);
       setUploadProgress(0);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 

@@ -18,7 +18,8 @@ import {
   Radio,
   Modal,
   Alert,
-  Tooltip
+  Tooltip,
+  Badge
 } from 'antd';
 import {
   SaveOutlined,
@@ -36,6 +37,7 @@ import CommissionForm from './components/CommissionForm';
 import SeasonalPricing from './components/SeasonalPricing';
 import { PROPERTY_FEATURES } from './constants/features';
 import dayjs from 'dayjs';
+import VideoUploader from './components/VideoUploader';
 
 const { Paragraph } = Typography;
 const { TextArea } = Input;
@@ -50,10 +52,14 @@ const PropertyForm = () => {
   const [detectingCoords, setDetectingCoords] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
   const [dealType, setDealType] = useState<'sale' | 'rent' | 'both'>('sale');
-  const [pricingType, setPricingType] = useState<'seasonal' | 'constant'>('seasonal');
   const [showRenovationDate, setShowRenovationDate] = useState(false);
   const [propertyData, setPropertyData] = useState<any>(null);
   const [googleMapsLink, setGoogleMapsLink] = useState('');
+  
+  // ========== НОВОЕ: Состояние для отслеживания изменения ссылки ==========
+  const [hasCoordinatesForCurrentLink, setHasCoordinatesForCurrentLink] = useState(true);
+  // =========================================================================
+
 
   const isEdit = !!id;
 
@@ -62,6 +68,21 @@ const PropertyForm = () => {
       loadProperty();
     }
   }, [id]);
+
+  // ========== НОВОЕ: Отслеживаем изменения в ссылке Google Maps ==========
+  useEffect(() => {
+    // Проверяем, есть ли координаты для текущей ссылки
+    const latitude = form.getFieldValue('latitude');
+    const longitude = form.getFieldValue('longitude');
+    
+    if (googleMapsLink && (!latitude || !longitude)) {
+      // Если ссылка есть, но координат нет - показываем подсказку
+      setHasCoordinatesForCurrentLink(false);
+    } else {
+      setHasCoordinatesForCurrentLink(true);
+    }
+  }, [googleMapsLink, form]);
+  // =======================================================================
 
   const loadProperty = async () => {
     setLoading(true);
@@ -123,12 +144,6 @@ const PropertyForm = () => {
         seasonalPricing: property.pricing || []
       });
 
-      // Определяем тип ценообразования
-      if (property.year_price && property.year_price > 0) {
-        setPricingType('constant');
-      } else if (property.pricing && property.pricing.length > 0) {
-        setPricingType('seasonal');
-      }
 
       if (property.renovation_type) {
         setShowRenovationDate(true);
@@ -157,6 +172,7 @@ const PropertyForm = () => {
         longitude: coords.lng
       });
       
+      setHasCoordinatesForCurrentLink(true);
       message.success(t('properties.coordinatesDetected'));
     } catch (error: any) {
       message.error(t('properties.coordinatesError'));
@@ -165,6 +181,18 @@ const PropertyForm = () => {
       setDetectingCoords(false);
     }
   };
+
+  // ========== НОВОЕ: Обработчик изменения ссылки Google Maps ==========
+  const handleGoogleMapsLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newLink = e.target.value;
+    setGoogleMapsLink(newLink);
+    
+    // Если ссылка изменилась, отмечаем что координаты могут быть неактуальны
+    if (newLink !== propertyData?.google_maps_link) {
+      setHasCoordinatesForCurrentLink(false);
+    }
+  };
+  // ====================================================================
 
   const showComplexInfo = () => {
     Modal.info({
@@ -213,7 +241,8 @@ const PropertyForm = () => {
         locationFeatures: values.features?.location || [],
         views: values.features?.views || [],
         translations: values.translations,
-        seasonalPricing: pricingType === 'seasonal' ? values.seasonalPricing : undefined
+        seasonalPricing: values.seasonalPricing || [],
+        year_price: values.year_price || null
       };
     
       // Удаляем features из formData
@@ -250,20 +279,64 @@ const PropertyForm = () => {
     }
   };
 
-  const handlePricingTypeChange = (e: any) => {
-    const newPricingType = e.target.value;
-    setPricingType(newPricingType);
+  // Добавьте эту функцию после handlePricingTypeChange и перед return
+  const handleSaveClick = async () => {
+    try {
+      // Получаем все значения формы без валидации
+      const values = form.getFieldsValue(true);
+
+      // Проверяем что хотя бы одно название заполнено
+      const hasAnyName = values.translations?.ru?.property_name || 
+                         values.translations?.en?.property_name || 
+                         values.translations?.th?.property_name;
+
+      if (!hasAnyName) {
+        message.error('Необходимо заполнить название хотя бы на одном языке');
+        setActiveTab('translations');
+        return;
+      }
     
-    // Очищаем противоположное поле
-    if (newPricingType === 'constant') {
-      // Если выбрали постоянную цену, очищаем сезонные цены
-      form.setFieldValue('seasonalPricing', []);
-    } else {
-      // Если выбрали сезонные цены, очищаем постоянную цену
-      form.setFieldValue('year_price', null);
+      // Проверяем что хотя бы одно описание заполнено
+      const hasAnyDescription = values.translations?.ru?.description || 
+                                values.translations?.en?.description || 
+                                values.translations?.th?.description;
+
+      if (!hasAnyDescription) {
+        message.error('Необходимо заполнить описание хотя бы на одном языке');
+        setActiveTab('translations');
+        return;
+      }
+
+      // Валидируем только обязательные поля
+      try {
+        await form.validateFields(['property_number', 'deal_type', 'property_type', 'region', 'address', 'status']);
+      } catch (errorInfo: any) {
+        // Если есть ошибки валидации, находим первую вкладку с ошибкой
+        const errorFields = errorInfo.errorFields || [];
+        if (errorFields.length > 0) {
+          const firstErrorField = errorFields[0].name[0];
+
+          // Определяем на какой вкладке ошибка
+          if (['property_number', 'deal_type', 'property_type', 'region', 'address', 
+               'building_ownership', 'land_ownership', 'ownership_type', 
+               'google_maps_link', 'latitude', 'longitude', 'complex_name',
+               'bedrooms', 'bathrooms', 'indoor_area', 'outdoor_area', 'plot_size',
+               'floors', 'floor', 'construction_year', 'construction_month',
+               'furniture_status', 'parking_spaces', 'pets_allowed', 'status', 'video_url'].includes(firstErrorField)) {
+            setActiveTab('basic');
+          }
+
+          message.error('Пожалуйста, заполните все обязательные поля');
+        }
+        return;
+      }
+
+      // Если все проверки прошли, вызываем handleSubmit с актуальными значениями
+      await handleSubmit(values);
+    } catch (error) {
+      console.error('Save error:', error);
     }
   };
-
   return (
     <Card>
       <Form
@@ -400,20 +473,80 @@ const PropertyForm = () => {
 
               <Col xs={24}>
                 <Form.Item
+                  name="address"
+                  label={t('properties.address')}
+                  rules={[{ required: true, message: t('validation.required') }]}
+                >
+                  <TextArea rows={2} placeholder="Точный адрес объекта" />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24}>
+                <Form.Item
+                  name="google_maps_link"
+                  label={
+                    <Space>
+                      <span>{t('properties.googleMapsLink')}</span>
+                      {/* ========== НОВОЕ: Показываем Badge если нужно определить координаты ========== */}
+                      {googleMapsLink && !hasCoordinatesForCurrentLink && (
+                        <Badge 
+                          status="warning" 
+                          text="Требуется определение координат"
+                          style={{ fontSize: 12 }}
+                        />
+                      )}
+                      {/* =============================================================================== */}
+                      <Button
+                        type={!hasCoordinatesForCurrentLink && googleMapsLink ? "primary" : "link"}
+                        size="small"
+                        icon={<EnvironmentOutlined />}
+                        onClick={handleAutoDetectCoordinates}
+                        loading={detectingCoords}
+                        danger={!hasCoordinatesForCurrentLink && !!googleMapsLink}
+                      >
+                        {t('properties.autoDetectCoordinates')}
+                      </Button>
+                    </Space>
+                  }
+                >
+                  <Input 
+                    placeholder="https://maps.google.com/..." 
+                    onChange={handleGoogleMapsLinkChange}
+                  />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="latitude"
+                  label={t('properties.latitude')}
+                >
+                  <InputNumber style={{ width: '100%' }} step={0.000001} placeholder="7.123456" />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="longitude"
+                  label={t('properties.longitude')}
+                >
+                  <InputNumber style={{ width: '100%' }} step={0.000001} placeholder="98.123456" />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24}>
+                <Form.Item
                   name="complex_name"
                   label={
                     <Space>
-                      {t('properties.complexName')}
+                      <span>{t('properties.complexName')}</span>
                       <Tooltip title={t('properties.complexInfo')}>
                         <Button
                           type="link"
                           size="small"
                           icon={<InfoCircleOutlined />}
                           onClick={showComplexInfo}
-                          style={{ padding: 0 }}
-                        >
-                          ВАЖНО
-                        </Button>
+                        />
                       </Tooltip>
                     </Space>
                   }
@@ -422,118 +555,171 @@ const PropertyForm = () => {
                 </Form.Item>
               </Col>
 
-              <Col xs={24}>
+              <Col xs={24} sm={12}>
                 <Form.Item
-                  name="address"
-                  label={t('properties.address')}
-                  rules={[{ required: true, message: 'Адрес обязателен для заполнения' }]}
+                  name="bedrooms"
+                  label={t('properties.bedrooms')}
                 >
-                  <TextArea rows={2} placeholder="Введите полный адрес объекта" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24}>
-                <Form.Item
-                  name="google_maps_link"
-                  label={t('properties.googleMapsLink')}
-                >
-                  <Input.Group compact>
-                    <Input
-                      style={{ width: 'calc(100% - 200px)' }}
-                      placeholder="https://maps.google.com/..."
-                      value={googleMapsLink}
-                      onChange={(e) => setGoogleMapsLink(e.target.value)}
-                    />
-                    <Button
-                      type="primary"
-                      icon={<EnvironmentOutlined />}
-                      onClick={handleAutoDetectCoordinates}
-                      loading={detectingCoords}
-                      style={{ width: 200 }}
-                    >
-                      Определить координаты
-                    </Button>
-                  </Input.Group>
+                  <InputNumber style={{ width: '100%' }} min={0} step={0.5} />
                 </Form.Item>
               </Col>
 
               <Col xs={24} sm={12}>
-                <Form.Item name="latitude" label={t('properties.latitude')}>
-                  <InputNumber style={{ width: '100%' }} step={0.000001} />
+                <Form.Item
+                  name="bathrooms"
+                  label={t('properties.bathrooms')}
+                >
+                  <InputNumber style={{ width: '100%' }} min={0} step={0.5} />
                 </Form.Item>
               </Col>
 
               <Col xs={24} sm={12}>
-                <Form.Item name="longitude" label={t('properties.longitude')}>
-                  <InputNumber style={{ width: '100%' }} step={0.000001} />
+                <Form.Item
+                  name="indoor_area"
+                  label={t('properties.indoorArea')}
+                >
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    min={0}
+                    addonAfter="м²"
+                  />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={8}>
-                <Form.Item name="bedrooms" label={t('properties.bedrooms')}>
-                  <InputNumber style={{ width: '100%' }} min={0} />
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="outdoor_area"
+                  label={t('properties.outdoorArea')}
+                >
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    min={0}
+                    addonAfter="м²"
+                  />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={8}>
-                <Form.Item name="bathrooms" label={t('properties.bathrooms')}>
-                  <InputNumber style={{ width: '100%' }} min={0} />
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="plot_size"
+                  label={t('properties.plotSize')}
+                >
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    min={0}
+                    addonAfter="м²"
+                  />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={8}>
-                <Form.Item name="parking_spaces" label={t('properties.parkingSpaces')}>
-                  <InputNumber style={{ width: '100%' }} min={0} />
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="floors"
+                  label={t('properties.floors')}
+                >
+                  <InputNumber style={{ width: '100%' }} min={1} />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={8}>
-                <Form.Item name="indoor_area" label={t('properties.indoorArea')}>
-                  <InputNumber style={{ width: '100%' }} min={0} addonAfter="m²" />
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="floor"
+                  label={t('properties.floor')}
+                >
+                  <Input placeholder="1, 2, 3 или 1-2" />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={8}>
-                <Form.Item name="outdoor_area" label={t('properties.outdoorArea')}>
-                  <InputNumber style={{ width: '100%' }} min={0} addonAfter="m²" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={8}>
-                <Form.Item name="plot_size" label={t('properties.plotSize')}>
-                  <InputNumber style={{ width: '100%' }} min={0} addonAfter="m²" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={8}>
-                <Form.Item name="floors" label="Количество этажей">
-                  <InputNumber style={{ width: '100%' }} min={1} max={100} placeholder="Всего этажей" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={8}>
-                <Form.Item name="construction_year" label={t('properties.constructionYear')}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="construction_year"
+                  label={t('properties.constructionYear')}
+                >
                   <InputNumber style={{ width: '100%' }} min={1900} max={2100} />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={8}>
-                <Form.Item name="furniture_status" label={t('properties.furnitureStatus')}>
-                  <Select>
-                    <Select.Option value="furnished">{t('properties.furnitureStatuses.furnished')}</Select.Option>
-                    <Select.Option value="unfurnished">{t('properties.furnitureStatuses.unfurnished')}</Select.Option>
-                    <Select.Option value="partially">{t('properties.furnitureStatuses.partially')}</Select.Option>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="construction_month"
+                  label={t('properties.constructionMonth')}
+                >
+                  <Select placeholder="Месяц">
+                    <Select.Option value="01">Январь</Select.Option>
+                    <Select.Option value="02">Февраль</Select.Option>
+                    <Select.Option value="03">Март</Select.Option>
+                    <Select.Option value="04">Апрель</Select.Option>
+                    <Select.Option value="05">Май</Select.Option>
+                    <Select.Option value="06">Июнь</Select.Option>
+                    <Select.Option value="07">Июль</Select.Option>
+                    <Select.Option value="08">Август</Select.Option>
+                    <Select.Option value="09">Сентябрь</Select.Option>
+                    <Select.Option value="10">Октябрь</Select.Option>
+                    <Select.Option value="11">Ноябрь</Select.Option>
+                    <Select.Option value="12">Декабрь</Select.Option>
                   </Select>
                 </Form.Item>
               </Col>
 
               <Col xs={24} sm={12}>
-                <Form.Item name="status" label={t('properties.status')}>
+                <Form.Item
+                  name="furniture_status"
+                  label={t('properties.furnitureStatus')}
+                >
+                  <Select>
+                    <Select.Option value="fullyFurnished">Полностью меблирована</Select.Option>
+                    <Select.Option value="partiallyFurnished">Частично меблирована</Select.Option>
+                    <Select.Option value="unfurnished">Без мебели</Select.Option>
+                    <Select.Option value="builtIn">Встроенная мебель</Select.Option>
+                    <Select.Option value="empty">Пустая</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="parking_spaces"
+                  label={t('properties.parkingSpaces')}
+                >
+                  <InputNumber style={{ width: '100%' }} min={0} />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="pets_allowed"
+                  label={t('properties.petsAllowed')}
+                >
+                  <Select>
+                    <Select.Option value="yes">Разрешены</Select.Option>
+                    <Select.Option value="no">Не разрешены</Select.Option>
+                    <Select.Option value="negotiable">По договоренности</Select.Option>
+                    <Select.Option value="custom">Особые условия</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="status"
+                  label={t('properties.status')}
+                  rules={[{ required: true }]}
+                >
                   <Select>
                     <Select.Option value="draft">{t('properties.statuses.draft')}</Select.Option>
                     <Select.Option value="published">{t('properties.statuses.published')}</Select.Option>
                     <Select.Option value="hidden">{t('properties.statuses.hidden')}</Select.Option>
+                    <Select.Option value="archived">{t('properties.statuses.archived')}</Select.Option>
                   </Select>
+                </Form.Item>
+              </Col>
+
+              <Col xs={24}>
+                <Form.Item
+                  name="video_url"
+                  label="URL видео (YouTube, Vimeo)"
+                >
+                  <Input placeholder="https://www.youtube.com/watch?v=..." />
                 </Form.Item>
               </Col>
             </Row>
@@ -541,75 +727,108 @@ const PropertyForm = () => {
 
           {/* ТАБ 2: ВЛАДЕЛЕЦ */}
           <Tabs.TabPane tab={t('properties.tabs.owner')} key="owner">
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item name="owner_name" label={t('properties.ownerName')}>
-                  <Input />
-                </Form.Item>
-              </Col>
+            <Space direction="vertical" style={{ width: '100%' }} size="large">
+              <Card title={t('properties.ownerInfo')} size="small">
+                <Row gutter={16}>
+                  <Col xs={24} sm={12}>
+                    <Form.Item name="owner_name" label={t('properties.ownerName')}>
+                      <Input />
+                    </Form.Item>
+                  </Col>
 
-              <Col xs={24} sm={12}>
-                <Form.Item name="owner_phone" label={t('properties.ownerPhone')}>
-                  <Input />
-                </Form.Item>
-              </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item name="owner_phone" label={t('properties.ownerPhone')}>
+                      <Input />
+                    </Form.Item>
+                  </Col>
 
-              <Col xs={24} sm={12}>
-                <Form.Item name="owner_email" label={t('properties.ownerEmail')}>
-                  <Input type="email" />
-                </Form.Item>
-              </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item name="owner_email" label={t('properties.ownerEmail')}>
+                      <Input type="email" />
+                    </Form.Item>
+                  </Col>
 
-              <Col xs={24} sm={12}>
-                <Form.Item name="owner_telegram" label={t('properties.ownerTelegram')}>
-                  <Input placeholder="@username" />
-                </Form.Item>
-              </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item name="owner_telegram" label={t('properties.ownerTelegram')}>
+                      <Input placeholder="@username" />
+                    </Form.Item>
+                  </Col>
 
-              <Col xs={24} sm={12}>
-                <Form.Item name="owner_instagram" label={t('properties.ownerInstagram')}>
-                  <Input placeholder="@username" />
-                </Form.Item>
-              </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item name="owner_instagram" label={t('properties.ownerInstagram')}>
+                      <Input placeholder="@username" />
+                    </Form.Item>
+                  </Col>
 
-              <Col xs={24}>
-                <Form.Item name="owner_notes" label={t('properties.ownerNotes')}>
-                  <TextArea rows={4} />
-                </Form.Item>
-              </Col>
-            </Row>
+                  <Col xs={24}>
+                    <Form.Item name="owner_notes" label={t('properties.ownerNotes')}>
+                      <TextArea rows={4} placeholder="Дополнительные заметки о владельце" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+            </Space>
           </Tabs.TabPane>
 
           {/* ТАБ 3: ОПИСАНИЕ */}
-          <Tabs.TabPane tab={t('properties.description')} key="translations">
+          <Tabs.TabPane tab={t('properties.tabs.translations')} key="translations">
             <Space direction="vertical" style={{ width: '100%' }} size="large">
-              <Alert
-                message="Необходимо заполнить хотя бы одно название и одно описание на любом языке"
-                type="info"
-                showIcon
-              />
+              {/* Русский */}
+              <Card title="🇷🇺 Русский" size="small">
+                <Form.Item
+                  name={['translations', 'ru', 'property_name']}
+                  label={t('properties.propertyName')}
+                >
+                  <Input placeholder={t('properties.translations.namePlaceholder')} />
+                </Form.Item>
+                <Form.Item
+                  name={['translations', 'ru', 'description']}
+                  label={t('properties.description')}
+                >
+                  <TextArea
+                    rows={8}
+                    placeholder={t('properties.translations.descriptionPlaceholder')}
+                  />
+                </Form.Item>
+              </Card>
 
-              {['ru', 'en', 'th'].map(lang => (
-                <Card key={lang} title={lang.toUpperCase()} size="small">
-                  <Form.Item
-                    name={['translations', lang, 'property_name']}
-                    label={t('properties.propertyName')}
-                  >
-                    <Input placeholder={t('properties.translations.namePlaceholder')} />
-                  </Form.Item>
+              {/* Английский */}
+              <Card title="🇬🇧 English" size="small">
+                <Form.Item
+                  name={['translations', 'en', 'property_name']}
+                  label={t('properties.propertyName')}
+                >
+                  <Input placeholder={t('properties.translations.namePlaceholder')} />
+                </Form.Item>
+                <Form.Item
+                  name={['translations', 'en', 'description']}
+                  label={t('properties.description')}
+                >
+                  <TextArea
+                    rows={8}
+                    placeholder={t('properties.translations.descriptionPlaceholder')}
+                  />
+                </Form.Item>
+              </Card>
 
-                  <Form.Item
-                    name={['translations', lang, 'description']}
-                    label={t('properties.translations.title')}
-                  >
-                    <TextArea
-                      rows={6}
-                      placeholder={t('properties.translations.descriptionPlaceholder')}
-                      showCount
-                    />
-                  </Form.Item>
-                </Card>
-              ))}
+              {/* Тайский */}
+              <Card title="🇹🇭 ภาษาไทย" size="small">
+                <Form.Item
+                  name={['translations', 'th', 'property_name']}
+                  label={t('properties.propertyName')}
+                >
+                  <Input placeholder={t('properties.translations.namePlaceholder')} />
+                </Form.Item>
+                <Form.Item
+                  name={['translations', 'th', 'description']}
+                  label={t('properties.description')}
+                >
+                  <TextArea
+                    rows={8}
+                    placeholder={t('properties.translations.descriptionPlaceholder')}
+                  />
+                </Form.Item>
+              </Card>
             </Space>
           </Tabs.TabPane>
 
@@ -618,16 +837,22 @@ const PropertyForm = () => {
             <Space direction="vertical" style={{ width: '100%' }} size="large">
               {/* Реновация */}
               <Card title={t('properties.renovation.title')} size="small">
-                <Form.Item name="renovation_type" label={t('properties.renovation.type')}>
+                <Form.Item
+                  name="renovation_type"
+                  label={t('properties.renovation.type')}
+                >
                   <Radio.Group onChange={handleRenovationChange}>
-                    <Radio value={null}>Нет реновации</Radio>
-                    <Radio value="full">{t('properties.renovation.types.full')}</Radio>
+                    <Radio value={null}>Без реновации</Radio>
                     <Radio value="partial">{t('properties.renovation.types.partial')}</Radio>
+                    <Radio value="full">{t('properties.renovation.types.full')}</Radio>
                   </Radio.Group>
                 </Form.Item>
 
                 {showRenovationDate && (
-                  <Form.Item name="renovation_date" label={t('properties.renovation.date')}>
+                  <Form.Item
+                    name="renovation_date"
+                    label={t('properties.renovation.date')}
+                  >
                     <DatePicker
                       picker="month"
                       style={{ width: '100%' }}
@@ -746,47 +971,47 @@ const PropertyForm = () => {
                 </Card>
               )}
 
-              {(dealType === 'rent' || dealType === 'both') && (
-                <Card title={t('properties.pricing.rentalPrices')} size="small">
-                  {isEdit ? (
-                    <>
-                      <Form.Item label="Тип ценообразования">
-                        <Radio.Group value={pricingType} onChange={handlePricingTypeChange}>
-                          <Radio value="seasonal">Сезонные цены</Radio>
-                          <Radio value="constant">Постоянная цена</Radio>
-                        </Radio.Group>
-                      </Form.Item>
+                {(dealType === 'rent' || dealType === 'both') && (
+                  <Card title={t('properties.pricing.rentalPrices')} size="small">
+                    {isEdit ? (
+                      <Space direction="vertical" style={{ width: '100%' }} size="large">
+                        {/* Годовая цена */}
+                        <div>
+                          <h4 style={{ marginBottom: 16 }}>Цена годового контракта</h4>
+                          <Form.Item
+                            name="year_price"
+                            label="Годовая цена аренды"
+                            extra="Укажите стоимость аренды на 12 месяцев"
+                          >
+                            <InputNumber<number>
+                              style={{ width: '100%' }}
+                              min={0}
+                              addonAfter="฿"
+                              placeholder="0"
+                              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                              parser={value => Number(value!.replace(/,/g, ''))}
+                            />
+                          </Form.Item>
+                        </div>
 
-                      {pricingType === 'constant' ? (
-                        <Form.Item
-                          name="year_price"
-                          label={t('properties.pricingOptions.constantPrice')}
-                        >
-                          <InputNumber<number>
-                            style={{ width: '100%' }}
-                            min={0}
-                            addonAfter="฿"
-                            placeholder="0"
-                            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                            parser={value => Number(value!.replace(/,/g, ''))}
-                          />
-                        </Form.Item>
-                      ) : (
-                        <Form.Item name="seasonalPricing">
-                          <SeasonalPricing />
-                        </Form.Item>
-                      )}
-                    </>
-                  ) : (
-                    <Alert
-                      message="Настройка цен будет доступна после создания объекта"
-                      description="Вы сможете настроить как постоянную годовую цену, так и гибкие сезонные цены с разными периодами и тарифами."
-                      type="info"
-                      showIcon
-                    />
-                  )}
-                </Card>
-              )}
+                        {/* Сезонные цены */}
+                        <div>
+                          <h4 style={{ marginBottom: 16 }}>Сезонные цены (посуточная аренда)</h4>
+                          <Form.Item name="seasonalPricing">
+                            <SeasonalPricing />
+                          </Form.Item>
+                        </div>
+                      </Space>
+                    ) : (
+                      <Alert
+                        message="Настройка цен будет доступна после создания объекта"
+                        description="Вы сможете настроить как постоянную годовую цену, так и гибкие сезонные цены с разными периодами и тарифами."
+                        type="info"
+                        showIcon
+                      />
+                    )}
+                  </Card>
+                )}
 
               <CommissionForm dealType={dealType} />
             </Space>
@@ -795,39 +1020,39 @@ const PropertyForm = () => {
           {/* ТАБ 6: МЕДИА */}
           <Tabs.TabPane tab={t('properties.tabs.media')} key="media">
             {isEdit ? (
-              <Tabs>
-                <Tabs.TabPane tab={t('properties.media.photos')} key="photos">
-                  <PhotosUploader 
-                    propertyId={Number(id)} 
-                    photos={propertyData?.photos || []}
-                    bedrooms={propertyData?.bedrooms || 0}
-                    onUpdate={loadProperty}
-                  />
-                </Tabs.TabPane>
-
-                <Tabs.TabPane tab={t('properties.media.floorPlan')} key="floorPlan">
-                  <FloorPlanUploader 
-                    propertyId={Number(id)} 
-                    floorPlanUrl={propertyData?.floor_plan_url}
-                    onUpdate={loadProperty}
-                  />
-                </Tabs.TabPane>
-
-                <Tabs.TabPane tab={t('properties.media.vrTour')} key="vr">
-                  <VRPanoramaUploader 
-                    propertyId={Number(id)}
-                    onUpdate={loadProperty}
-                  />
-                </Tabs.TabPane>
-              </Tabs>
+              <Space direction="vertical" style={{ width: '100%' }} size="large">
+                <PhotosUploader
+                  propertyId={Number(id)}
+                  photos={propertyData?.photos || []}
+                  bedrooms={form.getFieldValue('bedrooms') || 1}
+                  onUpdate={loadProperty}
+                />
+          
+                <VideoUploader
+                  propertyId={Number(id)}
+                  videos={propertyData?.videos || []}
+                  onUpdate={loadProperty}
+                />
+          
+                <FloorPlanUploader
+                  propertyId={Number(id)}
+                  floorPlanUrl={propertyData?.floor_plan_url}
+                  onUpdate={loadProperty}
+                />
+          
+                <VRPanoramaUploader
+                  propertyId={Number(id)}
+                  onUpdate={loadProperty}
+                />
+              </Space>
             ) : (
               <Card>
                 <Alert
-                  message="Загрузка медиа-файлов станет доступна после создания объекта"
+                  message="Загрузка медиа будет доступна после создания объекта"
                   description={
-                    <div style={{ marginTop: 12 }}>
+                    <div>
                       <Paragraph>
-                        Чтобы загрузить фотографии, планировки и VR-туры, сначала необходимо сохранить основную информацию об объекте.
+                        После создания объекта вы сможете:
                       </Paragraph>
                       <Paragraph style={{ marginBottom: 0 }}>
                         После сохранения вы автоматически перейдете на страницу редактирования, где будут доступны все функции работы с медиа:
@@ -848,21 +1073,36 @@ const PropertyForm = () => {
           </Tabs.TabPane>
         </Tabs>
 
-        {/* Кнопки сохранения */}
-        <div style={{ marginTop: 24, textAlign: 'right' }}>
-          <Space>
-            <Button onClick={() => navigate('/properties')}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={<SaveOutlined />}
-              loading={loading}
-            >
-              {isEdit ? t('common.save') : t('common.create')}
-            </Button>
-          </Space>
+        {/* Кнопки сохранения видны со всех вкладок */}
+        <div style={{ 
+          position: 'sticky', 
+          bottom: 0, 
+          marginTop: 24, 
+          padding: '16px 24px',
+          background: 'transparent',
+          backdropFilter: 'blur(8px)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          zIndex: 100
+        }}>
+          <Row justify="end">
+            <Space size="middle">
+              <Button 
+                size="large"
+                onClick={() => navigate('/properties')}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                icon={<SaveOutlined />}
+                loading={loading}
+                onClick={handleSaveClick}
+              >
+                {isEdit ? t('common.save') : t('common.create')}
+              </Button>
+            </Space>
+          </Row>
         </div>
       </Form>
     </Card>
