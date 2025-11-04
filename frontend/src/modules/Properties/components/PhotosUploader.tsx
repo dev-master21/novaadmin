@@ -12,7 +12,8 @@ import {
   Input,
   Tag,
   Collapse,
-  Tooltip
+  Tooltip,
+  Checkbox
 } from 'antd';
 import {
   UploadOutlined,
@@ -22,12 +23,15 @@ import {
   ArrowRightOutlined,
   PlusOutlined,
   MinusOutlined,
-  DragOutlined,
   PictureOutlined,
-  NumberOutlined
+  NumberOutlined,
+  DownloadOutlined,
+  CheckSquareOutlined,
+  CloseSquareOutlined
 } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { propertiesApi } from '@/api/properties.api';
+import { saveAs } from 'file-saver';
 
 const { Panel } = Collapse;
 
@@ -70,6 +74,15 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
   const [positionChangePhotoId, setPositionChangePhotoId] = useState<number | null>(null);
   const [newPosition, setNewPosition] = useState('');
   const [activeCategories, setActiveCategories] = useState<string[]>(['general']);
+  
+  // ✅ ДОБАВЛЕНО: Состояния для выбора фотографий
+  const [selectedPhotos, setSelectedPhotos] = useState<Set<number>>(new Set());
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadingSelected, setDownloadingSelected] = useState(false);
+
+  useEffect(() => {
+    setLocalPhotos(photos);
+  }, [photos]);
 
   // Базовые категории
   const baseCategories = [
@@ -85,87 +98,59 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
 
   // Генерация категорий с учетом количества спален
   const generateCategories = () => {
-    const cats: Array<{ value: string; label: string; isSubcategory?: boolean }> = [];
-
-    for (const cat of baseCategories) {
-      if (cat.value === 'bedroom') {
-        // Добавляем спальни с номерами
-        for (let i = 1; i <= bedroomCount; i++) {
-          cats.push({
-            value: `bedroom-${i}`,
-            label: `Спальня ${i}`,
-            isSubcategory: true
-          });
-        }
-      } else {
-        cats.push(cat);
-      }
+    const cats: Array<{ value: string; label: string; isSubcategory?: boolean }> = [...baseCategories];
+    
+    for (let i = 1; i <= bedroomCount; i++) {
+      cats.push({
+        value: `bedroom-${i}`,
+        label: `Спальня ${i}`,
+        isSubcategory: true
+      });
     }
-
+    
     return cats;
   };
 
   const categories = generateCategories();
 
-  // Синхронизация с props
-  useEffect(() => {
-    setLocalPhotos(photos);
-
-    // Определяем максимальное количество спален из существующих фото
-    const maxBedroom = photos.reduce((max, photo) => {
-      if (photo.category && photo.category.startsWith('bedroom-')) {
-        const num = parseInt(photo.category.split('-')[1]);
-        return Math.max(max, num);
-      }
-      return max;
-    }, initialBedrooms || 1);
-
-    setBedroomCount(maxBedroom);
-  }, [photos, initialBedrooms]);
-
   // Группировка фотографий по категориям
   const groupedPhotos = localPhotos.reduce((acc, photo) => {
-    const category = photo.category || 'general';
-    if (!acc[category]) {
-      acc[category] = [];
+    if (!acc[photo.category]) {
+      acc[photo.category] = [];
     }
-    acc[category].push(photo);
+    acc[photo.category].push(photo);
     return acc;
   }, {} as Record<string, Photo[]>);
 
-  // Сортировка фото по sort_order
+  // Сортировка фотографий в каждой категории
   Object.keys(groupedPhotos).forEach(category => {
     groupedPhotos[category].sort((a, b) => a.sort_order - b.sort_order);
   });
 
-  // Получение иконки категории
-  const getCategoryIcon = (categoryValue: string) => {
-    if (categoryValue.startsWith('bedroom-')) {
+  const getCategoryIcon = (category: string) => {
+    if (category.startsWith('bedroom-')) {
       return '🛏️';
     }
-    return CategoryIcons[categoryValue] || <PictureOutlined />;
+    return CategoryIcons[category] || <PictureOutlined />;
   };
 
-  // Добавление спальни
   const handleAddBedroom = () => {
     setBedroomCount(prev => prev + 1);
     message.success(`Спальня ${bedroomCount + 1} добавлена`);
   };
 
-  // Удаление спальни
-  const handleRemoveBedroom = async (bedroomNumber: number) => {
-    const bedroomCategory = `bedroom-${bedroomNumber}`;
-    const bedroomPhotos = groupedPhotos[bedroomCategory] || [];
+  const handleRemoveBedroom = (bedroomNumber: number) => {
+    const category = `bedroom-${bedroomNumber}`;
+    const bedroomPhotos = groupedPhotos[category] || [];
 
     if (bedroomPhotos.length > 0) {
       Modal.confirm({
-        title: `Удалить спальню ${bedroomNumber}?`,
-        content: `В этой спальне ${bedroomPhotos.length} фото. Все фотографии будут удалены.`,
+        title: 'Удалить спальню?',
+        content: `В спальне ${bedroomNumber} есть ${bedroomPhotos.length} фото. Все фотографии будут удалены.`,
         okText: 'Удалить',
         okType: 'danger',
         cancelText: 'Отмена',
         onOk: async () => {
-          // Удаляем все фото этой спальни
           for (const photo of bedroomPhotos) {
             try {
               await propertiesApi.deletePhoto(photo.id);
@@ -173,7 +158,6 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
               console.error('Failed to delete photo:', error);
             }
           }
-
           setBedroomCount(prev => Math.max(1, prev - 1));
           onUpdate();
           message.success(`Спальня ${bedroomNumber} удалена`);
@@ -190,14 +174,12 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
   
-    // Проверка размера каждого файла
     const oversizedFiles = files.filter(file => file.size > 50 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       message.error(`Некоторые файлы превышают 50MB: ${oversizedFiles.map(f => f.name).join(', ')}`);
       return;
     }
   
-    // Проверка типов файлов
     const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
     if (invalidFiles.length > 0) {
       message.error(`Некоторые файлы не являются изображениями: ${invalidFiles.map(f => f.name).join(', ')}`);
@@ -214,7 +196,6 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
       });
       formData.append('category', selectedCategory);
     
-      // Загружаем все файлы одним запросом (обработка на сервере будет параллельной)
       await propertiesApi.uploadPhotos(propertyId, formData, (progress) => {
         setUploadProgress(progress);
       });
@@ -240,6 +221,12 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
       await propertiesApi.deletePhoto(photoId);
       message.success('Фото удалено');
       onUpdate();
+      // Убираем из выбранных если была выбрана
+      setSelectedPhotos(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(photoId);
+        return newSet;
+      });
     } catch (error: any) {
       message.error(error.response?.data?.message || 'Ошибка удаления');
       setLocalPhotos(oldPhotos);
@@ -264,13 +251,11 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
     }
   };
 
-  // Получение категории фотографии
   const getPhotoCategory = (photoId: number) => {
     const photo = localPhotos.find(p => p.id === photoId);
     return photo?.category || 'general';
   };
 
-  // Перемещение фотографии в другую категорию
   const handleMovePhoto = async (photoId: number, newCategory: string) => {
     const oldPhotos = [...localPhotos];
 
@@ -281,7 +266,6 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
     setMovingPhotoId(null);
 
     try {
-      // Обновляем категорию фотографии
       const photo = localPhotos.find(p => p.id === photoId);
       if (!photo) return;
 
@@ -301,7 +285,6 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
     }
   };
 
-  // Изменение позиции фотографии вручную
   const handleChangePosition = async () => {
     const position = parseInt(newPosition);
     const photo = localPhotos.find(p => p.id === positionChangePhotoId);
@@ -310,34 +293,29 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
     const categoryPhotos = groupedPhotos[photo.category || 'general'];
 
     if (isNaN(position) || position < 1 || position > categoryPhotos.length) {
-      message.error('Неверная позиция');
+      message.error(`Позиция должна быть от 1 до ${categoryPhotos.length}`);
       return;
     }
 
-    const oldPhotos = [...localPhotos];
-    const newIndex = position - 1;
+    const updatedPhotos = [...categoryPhotos];
+    const currentIndex = updatedPhotos.findIndex(p => p.id === positionChangePhotoId);
+    const [movedItem] = updatedPhotos.splice(currentIndex, 1);
+    updatedPhotos.splice(position - 1, 0, movedItem);
 
-    // Обновляем порядок фотографий в категории
-    const updatedCategoryPhotos = categoryPhotos.filter(p => p.id !== positionChangePhotoId);
-    updatedCategoryPhotos.splice(newIndex, 0, photo);
-
-    // Обновляем sort_order для всех фото в категории
-    const updatedPhotos = updatedCategoryPhotos.map((p, index) => ({
+    const reorderedPhotos = updatedPhotos.map((p, index) => ({
       ...p,
       sort_order: index
     }));
 
     const newLocalPhotos = localPhotos.map(p => {
-      const updated = updatedPhotos.find(up => up.id === p.id);
+      const updated = reorderedPhotos.find(rp => rp.id === p.id);
       return updated || p;
     });
 
     setLocalPhotos(newLocalPhotos);
-    setPositionChangePhotoId(null);
-    setNewPosition('');
 
     try {
-      const photosToUpdate = updatedPhotos.map((p, index) => ({
+      const photosToUpdate = reorderedPhotos.map((p, index) => ({
         id: p.id,
         sort_order: index,
         category: p.category
@@ -345,42 +323,45 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
 
       await propertiesApi.updatePhotosOrder(propertyId, photosToUpdate);
       message.success('Позиция изменена');
+      setPositionChangePhotoId(null);
+      setNewPosition('');
     } catch (error) {
       console.error('Failed to change position:', error);
       message.error('Ошибка изменения позиции');
-      setLocalPhotos(oldPhotos);
     }
   };
 
-  // Drag & Drop - поддержка перемещения между категориями
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
-
+  
     const sourceCategory = result.source.droppableId;
     const destinationCategory = result.destination.droppableId;
-
+  
+    // ✅ ИСПРАВЛЕНО: добавлено сохранение старого состояния
     const oldPhotos = [...localPhotos];
-
-    // Перемещение между категориями
+  
     if (sourceCategory !== destinationCategory) {
-      const sourceItems = Array.from(groupedPhotos[sourceCategory]);
-      const [movedItem] = sourceItems.splice(result.source.index, 1);
-
-      // Optimistic update - меняем категорию
-      const updatedPhoto = { ...movedItem, category: destinationCategory };
+      const movedItem = groupedPhotos[sourceCategory][result.source.index];
+      
+      const updatedPhoto = {
+        ...movedItem,
+        category: destinationCategory,
+        sort_order: result.destination.index
+      };
+    
       const newLocalPhotos = localPhotos.map(p =>
         p.id === movedItem.id ? updatedPhoto : p
       );
-
+    
       setLocalPhotos(newLocalPhotos);
-
+    
       try {
         const updates = [{
           id: movedItem.id,
           sort_order: result.destination.index,
           category: destinationCategory
         }];
-
+      
         await propertiesApi.updatePhotosOrder(propertyId, updates);
         message.success('Фото перемещено');
         onUpdate();
@@ -390,31 +371,29 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
         setLocalPhotos(oldPhotos);
       }
     } else {
-      // Перемещение внутри одной категории
       const items = Array.from(groupedPhotos[sourceCategory]);
       const [reorderedItem] = items.splice(result.source.index, 1);
       items.splice(result.destination.index, 0, reorderedItem);
-
-      // Обновляем sort_order
+    
       const updatedPhotos = items.map((item, index) => ({
         ...item,
         sort_order: index
       }));
-
+    
       const newLocalPhotos = localPhotos.map(p => {
         const updated = updatedPhotos.find(up => up.id === p.id);
         return updated || p;
       });
-
+    
       setLocalPhotos(newLocalPhotos);
-
+    
       try {
         const photosToUpdate = updatedPhotos.map((p, index) => ({
           id: p.id,
           sort_order: index,
           category: p.category
         }));
-
+      
         await propertiesApi.updatePhotosOrder(propertyId, photosToUpdate);
       } catch (error) {
         console.error('Failed to reorder photos:', error);
@@ -424,8 +403,138 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
     }
   };
 
+  // ✅ ДОБАВЛЕНО: Функции для работы с выбором фотографий
+  const handleTogglePhoto = (photoId: number) => {
+    setSelectedPhotos(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(photoId)) {
+        newSet.delete(photoId);
+      } else {
+        newSet.add(photoId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedPhotos(new Set(localPhotos.map(p => p.id)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedPhotos(new Set());
+  };
+
+
+// ✅ Скачивание выбранных фотографий через API
+const handleDownloadSelected = async () => {
+  if (selectedPhotos.size === 0) {
+    message.warning('Выберите фотографии для скачивания');
+    return;
+  }
+
+  setDownloadingSelected(true);
+  try {
+    const photoIds = Array.from(selectedPhotos);
+    const response = await propertiesApi.downloadPhotos(propertyId, photoIds);
+    
+    const filename = photoIds.length === 1
+      ? `property_${propertyId}_photo_${photoIds[0]}.jpg`
+      : `property_${propertyId}_selected_photos.zip`;
+    
+    const blob = new Blob([response.data]);
+    saveAs(blob, filename);
+    
+    message.success(`Скачано ${photoIds.length} фотографий`);
+  } catch (error) {
+    console.error('Download error:', error);
+    message.error('Ошибка скачивания фотографий');
+  } finally {
+    setDownloadingSelected(false);
+  }
+};
+
+
+// ✅ Скачивание всех фотографий через API
+const handleDownloadAll = async () => {
+  if (localPhotos.length === 0) {
+    message.warning('Нет фотографий для скачивания');
+    return;
+  }
+
+  setDownloadingAll(true);
+  try {
+    const response = await propertiesApi.downloadPhotos(propertyId);
+    
+    const filename = localPhotos.length === 1
+      ? `property_${propertyId}_photo_${localPhotos[0].id}.jpg`
+      : `property_${propertyId}_all_photos.zip`;
+    
+    const blob = new Blob([response.data]);
+    saveAs(blob, filename);
+    
+    message.success(`Скачано ${localPhotos.length} фотографий`);
+  } catch (error) {
+    console.error('Download error:', error);
+    message.error('Ошибка скачивания фотографий');
+  } finally {
+    setDownloadingAll(false);
+  }
+};
+
   return (
     <Card>
+      {/* ✅ ДОБАВЛЕНО: Панель управления выбором */}
+      {localPhotos.length > 0 && (
+        <Card
+          type="inner"
+          size="small"
+          style={{ marginBottom: 16, background: '#1a1a1a' }}
+        >
+          <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Space wrap>
+              <Button
+                size="small"
+                icon={<CheckSquareOutlined />}
+                onClick={handleSelectAll}
+              >
+                Выбрать всё ({localPhotos.length})
+              </Button>
+              <Button
+                size="small"
+                icon={<CloseSquareOutlined />}
+                onClick={handleDeselectAll}
+                disabled={selectedPhotos.size === 0}
+              >
+                Снять выделение
+              </Button>
+              {selectedPhotos.size > 0 && (
+                <Tag color="blue">{selectedPhotos.size} выбрано</Tag>
+              )}
+            </Space>
+            <Space wrap>
+              <Button
+                type="primary"
+                size="small"
+                icon={<DownloadOutlined />}
+                onClick={handleDownloadSelected}
+                loading={downloadingSelected}
+                disabled={selectedPhotos.size === 0}
+              >
+                Скачать выбранные ({selectedPhotos.size})
+              </Button>
+              <Button
+                size="small"
+                icon={<DownloadOutlined />}
+                onClick={handleDownloadAll}
+                loading={downloadingAll}
+              >
+                Скачать всё ({localPhotos.length})
+              </Button>
+            </Space>
+          </Space>
+        </Card>
+      )}
+
       {/* Секция загрузки */}
       <Card
         type="inner"
@@ -437,7 +546,6 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
         }
         style={{ marginBottom: 24 }}
       >
-        {/* Выбор категории */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 500 }}>Выберите категорию:</span>
@@ -478,7 +586,6 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
                     <Badge count={photoCount} style={{ fontSize: 10 }} />
                   </Button>
 
-                  {/* Кнопка удаления спальни */}
                   {cat.value.startsWith('bedroom-') && photoCount === 0 && bedroomCount > 1 && (
                     <Tooltip title="Удалить спальню">
                       <Button
@@ -507,7 +614,6 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
           </div>
         </div>
 
-        {/* Кнопка загрузки */}
         <input
           ref={fileInputRef}
           type="file"
@@ -583,13 +689,13 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
                             backgroundColor: snapshot.isDraggingOver ? '#f0f5ff' : 'transparent',
                             border: snapshot.isDraggingOver ? '2px dashed #1890ff' : 'none',
                             borderRadius: 8,
-                            minHeight: 200
+                            minHeight: 100
                           }}
                         >
                           {categoryPhotos.map((photo, index) => (
                             <Draggable
                               key={photo.id}
-                              draggableId={photo.id.toString()}
+                              draggableId={String(photo.id)}
                               index={index}
                             >
                               {(provided, snapshot) => (
@@ -599,139 +705,133 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
                                   {...provided.dragHandleProps}
                                   style={{
                                     ...provided.draggableProps.style,
-                                    opacity: snapshot.isDragging ? 0.8 : 1,
-                                    transform: snapshot.isDragging
-                                      ? `${provided.draggableProps.style?.transform} scale(1.05)`
-                                      : provided.draggableProps.style?.transform
+                                    opacity: snapshot.isDragging ? 0.5 : 1,
+                                    position: 'relative'
                                   }}
                                 >
-<Card
-  hoverable
-  styles={{ 
-    body: { padding: 8 },
-    cover: { overflow: 'hidden' }
-  }}
-  cover={
-    <div style={{ position: 'relative', width: '100%', height: 180, overflow: 'hidden' }}>
-      <img
-        src={photo.photo_url}
-        alt={`Photo ${index + 1}`}
-        style={{ 
-          width: '100%', 
-          height: '100%', 
-          objectFit: 'cover', 
-          display: 'block' 
-        }}
-        onClick={() => {
-          Modal.info({
-            width: '90vw',
-            centered: true,
-            icon: null,
-            content: (
-              <img 
-                src={photo.photo_url} 
-                alt={`Photo ${index + 1}`} 
-                style={{ width: '100%', height: 'auto' }} 
-              />
-            ),
-            okText: 'Закрыть'
-          });
-        }}
-      />
-      {photo.is_primary ? (
-        <Tag
-          icon={<StarFilled />}
-          color="gold"
-          style={{
-            position: 'absolute',
-            top: 8,
-            left: 8
-          }}
-        >
-          Главное
-        </Tag>
-      ) : null}
-      <Tag
-        style={{
-          position: 'absolute',
-          top: 8,
-          right: 8
-        }}
-      >
-        #{index + 1}
-      </Tag>
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          cursor: 'grab',
-          opacity: 0.7
-        }}
-      >
-        <DragOutlined style={{ fontSize: 24, color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }} />
-      </div>
-    </div>
-  }
->
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    gap: 4,
-    minHeight: 32
-  }}>
-    {photo.is_primary ? null : (
-      <Tooltip title="Главное">
-        <Button
-          type="text"
-          icon={<StarOutlined />}
-          onClick={() => handleSetPrimary(photo.id)}
-          size="small"
-          style={{ padding: '4px 8px' }}
-        />
-      </Tooltip>
-    )}
-    <Tooltip title="Переместить">
-      <Button
-        type="text"
-        icon={<ArrowRightOutlined />}
-        onClick={() => setMovingPhotoId(photo.id)}
-        size="small"
-        style={{ padding: '4px 8px' }}
-      />
-    </Tooltip>
-    <Tooltip title="Позиция">
-      <Button
-        type="text"
-        icon={<NumberOutlined />}
-        onClick={() => {
-          setPositionChangePhotoId(photo.id);
-          setNewPosition((index + 1).toString());
-        }}
-        size="small"
-        style={{ padding: '4px 8px' }}
-      />
-    </Tooltip>
-    <Popconfirm
-      title="Удалить фото?"
-      onConfirm={() => handleDeletePhoto(photo.id)}
-      okText="Да"
-      cancelText="Нет"
-    >
-      <Tooltip title="Удалить">
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          size="small"
-          style={{ padding: '4px 8px' }}
-        />
-      </Tooltip>
-    </Popconfirm>
-  </div>
-</Card>
+                                  {/* ✅ ДОБАВЛЕНО: Checkbox для выбора */}
+                                  <Checkbox
+                                    checked={selectedPhotos.has(photo.id)}
+                                    onChange={() => handleTogglePhoto(photo.id)}
+                                    style={{
+                                      position: 'absolute',
+                                      top: 8,
+                                      left: 8,
+                                      zIndex: 10,
+                                      background: 'rgba(0,0,0,0.6)',
+                                      borderRadius: 4,
+                                      padding: 4
+                                    }}
+                                  />
+
+                                  <img
+                                    src={`${photo.photo_url}`}
+                                    alt={`Photo ${photo.id}`}
+                                    style={{
+                                      width: '100%',
+                                      height: 180,
+                                      objectFit: 'cover',
+                                      borderRadius: 8,
+                                      cursor: 'move'
+                                    }}
+                                  />
+
+                                  {/* Индикатор главного фото */}
+                                  {photo.is_primary && (
+                                    <Tag
+                                      color="gold"
+                                      icon={<StarFilled />}
+                                      style={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        right: 8,
+                                        fontSize: 11
+                                      }}
+                                    >
+                                      Главное
+                                    </Tag>
+                                  )}
+
+                                  {/* Номер позиции */}
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      bottom: 8,
+                                      left: 8,
+                                      background: 'rgba(0, 0, 0, 0.7)',
+                                      color: 'white',
+                                      padding: '2px 8px',
+                                      borderRadius: 4,
+                                      fontSize: 12,
+                                      fontWeight: 600
+                                    }}
+                                  >
+                                    #{index + 1}
+                                  </div>
+
+                                  {/* Панель действий */}
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                                      padding: '24px 8px 8px 8px',
+                                      display: 'flex',
+                                      justifyContent: 'space-around',
+                                      gap: 4
+                                    }}
+                                  >
+                                    {!photo.is_primary && (
+                                      <Tooltip title="Сделать главным">
+                                        <Button
+                                          type="text"
+                                          size="small"
+                                          icon={<StarOutlined />}
+                                          onClick={() => handleSetPrimary(photo.id)}
+                                          style={{ color: 'white' }}
+                                        />
+                                      </Tooltip>
+                                    )}
+                                    <Tooltip title="Переместить в категорию">
+                                      <Button
+                                        type="text"
+                                        size="small"
+                                        icon={<ArrowRightOutlined />}
+                                        onClick={() => setMovingPhotoId(photo.id)}
+                                        style={{ color: 'white' }}
+                                      />
+                                    </Tooltip>
+                                    <Tooltip title="Изменить позицию">
+                                      <Button
+                                        type="text"
+                                        size="small"
+                                        icon={<NumberOutlined />}
+                                        onClick={() => {
+                                          setPositionChangePhotoId(photo.id);
+                                          setNewPosition(String(index + 1));
+                                        }}
+                                        style={{ color: 'white' }}
+                                      />
+                                    </Tooltip>
+                                    <Popconfirm
+                                      title="Удалить фото?"
+                                      onConfirm={() => handleDeletePhoto(photo.id)}
+                                      okText="Да"
+                                      cancelText="Нет"
+                                    >
+                                      <Tooltip title="Удалить">
+                                        <Button
+                                          type="text"
+                                          size="small"
+                                          danger
+                                          icon={<DeleteOutlined />}
+                                          style={{ color: '#ff4d4f' }}
+                                        />
+                                      </Tooltip>
+                                    </Popconfirm>
+                                  </div>
                                 </div>
                               )}
                             </Draggable>
@@ -747,43 +847,33 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
         </DragDropContext>
       )}
 
-      {/* Модальное окно перемещения фотографии */}
+      {/* Модальное окно перемещения в категорию */}
       <Modal
         title="Переместить фото в категорию"
         open={movingPhotoId !== null}
         onCancel={() => setMovingPhotoId(null)}
         footer={null}
-        width={400}
       >
-        <Space direction="vertical" style={{ width: '100%' }} size="small">
-          {categories
-            .filter(cat => cat.value !== getPhotoCategory(movingPhotoId!))
-            .map((cat) => (
-              <Button
-                key={cat.value}
-                onClick={() => handleMovePhoto(movingPhotoId!, cat.value)}
-                block
-                style={{
-                  height: 'auto',
-                  padding: '12px 16px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <Space>
-                  <span style={{ fontSize: 18 }}>{getCategoryIcon(cat.value)}</span>
-                  <span>{cat.label}</span>
-                </Space>
-                <Badge count={groupedPhotos[cat.value]?.length || 0} />
-              </Button>
-            ))}
-        </Space>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+          {categories.map((cat) => (
+            <Button
+              key={cat.value}
+              onClick={() => handleMovePhoto(movingPhotoId!, cat.value)}
+              disabled={getPhotoCategory(movingPhotoId!) === cat.value}
+              style={{ height: 'auto', padding: '12px 8px' }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 20 }}>{getCategoryIcon(cat.value)}</span>
+                <span style={{ fontSize: 12 }}>{cat.label}</span>
+              </div>
+            </Button>
+          ))}
+        </div>
       </Modal>
 
       {/* Модальное окно изменения позиции */}
       <Modal
-        title="Изменить позицию фотографии"
+        title="Изменить позицию"
         open={positionChangePhotoId !== null}
         onOk={handleChangePosition}
         onCancel={() => {
@@ -793,25 +883,17 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
         okText="Изменить"
         cancelText="Отмена"
       >
-        <div style={{ marginBottom: 16 }}>
-          Максимальная позиция:{' '}
-          {positionChangePhotoId
-            ? groupedPhotos[getPhotoCategory(positionChangePhotoId)]?.length || 0
-            : 0}
+        <div>
+          <p>Введите новую позицию:</p>
+          <Input
+            type="number"
+            min={1}
+            max={groupedPhotos[getPhotoCategory(positionChangePhotoId!)]?.length || 1}
+            value={newPosition}
+            onChange={(e) => setNewPosition(e.target.value)}
+            placeholder="Позиция"
+          />
         </div>
-        <Input
-          type="number"
-          min="1"
-          max={
-            positionChangePhotoId
-              ? groupedPhotos[getPhotoCategory(positionChangePhotoId)]?.length || 0
-              : 0
-          }
-          value={newPosition}
-          onChange={(e) => setNewPosition(e.target.value)}
-          placeholder="Введите новую позицию"
-          autoFocus
-        />
       </Modal>
     </Card>
   );

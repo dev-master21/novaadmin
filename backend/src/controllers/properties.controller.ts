@@ -21,7 +21,8 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
       status, 
       deal_type, 
       property_type,
-      search 
+      search,
+      owner_name  // ✅ ДОБАВЛЕНО: новый параметр фильтрации
     } = req.query;
 
     const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
@@ -44,6 +45,12 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
     if (property_type) {
       whereConditions.push('p.property_type = ?');
       queryParams.push(property_type);
+    }
+
+    // ✅ ДОБАВЛЕНО: фильтр по owner_name
+    if (owner_name) {
+      whereConditions.push('p.owner_name = ?');
+      queryParams.push(owner_name);
     }
 
     if (search) {
@@ -82,6 +89,9 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
         p.owner_name,
         p.owner_phone,
         p.owner_email,
+        p.owner_telegram,
+        p.owner_instagram,
+        p.owner_notes,
         COALESCE(au.full_name, 'Система') as creator_name,
         COALESCE(au.username, 'system') as creator_username,
         pt.property_name,
@@ -94,7 +104,8 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
       LIMIT ${limitNum} OFFSET ${offset}
     `;
 
-    const properties = await db.query<any>(query, []); // используем any для типа с cover_photo
+    // ✅ ИСПРАВЛЕНО: заменили [] на queryParams
+    const properties = await db.query<any>(query, queryParams);
 
     // Преобразуем cover_photo в полный URL с thumbnail
     const propertiesWithUrls = properties.map((property: any) => ({
@@ -123,6 +134,135 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
   }
 }
 
+/**
+ * Получить список уникальных владельцев (источников)
+ * GET /api/properties/owners/unique
+ */
+async getUniqueOwners(_req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const owners = await db.query<any>(
+      `SELECT DISTINCT owner_name
+       FROM properties
+       WHERE owner_name IS NOT NULL 
+       AND owner_name != ''
+       AND deleted_at IS NULL
+       ORDER BY owner_name ASC`
+    );
+
+    const ownersList = owners.map((o: any) => o.owner_name);
+
+    res.json({
+      success: true,
+      data: ownersList
+    });
+  } catch (error) {
+    logger.error('Get unique owners error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения списка владельцев'
+    });
+  }
+}
+/**
+ * Скачать архив фотографий
+ * POST /api/properties/:id/photos/download
+ */
+async downloadPhotos(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { photoIds } = req.body; // массив ID фотографий для скачивания
+
+    // Проверяем существование объекта
+    const property = await db.queryOne<any>(
+      'SELECT id FROM properties WHERE id = ? AND deleted_at IS NULL',
+      [id]
+    );
+
+    if (!property) {
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден'
+      });
+      return;
+    }
+
+    // Получаем фотографии
+    let photos;
+    if (photoIds && photoIds.length > 0) {
+      // Скачиваем выбранные фотографии
+      const placeholders = photoIds.map(() => '?').join(',');
+      photos = await db.query<any>(
+        `SELECT id, photo_url, category FROM property_photos 
+         WHERE property_id = ? AND id IN (${placeholders})`,
+        [id, ...photoIds]
+      );
+    } else {
+      // Скачиваем все фотографии
+      photos = await db.query<any>(
+        'SELECT id, photo_url, category FROM property_photos WHERE property_id = ?',
+        [id]
+      );
+    }
+
+    if (photos.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: 'Фотографии не найдены'
+      });
+      return;
+    }
+
+    // Если одна фотография - отправляем напрямую
+    if (photos.length === 1) {
+      const photo = photos[0];
+      const filePath = path.join('/var/www/www-root/data/www/novaestate.company/backend', photo.photo_url);
+      
+      if (await fs.pathExists(filePath)) {
+        res.download(filePath, `property_${id}_photo_${photo.id}.jpg`);
+      } else {
+        res.status(404).json({
+          success: false,
+          message: 'Файл не найден'
+        });
+      }
+      return;
+    }
+
+    // Создаем ZIP архив для нескольких фотографий
+    const archiver = require('archiver');
+    const archive = archiver('zip', {
+      zlib: { level: 9 }
+    });
+
+    const filename = photoIds && photoIds.length > 0 
+      ? `property_${id}_selected_photos.zip`
+      : `property_${id}_all_photos.zip`;
+
+    res.attachment(filename);
+    archive.pipe(res);
+
+    // Добавляем файлы в архив
+    for (const photo of photos) {
+      const filePath = path.join('/var/www/www-root/data/www/novaestate.company/backend', photo.photo_url);
+      
+      if (await fs.pathExists(filePath)) {
+        const fileName = `${photo.category}_${photo.id}.jpg`;
+        archive.file(filePath, { name: fileName });
+      }
+    }
+
+    await archive.finalize();
+
+    logger.info(`Downloaded ${photos.length} photos for property ${id}`);
+
+  } catch (error) {
+    logger.error('Download photos error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка скачивания фотографий'
+    });
+  }
+}
 /**
  * Получить объект по ID
  * GET /api/properties/:id
@@ -363,161 +503,184 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
     }
   }
 
-  /**
-   * Обновить объект недвижимости
-   * PUT /api/properties/:id
-   */
-  async update(req: AuthRequest, res: Response): Promise<void> {
-    const connection = await db.beginTransaction();
-    
-    try {
-      const { id } = req.params;
-      const updateData = req.body;
+/**
+ * Обновить объект недвижимости
+ * PUT /api/properties/:id
+ */
+async update(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+  
+  try {
+    const { id } = req.params;
+    const {
+      // Основная информация
+      deal_type, property_type, region, address, google_maps_link,
+      latitude, longitude, property_number, complex_name,
+      bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
+      floors, floor, penthouse_floors, construction_year, construction_month,
+      furniture_status, parking_spaces, pets_allowed, pets_custom,
+      building_ownership, land_ownership, ownership_type,
+      sale_price, year_price, minimum_nights, ics_calendar_url, status, video_url,
+      
+      // Информация о владельце
+      owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
+      
+      // Переводы
+      translations,
+      
+      // Features
+      renovationDates,
+      
+      // Комиссии
+      sale_commission_type, sale_commission_value,
+      rent_commission_type, rent_commission_value,
+      
+      // Реновация
+      renovation_type, renovation_date,
+      
+      // Сезонные цены
+      seasonalPricing,
+      
+      // ✅ ИГНОРИРУЕМ videos - они обрабатываются отдельно через другой endpoint
+      // videos - не используется здесь
+    } = req.body;
 
-      // Проверяем существование объекта
-      const property = await db.queryOne(
-        'SELECT id FROM properties WHERE id = ? AND deleted_at IS NULL',
-        [id]
-      );
+    // ✅ ИСПРАВЛЕНО: используем query вместо queryOne
+    const existingPropertyResult: any = await connection.query(
+      'SELECT id FROM properties WHERE id = ? AND deleted_at IS NULL',
+      [id]
+    );
 
-      if (!property) {
-        await db.rollback(connection);
-        res.status(404).json({
-          success: false,
-          message: 'Объект не найден'
-        });
-        return;
-      }
+    const existingProperty = Array.isArray(existingPropertyResult[0]) 
+      ? existingPropertyResult[0][0] 
+      : existingPropertyResult[0];
 
-      const {
-        translations, 
-        renovationDates, 
-        seasonalPricing,
-        propertyFeatures,
-        outdoorFeatures,
-        rentalFeatures,
-        locationFeatures,
-        views,
-        // Исключаем поля которые не должны обновляться напрямую
-        photos,
-        pricing,
-        vrPanoramas,
-        creator_name,
-        creator_username,
-        created_at,
-        updated_at,     // ← ДОБАВЬТЕ ЭТО
-        deleted_at,     // ← ДОБАВЬТЕ ЭТО
-        cover_photo,
-        features,
-        views_count,    // ← ДОБАВЬТЕ ЭТО
-        last_calendar_sync, // ← ДОБАВЬТЕ ЭТО
-        ...mainData
-      } = updateData;
-
-      // Удаляем id из mainData если он там есть
-      delete mainData.id;
-
-      // Обновляем основные данные
-      if (Object.keys(mainData).length > 0) {
-        const fields = Object.keys(mainData).map(key => `${key} = ?`).join(', ');
-        const values = Object.values(mainData);
-        
-        await connection.query(
-          `UPDATE properties SET ${fields}, updated_at = NOW() WHERE id = ?`,
-          [...values, id]
-        );
-      }
-
-      // Обновляем переводы
-      if (translations) {
-        await connection.query('DELETE FROM property_translations WHERE property_id = ?', [id]);
-        
-        for (const [lang, data] of Object.entries(translations)) {
-          const translationData = data as { property_name?: string; description?: string };
-          if (translationData.property_name || translationData.description) {
-            await connection.query(
-              `INSERT INTO property_translations (property_id, language_code, property_name, description)
-               VALUES (?, ?, ?, ?)`,
-              [id, lang, translationData.property_name || null, translationData.description || null]
-            );
-          }
-        }
-      }
-
-      // Обновляем features (только если хотя бы один тип передан)
-      const hasFeatureUpdates = 
-        propertyFeatures !== undefined || 
-        outdoorFeatures !== undefined || 
-        rentalFeatures !== undefined || 
-        locationFeatures !== undefined || 
-        views !== undefined;
-
-      if (hasFeatureUpdates) {
-        await connection.query('DELETE FROM property_features WHERE property_id = ?', [id]);
-        
-        const featureTypes: { [key: string]: string } = {
-          propertyFeatures: 'property',
-          outdoorFeatures: 'outdoor',
-          rentalFeatures: 'rental',
-          locationFeatures: 'location',
-          views: 'view'
-        };
-
-        for (const [key, type] of Object.entries(featureTypes)) {
-          const featuresArray = updateData[key];
-          if (featuresArray && Array.isArray(featuresArray)) {
-            for (const feature of featuresArray) {
-              const renovationDate = renovationDates?.[feature] || null;
-              await connection.query(
-                `INSERT INTO property_features (property_id, feature_type, feature_value, renovation_date)
-                 VALUES (?, ?, ?, ?)`,
-                [id, type, feature, renovationDate]
-              );
-            }
-          }
-        }
-      }
-
-      // Обновляем сезонные цены
-      if (seasonalPricing !== undefined) {
-        await connection.query('DELETE FROM property_pricing WHERE property_id = ?', [id]);
-        
-        if (Array.isArray(seasonalPricing) && seasonalPricing.length > 0) {
-          for (const price of seasonalPricing) {
-            await connection.query(
-              `INSERT INTO property_pricing (property_id, season_type, start_date_recurring, end_date_recurring, price_per_night, source_price_per_night, minimum_nights)
-               VALUES (?, ?, ?, ?, ?, ?, ?)`,
-              [
-                id,
-                price.season_type || null,
-                price.start_date_recurring,
-                price.end_date_recurring,
-                price.price_per_night,
-                price.source_price_per_night || null,
-                price.minimum_nights || null
-              ]
-            );
-          }
-        }
-      }
-
-      await db.commit(connection);
-
-      logger.info(`Property updated: ${id} by user ${req.admin?.username}`);
-
-      res.json({
-        success: true,
-        message: 'Объект успешно обновлен'
-      });
-    } catch (error) {
-      await db.rollback(connection);
-      logger.error('Update property error:', error);
-      res.status(500).json({
+    if (!existingProperty) {
+      await connection.rollback();
+      res.status(404).json({
         success: false,
-        message: 'Ошибка обновления объекта'
+        message: 'Объект не найден'
       });
+      return;
     }
+
+    // Обновляем основную информацию
+    await connection.query(
+      `UPDATE properties SET
+        deal_type = ?, property_type = ?, region = ?, address = ?, google_maps_link = ?,
+        latitude = ?, longitude = ?, property_number = ?, complex_name = ?,
+        bedrooms = ?, bathrooms = ?, indoor_area = ?, outdoor_area = ?, plot_size = ?,
+        floors = ?, floor = ?, penthouse_floors = ?, construction_year = ?, construction_month = ?,
+        furniture_status = ?, parking_spaces = ?, pets_allowed = ?, pets_custom = ?,
+        building_ownership = ?, land_ownership = ?, ownership_type = ?,
+        sale_price = ?, year_price = ?, minimum_nights = ?, ics_calendar_url = ?, video_url = ?, status = ?,
+        owner_name = ?, owner_phone = ?, owner_email = ?, owner_telegram = ?, owner_instagram = ?, owner_notes = ?,
+        sale_commission_type = ?, sale_commission_value = ?,
+        rent_commission_type = ?, rent_commission_value = ?,
+        renovation_type = ?, renovation_date = ?,
+        updated_at = NOW()
+      WHERE id = ?`,
+      [
+        deal_type, property_type, region, address, google_maps_link,
+        latitude, longitude, property_number, complex_name,
+        bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
+        floors, floor, penthouse_floors, construction_year, construction_month,
+        furniture_status, parking_spaces, pets_allowed, pets_custom,
+        building_ownership, land_ownership, ownership_type,
+        sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status || 'draft',
+        owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
+        sale_commission_type, sale_commission_value,
+        rent_commission_type, rent_commission_value,
+        renovation_type, renovation_date,
+        id
+      ]
+    );
+
+    // Обновляем переводы
+    if (translations && Object.keys(translations).length > 0) {
+      // Удаляем старые переводы
+      await connection.query('DELETE FROM property_translations WHERE property_id = ?', [id]);
+
+      // Добавляем новые переводы
+      for (const [lang, data] of Object.entries(translations)) {
+        const translationData = data as { property_name?: string; description?: string };
+        if (translationData.property_name || translationData.description) {
+          await connection.query(
+            `INSERT INTO property_translations (property_id, language_code, property_name, description)
+             VALUES (?, ?, ?, ?)`,
+            [id, lang, translationData.property_name || null, translationData.description || null]
+          );
+        }
+      }
+    }
+
+    // Обновляем features
+    await connection.query('DELETE FROM property_features WHERE property_id = ?', [id]);
+
+    const featureTypes: { [key: string]: string } = {
+      propertyFeatures: 'property',
+      outdoorFeatures: 'outdoor',
+      rentalFeatures: 'rental',
+      locationFeatures: 'location',
+      views: 'view'
+    };
+
+    for (const [key, type] of Object.entries(featureTypes)) {
+      const featuresArray = req.body[key];
+      if (featuresArray && Array.isArray(featuresArray) && featuresArray.length > 0) {
+        for (const feature of featuresArray) {
+          const renovationDate = renovationDates?.[feature] || null;
+          await connection.query(
+            `INSERT INTO property_features (property_id, feature_type, feature_value, renovation_date)
+             VALUES (?, ?, ?, ?)`,
+            [id, type, feature, renovationDate]
+          );
+        }
+      }
+    }
+
+    // Обновляем сезонные цены
+    if (seasonalPricing !== undefined) {
+      // Удаляем старые цены
+      await connection.query('DELETE FROM property_pricing WHERE property_id = ?', [id]);
+
+      // Добавляем новые цены
+      if (Array.isArray(seasonalPricing) && seasonalPricing.length > 0) {
+        for (const price of seasonalPricing) {
+          await connection.query(
+            `INSERT INTO property_pricing (property_id, season_type, start_date_recurring, end_date_recurring, price_per_night, source_price_per_night, minimum_nights)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              id,
+              price.season_type || 'custom',
+              price.start_date_recurring,
+              price.end_date_recurring,
+              price.price_per_night,
+              price.source_price_per_night || null,
+              price.minimum_nights || null
+            ]
+          );
+        }
+      }
+    }
+
+    await connection.commit();
+    logger.info(`Property updated: ${id} by user ${req.admin?.username}`);
+
+    res.json({
+      success: true,
+      message: 'Объект успешно обновлен'
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    logger.error('Update property error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка обновления объекта'
+    });
   }
+}
 
   /**
    * Мягкое удаление объекта (скрытие)

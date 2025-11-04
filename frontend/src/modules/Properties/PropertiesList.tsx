@@ -25,7 +25,8 @@ import {
   EyeInvisibleOutlined,
   ReloadOutlined,
   DollarOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +34,7 @@ import { propertiesApi } from '@/api/properties.api';
 import { useAuthStore } from '@/store/authStore';
 import PricingModal from './components/PricingModal';
 import CalendarModal from './components/CalendarModal';
+import OwnerInfoModal from './components/OwnerInfoModal';  // ✅ ДОБАВЛЕНО
 import type { Property } from './types';
 import type { ColumnsType } from 'antd/es/table';
 import './PropertiesList.css';
@@ -44,6 +46,7 @@ const PropertiesList = () => {
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uniqueOwners, setUniqueOwners] = useState<string[]>([]);  // ✅ ДОБАВЛЕНО
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -53,14 +56,17 @@ const PropertiesList = () => {
     search: '',
     status: undefined,
     deal_type: undefined,
-    property_type: undefined
+    property_type: undefined,
+    owner_name: undefined  // ✅ ДОБАВЛЕНО
   });
   const [isMobile, setIsMobile] = useState(false);
 
   // Модальные окна
   const [pricingModalVisible, setPricingModalVisible] = useState(false);
   const [calendarModalVisible, setCalendarModalVisible] = useState(false);
+  const [ownerInfoModalVisible, setOwnerInfoModalVisible] = useState(false);  // ✅ ДОБАВЛЕНО
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
+  const [selectedOwnerData, setSelectedOwnerData] = useState<any>(null);  // ✅ ДОБАВЛЕНО
 
   useEffect(() => {
     const checkMobile = () => {
@@ -73,6 +79,7 @@ const PropertiesList = () => {
 
   useEffect(() => {
     loadProperties();
+    loadUniqueOwners();  // ✅ ДОБАВЛЕНО
   }, [pagination.current, pagination.pageSize]);
 
   const loadProperties = async () => {
@@ -93,6 +100,16 @@ const PropertiesList = () => {
       message.error(error.response?.data?.message || t('errors.generic'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ ДОБАВЛЕНО: загрузка уникальных владельцев
+  const loadUniqueOwners = async () => {
+    try {
+      const { data } = await propertiesApi.getUniqueOwners();
+      setUniqueOwners(data.data);
+    } catch (error: any) {
+      console.error('Failed to load unique owners:', error);
     }
   };
 
@@ -124,7 +141,8 @@ const PropertiesList = () => {
       search: '',
       status: undefined,
       deal_type: undefined,
-      property_type: undefined
+      property_type: undefined,
+      owner_name: undefined  // ✅ ДОБАВЛЕНО
     });
     setPagination(prev => ({ ...prev, current: 1 }));
     setTimeout(loadProperties, 100);
@@ -138,6 +156,19 @@ const PropertiesList = () => {
   const openCalendarModal = (id: number) => {
     setSelectedPropertyId(id);
     setCalendarModalVisible(true);
+  };
+
+  // ✅ ДОБАВЛЕНО: открытие модального окна с информацией о владельце
+  const openOwnerInfoModal = (property: any) => {
+    setSelectedOwnerData({
+      owner_name: property.owner_name,
+      owner_phone: property.owner_phone,
+      owner_email: property.owner_email,
+      owner_telegram: property.owner_telegram,
+      owner_instagram: property.owner_instagram,
+      owner_notes: property.owner_notes
+    });
+    setOwnerInfoModalVisible(true);
   };
 
   // Мобильный вид - карточки
@@ -198,11 +229,17 @@ const PropertiesList = () => {
                     #{property.property_number}
                   </div>
 
-                  {/* Источник */}
-                  {property.source_name && (
-                    <div style={{ color: '#666', fontSize: 12 }}>
-                      {t('properties.source')}: {property.source_name}
-                    </div>
+                  {/* Источник - ✅ ИЗМЕНЕНО */}
+                  {property.owner_name && (
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<UserOutlined />}
+                      onClick={() => openOwnerInfoModal(property)}
+                      style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                    >
+                      {property.owner_name}
+                    </Button>
                   )}
 
                   {/* Кто добавил */}
@@ -357,13 +394,26 @@ const PropertiesList = () => {
       width: 80,
       render: (text: string) => <span style={{ color: '#888' }}>{text}</span>
     },
+    // ✅ ИЗМЕНЕНО: колонка "Источник" теперь с кнопкой
     {
       title: t('properties.source'),
-      dataIndex: 'source_name',
-      key: 'source_name',
+      key: 'owner_name',
       width: 150,
       ellipsis: true,
-      render: (text: string) => text || '—'
+      render: (_: any, record: any) => 
+        record.owner_name ? (
+          <Button
+            type="link"
+            size="small"
+            icon={<UserOutlined />}
+            onClick={() => openOwnerInfoModal(record)}
+            style={{ padding: 0, height: 'auto' }}
+          >
+            {record.owner_name}
+          </Button>
+        ) : (
+          <span>—</span>
+        )
     },
     {
       title: t('properties.addedBy'),
@@ -413,13 +463,12 @@ const PropertiesList = () => {
     {
       title: t('common.actions'),
       key: 'actions',
-      width: 240,
-      fixed: 'right',
+      width: 200,
+      fixed: 'right' as const,
       render: (_: any, record: any) => (
         <Space size="small">
           <Tooltip title={t('properties.prices')}>
             <Button
-              type="link"
               size="small"
               icon={<DollarOutlined />}
               onClick={() => openPricingModal(record.id)}
@@ -427,7 +476,6 @@ const PropertiesList = () => {
           </Tooltip>
           <Tooltip title={t('properties.calendar.button')}>
             <Button
-              type="link"
               size="small"
               icon={<CalendarOutlined />}
               onClick={() => openCalendarModal(record.id)}
@@ -435,7 +483,6 @@ const PropertiesList = () => {
           </Tooltip>
           <Tooltip title={t('common.edit')}>
             <Button
-              type="link"
               size="small"
               icon={<EditOutlined />}
               onClick={() => navigate(`/properties/edit/${record.id}`)}
@@ -450,9 +497,8 @@ const PropertiesList = () => {
             >
               <Tooltip title={t('common.delete')}>
                 <Button
-                  type="link"
-                  danger
                   size="small"
+                  danger
                   icon={<DeleteOutlined />}
                 />
               </Tooltip>
@@ -464,109 +510,120 @@ const PropertiesList = () => {
   ];
 
   return (
-    <>
-      <Card
-        title={
-          <Space>
-            <HomeOutlined />
-            {t('properties.title')}
-          </Space>
-        }
-        extra={
-          hasPermission('properties.create') && (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/properties/new')}
-              size={isMobile ? 'middle' : 'large'}
-            >
-              {!isMobile && t('properties.add')}
-            </Button>
-          )
-        }
-      >
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
-          {/* Фильтры */}
-          <Row gutter={[12, 12]}>
-            <Col xs={24} sm={24} md={8}>
-              <Input
-                placeholder={t('properties.search')}
-                prefix={<SearchOutlined />}
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                onPressEnter={handleSearch}
-                allowClear
-              />
-            </Col>
-            <Col xs={12} sm={8} md={5}>
-              <Select
-                placeholder={t('properties.status')}
-                value={filters.status}
-                onChange={(value) => setFilters({ ...filters, status: value })}
-                allowClear
-                style={{ width: '100%' }}
-                options={[
-                  { value: 'draft', label: t('properties.draft') },
-                  { value: 'published', label: t('properties.published') }
-                ]}
-              />
-            </Col>
-            <Col xs={12} sm={8} md={5}>
-              <Select
-                placeholder={t('properties.dealType')}
-                value={filters.deal_type}
-                onChange={(value) => setFilters({ ...filters, deal_type: value })}
-                allowClear
-                style={{ width: '100%' }}
-                options={[
-                  { value: 'sale', label: t('properties.sale') },
-                  { value: 'rent', label: t('properties.rent') }
-                ]}
-              />
-            </Col>
-            <Col xs={24} sm={8} md={6}>
-              <Space size="small" style={{ width: '100%' }}>
-                <Button
-                  type="primary"
-                  icon={<SearchOutlined />}
-                  onClick={handleSearch}
-                  block={isMobile}
-                >
-                  {t('common.search')}
-                </Button>
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={handleReset}
-                >
-                  {t('common.reset')}
-                </Button>
-              </Space>
-            </Col>
-          </Row>
-
-          {/* Список объектов */}
-          {isMobile ? (
-            <MobileView />
-          ) : (
-            <Table
-              columns={columns}
-              dataSource={properties}
-              rowKey="id"
-              loading={loading}
-              pagination={{
-                current: pagination.current,
-                pageSize: pagination.pageSize,
-                total: pagination.total,
-                showSizeChanger: true,
-                showTotal: (total) => t('common.total', { total }),
-                pageSizeOptions: ['10', '20', '50', '100']
-              }}
-              onChange={handleTableChange}
-              scroll={{ x: 1400 }}
+    <Card
+      title={t('properties.list')}
+      extra={
+        hasPermission('properties.create') && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/properties/new')}
+            size={isMobile ? 'middle' : 'large'}
+          >
+            {!isMobile && t('properties.add')}
+          </Button>
+        )
+      }
+    >
+      <Space direction="vertical" style={{ width: '100%' }} size="large">
+        {/* Фильтры */}
+        <Row gutter={[12, 12]}>
+          <Col xs={24} sm={12} md={6}>
+            <Input
+              placeholder={t('properties.search')}
+              prefix={<SearchOutlined />}
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              onPressEnter={handleSearch}
+              allowClear
             />
-          )}
-        </Space>
-      </Card>
+          </Col>
+          <Col xs={12} sm={6} md={4}>
+            <Select
+              placeholder={t('properties.status')}
+              value={filters.status}
+              onChange={(value) => setFilters({ ...filters, status: value })}
+              allowClear
+              style={{ width: '100%' }}
+              options={[
+                { value: 'draft', label: t('properties.draft') },
+                { value: 'published', label: t('properties.published') }
+              ]}
+            />
+          </Col>
+          {/* ✅ ИЗМЕНЕНО: добавлена опция "both" */}
+          <Col xs={12} sm={6} md={4}>
+            <Select
+              placeholder={t('properties.dealType')}
+              value={filters.deal_type}
+              onChange={(value) => setFilters({ ...filters, deal_type: value })}
+              allowClear
+              style={{ width: '100%' }}
+              options={[
+                { value: 'sale', label: t('properties.dealTypes.sale') },
+                { value: 'rent', label: t('properties.dealTypes.rent') },
+                { value: 'both', label: t('properties.dealTypes.both') }  // ✅ ДОБАВЛЕНО
+              ]}
+            />
+          </Col>
+          {/* ✅ ДОБАВЛЕНО: новый фильтр по источнику */}
+          <Col xs={12} sm={6} md={4}>
+            <Select
+              placeholder={t('properties.source')}
+              value={filters.owner_name}
+              onChange={(value) => setFilters({ ...filters, owner_name: value })}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              style={{ width: '100%' }}
+              options={uniqueOwners.map(owner => ({
+                value: owner,
+                label: owner
+              }))}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Space size="small" style={{ width: '100%' }}>
+              <Button
+                type="primary"
+                icon={<SearchOutlined />}
+                onClick={handleSearch}
+                block={isMobile}
+              >
+                {t('common.search')}
+              </Button>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={handleReset}
+              >
+                {t('common.reset')}
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+
+        {/* Список объектов */}
+        {isMobile ? (
+          <MobileView />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={properties}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              showTotal: (total) => t('common.total', { total }),
+              pageSizeOptions: ['10', '20', '50', '100']
+            }}
+            onChange={handleTableChange}
+            scroll={{ x: 1200 }}
+          />
+        )}
+      </Space>
 
       {/* Модальные окна */}
       {selectedPropertyId && (
@@ -574,16 +631,32 @@ const PropertiesList = () => {
           <PricingModal
             propertyId={selectedPropertyId}
             visible={pricingModalVisible}
-            onClose={() => setPricingModalVisible(false)}
+            onClose={() => {
+              setPricingModalVisible(false);
+              setSelectedPropertyId(null);
+            }}
           />
           <CalendarModal
             propertyId={selectedPropertyId}
             visible={calendarModalVisible}
-            onClose={() => setCalendarModalVisible(false)}
+            onClose={() => {
+              setCalendarModalVisible(false);
+              setSelectedPropertyId(null);
+            }}
           />
         </>
       )}
-    </>
+
+      {/* ✅ ДОБАВЛЕНО: модальное окно с информацией о владельце */}
+      <OwnerInfoModal
+        visible={ownerInfoModalVisible}
+        onClose={() => {
+          setOwnerInfoModalVisible(false);
+          setSelectedOwnerData(null);
+        }}
+        ownerData={selectedOwnerData}
+      />
+    </Card>
   );
 };
 

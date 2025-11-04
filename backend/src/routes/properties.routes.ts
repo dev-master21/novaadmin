@@ -18,6 +18,12 @@ router.post('/', authenticate, propertiesController.create.bind(propertiesContro
 router.put('/:id', authenticate, propertiesController.update.bind(propertiesController));
 router.delete('/:id', authenticate, propertiesController.delete.bind(propertiesController));
 
+// Получить уникальных владельцев (источников)
+router.get('/owners/unique', authenticate, propertiesController.getUniqueOwners.bind(propertiesController));
+
+// Скачать фотографии
+router.post('/:id/photos/download', authenticate, propertiesController.downloadPhotos.bind(propertiesController));
+
 // Дополнительные операции
 router.post('/:id/restore', authenticate, propertiesController.restore.bind(propertiesController));
 router.patch('/:id/visibility', authenticate, propertiesController.toggleVisibility.bind(propertiesController));

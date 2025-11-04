@@ -29,4 +29,5 @@ export interface PropertyFilters {
   deal_type?: string;
   property_type?: string;
   search?: string;
+  owner_name?: string;
 }

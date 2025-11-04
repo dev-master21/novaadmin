@@ -43,6 +43,7 @@ export const propertiesApi = {
     deal_type?: string;
     property_type?: string;
     search?: string;
+    owner_name?: string;
   }) => api.get<PropertiesResponse>('/properties', { params }),
 
   getById: (id: number) => api.get(`/properties/${id}`),
@@ -54,6 +55,15 @@ export const propertiesApi = {
   delete: (id: number) => api.delete(`/properties/${id}`),
 
   restore: (id: number) => api.post(`/properties/${id}/restore`),
+
+  getUniqueOwners: () => api.get<{ success: boolean; data: string[] }>('/properties/owners/unique'),
+  
+  // Скачать фотографии
+  downloadPhotos: (propertyId: number, photoIds?: number[]) => 
+    api.post(`/properties/${propertyId}/photos/download`, 
+      { photoIds }, 
+      { responseType: 'blob' }
+    ),
 
   toggleVisibility: (id: number, status: string) => 
     api.patch(`/properties/${id}/visibility`, { status }),

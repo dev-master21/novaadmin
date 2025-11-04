@@ -28,6 +28,7 @@ interface Video {
   description?: string;
   file_size: number;
   sort_order: number;
+  thumbnail_url?: string;
 }
 
 interface VideoUploaderProps {
@@ -44,6 +45,10 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate }: VideoUploaderProps
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
   const [form] = Form.useForm();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // ✅ ДОБАВЛЕНО: Состояние для видеоплеера
+  const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
+  const [playerModalVisible, setPlayerModalVisible] = useState(false);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -57,7 +62,6 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate }: VideoUploaderProps
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Проверка типов файлов
     const invalidFiles = files.filter(file => !file.type.startsWith('video/'));
     if (invalidFiles.length > 0) {
       message.error(`Некоторые файлы не являются видео: ${invalidFiles.map(f => f.name).join(', ')}`);
@@ -117,6 +121,20 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate }: VideoUploaderProps
     } catch (error: any) {
       message.error(error.response?.data?.message || t('errors.generic'));
     }
+  };
+
+  // ✅ ДОБАВЛЕНО: Открытие видеоплеера
+  const handlePlayVideo = (video: Video) => {
+    setPlayingVideo(video);
+    setPlayerModalVisible(true);
+  };
+
+  // ✅ ДОБАВЛЕНО: Закрытие видеоплеера
+  const handleClosePlayer = () => {
+    setPlayerModalVisible(false);
+    setTimeout(() => {
+      setPlayingVideo(null);
+    }, 300);
   };
 
   return (
@@ -194,15 +212,64 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate }: VideoUploaderProps
             >
               <List.Item.Meta
                 avatar={
-                  <video
-                    src={`https://novaestate.company${video.video_url}`}
-                    style={{ 
-                      width: 120, 
-                      height: 68, 
-                      objectFit: 'cover',
-                      borderRadius: 4
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: 120,
+                      height: 68,
+                      cursor: 'pointer',
+                      borderRadius: 4,
+                      overflow: 'hidden'
                     }}
-                  />
+                    onClick={() => handlePlayVideo(video)}
+                  >
+                    {/* ✅ ИЗМЕНЕНО: Добавлен thumbnail или видео превью */}
+                    {video.thumbnail_url ? (
+                      <img
+                        src={`https://novaestate.company${video.thumbnail_url}`}
+                        alt="Video thumbnail"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    ) : (
+                      <video
+                        src={`https://novaestate.company${video.video_url}`}
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover'
+                        }}
+                      />
+                    )}
+                    {/* ✅ ДОБАВЛЕНО: Иконка воспроизведения */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        width: 40,
+                        height: 40,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.3s'
+                      }}
+                      className="play-button-overlay"
+                    >
+                      <PlayCircleOutlined 
+                        style={{ 
+                          fontSize: 24, 
+                          color: 'white'
+                        }} 
+                      />
+                    </div>
+                  </div>
                 }
                 title={video.title || 'Без названия'}
                 description={
@@ -219,6 +286,7 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate }: VideoUploaderProps
         />
       )}
 
+      {/* Модальное окно редактирования */}
       <Modal
         title="Редактировать видео"
         open={editModalVisible}
@@ -245,6 +313,53 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate }: VideoUploaderProps
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* ✅ ДОБАВЛЕНО: Модальное окно с видеоплеером */}
+      <Modal
+        title={playingVideo?.title || 'Воспроизведение видео'}
+        open={playerModalVisible}
+        onCancel={handleClosePlayer}
+        footer={null}
+        width={800}
+        centered
+        destroyOnClose
+      >
+        {playingVideo && (
+          <div style={{ position: 'relative', paddingTop: '56.25%' }}>
+            <video
+              controls
+              autoPlay
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#000'
+              }}
+              src={`https://novaestate.company${playingVideo.video_url}`}
+            >
+              Ваш браузер не поддерживает воспроизведение видео.
+            </video>
+          </div>
+        )}
+        {playingVideo?.description && (
+          <p style={{ marginTop: 16, color: '#999' }}>
+            {playingVideo.description}
+          </p>
+        )}
+      </Modal>
+
+      {/* ✅ ДОБАВЛЕНО: CSS для эффекта наведения на кнопку воспроизведения */}
+      <style>{`
+        .play-button-overlay {
+          opacity: 0.8;
+        }
+        .play-button-overlay:hover {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.1);
+        }
+      `}</style>
     </Card>
   );
 };
