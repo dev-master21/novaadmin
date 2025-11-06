@@ -1,75 +1,217 @@
 /* frontend/src/modules/Agreements/Public/PublicAgreement.css */
 .public-agreement-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 24px;
   background: #f0f2f5;
   min-height: 100vh;
 }
 
-.agreement-document {
-  padding: 40px;
-  background: #fff;
-  font-family: 'Arial', sans-serif;
-  font-size: 14px;
-  line-height: 1.8;
-  color: #000;
+.public-agreement-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f0f2f5;
 }
 
-.agreement-document h1 {
+.public-agreement-not-found {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f0f2f5;
   text-align: center;
+  padding: 24px;
+}
+
+.public-agreement-not-found h2 {
   font-size: 24px;
-  margin-bottom: 30px;
+  margin-bottom: 8px;
+  color: #262626;
 }
 
-.agreement-document h2 {
-  font-size: 18px;
-  margin: 20px 0 10px;
+.public-agreement-not-found p {
+  font-size: 14px;
+  color: #8c8c8c;
 }
 
-.agreement-document h3 {
-  font-size: 16px;
-  margin: 15px 0 8px;
+.public-header-card {
+  margin-bottom: 16px;
 }
 
-.agreement-document p {
-  margin: 8px 0;
+.public-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.agreement-document ul,
-.agreement-document ol {
-  margin: 8px 0;
-  padding-left: 30px;
+.public-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
+.public-agreement-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.public-info-card,
+.public-parties-card,
+.public-signatures-card,
+.public-document-card {
+  margin-bottom: 16px;
+}
+
+.qr-code-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.qr-code-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #8c8c8c;
+  text-align: center;
+}
+
+.party-info-card {
+  margin-bottom: 12px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.party-role {
+  margin-bottom: 8px;
+}
+
+.party-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.party-name {
+  font-size: 14px;
+}
+
+.party-passport {
+  font-size: 13px;
+  color: #666;
+}
+
+.signature-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+.signature-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.signature-role {
+  font-size: 13px;
+  color: #666;
+}
+
+.document-wrapper {
+  background: #fff;
+  border-radius: 4px;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .public-agreement-container {
+    padding: 12px;
+  }
+
+  .public-header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .public-header-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .public-agreement-title {
+    font-size: 18px;
+  }
+
+  .public-header-content .ant-btn {
+    width: 100%;
+  }
+
+  .party-info-card {
+    margin-bottom: 8px;
+  }
+
+  .signature-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .public-agreement-container {
+    padding: 8px;
+  }
+
+  .public-agreement-title {
+    font-size: 16px;
+  }
+
+  .public-info-card .ant-card-body,
+  .public-parties-card .ant-card-body,
+  .public-signatures-card .ant-card-body,
+  .public-document-card .ant-card-body {
+    padding: 12px;
+  }
+}
+
+/* Печать */
 @media print {
   .public-agreement-container {
     background: #fff;
     padding: 0;
   }
 
-  .ant-card {
-    border: none;
-    box-shadow: none;
-  }
-
-  .ant-card-head,
-  .ant-btn {
+  .public-header-card,
+  .public-info-card,
+  .public-parties-card,
+  .public-signatures-card {
     display: none !important;
   }
 
-  .agreement-document {
+  .public-document-card {
+    border: none;
+    box-shadow: none;
+    margin: 0;
+  }
+
+  .public-document-card .ant-card-head {
+    display: none;
+  }
+
+  .public-document-card .ant-card-body {
     padding: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .public-agreement-container {
-    padding: 12px;
-  }
-
-  .agreement-document {
-    padding: 20px;
-    font-size: 12px;
   }
 }

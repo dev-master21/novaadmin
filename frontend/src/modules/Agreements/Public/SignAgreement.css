@@ -1,32 +1,46 @@
 /* frontend/src/modules/Agreements/Public/SignAgreement.css */
 .sign-agreement-container {
-  max-width: 1200px;
+  max-width: 600px;
   margin: 0 auto;
   padding: 24px;
-  background: #f0f2f5;
   min-height: 100vh;
+  background: #f0f2f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.agreement-content {
-  padding: 20px;
-  background: #fff;
-  font-family: 'Arial', sans-serif;
+.sign-agreement-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f0f2f5;
+}
+
+.sign-agreement-not-found {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f0f2f5;
+  text-align: center;
+  padding: 24px;
+}
+
+.sign-agreement-not-found h2 {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.sign-agreement-not-found p {
   font-size: 14px;
-  line-height: 1.8;
-}
-
-.signature-canvas {
-  border-radius: 4px;
-  cursor: crosshair;
+  color: #8c8c8c;
 }
 
 @media (max-width: 768px) {
   .sign-agreement-container {
     padding: 12px;
-  }
-
-  .agreement-content {
-    padding: 12px;
-    font-size: 12px;
   }
 }

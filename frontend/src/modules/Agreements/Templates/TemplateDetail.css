@@ -1,0 +1,90 @@
+/* frontend/src/modules/Agreements/Templates/TemplateDetail.css */
+.template-detail-container {
+  padding: 24px;
+  background: #141414;
+  min-height: 100vh;
+}
+
+.template-header-card,
+.template-info-card,
+.template-document-card {
+  background: #1f1f1f;
+  border-color: #303030;
+  margin-bottom: 16px;
+}
+
+.template-header-card .ant-card-body {
+  padding: 16px;
+}
+
+.template-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.template-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.template-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.template-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.template-info-card .ant-descriptions-item-label,
+.template-info-card .ant-descriptions-item-content {
+  background: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+  border-color: #303030;
+}
+
+.template-info-card .ant-descriptions-item-label {
+  font-weight: 500;
+}
+
+.template-document-card .ant-card-head {
+  background: #1f1f1f;
+  border-bottom: 1px solid #303030;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.template-document-card .ant-card-body {
+  background: #fff;
+  padding: 24px;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .template-detail-container {
+    padding: 12px;
+  }
+
+  .template-header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .template-header-left {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .template-title {
+    font-size: 16px;
+  }
+}

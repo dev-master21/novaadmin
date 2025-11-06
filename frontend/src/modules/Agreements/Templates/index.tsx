@@ -24,6 +24,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { agreementsApi, AgreementTemplate } from '@/api/agreements.api';
 import type { ColumnsType } from 'antd/es/table';
+import './Templates.css';
 
 const { Search } = Input;
 
@@ -103,7 +104,7 @@ const AgreementTemplates = () => {
       dataIndex: 'name',
       key: 'name',
       render: (text, record) => (
-        <Button type="link" onClick={() => navigate(`/agreements/templates/${record.id}`)}>
+        <Button type="link" onClick={() => navigate(`/agreements/templates/${record.id}/view`)}>
           {text}
         </Button>
       )
@@ -112,14 +113,16 @@ const AgreementTemplates = () => {
       title: 'Тип',
       dataIndex: 'type',
       key: 'type',
-      render: (type) => getTypeTag(type)
+      render: (type) => getTypeTag(type),
+      responsive: ['md']
     },
     {
       title: 'Версия',
       dataIndex: 'version',
       key: 'version',
       align: 'center',
-      width: 100
+      width: 100,
+      responsive: ['lg']
     },
     {
       title: 'Использован',
@@ -127,7 +130,8 @@ const AgreementTemplates = () => {
       key: 'usage_count',
       align: 'center',
       width: 120,
-      render: (count) => `${count || 0} раз`
+      render: (count) => `${count || 0} раз`,
+      responsive: ['xl']
     },
     {
       title: 'Статус',
@@ -138,22 +142,26 @@ const AgreementTemplates = () => {
         <Switch
           checked={is_active}
           onChange={() => toggleActive(record.id, is_active)}
-          checkedChildren="Активен"
-          unCheckedChildren="Неактивен"
+          checkedChildren="Вкл"
+          unCheckedChildren="Выкл"
+          size="small"
         />
-      )
+      ),
+      responsive: ['lg']
     },
     {
       title: 'Создан',
       dataIndex: 'created_at',
       key: 'created_at',
-      width: 150,
-      render: (date) => new Date(date).toLocaleDateString('ru-RU')
+      width: 120,
+      render: (date) => new Date(date).toLocaleDateString('ru-RU'),
+      responsive: ['xl']
     },
     {
       title: 'Действия',
       key: 'actions',
-      width: 100,
+      width: 80,
+      fixed: 'right',
       render: (_, record) => (
         <Dropdown
           menu={{
@@ -190,7 +198,7 @@ const AgreementTemplates = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="templates-container">
       <Card
         title={
           <Space>
@@ -209,7 +217,7 @@ const AgreementTemplates = () => {
             icon={<PlusOutlined />}
             onClick={() => navigate('/agreements/templates/create')}
           >
-            Создать шаблон
+            <span className="create-template-text">Создать шаблон</span>
           </Button>
         }
       >
@@ -223,17 +231,74 @@ const AgreementTemplates = () => {
           />
         </Space>
 
-        <Table
-          columns={columns}
-          dataSource={filteredTemplates}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            pageSize: 20,
-            showSizeChanger: true,
-            showTotal: (total) => `Всего: ${total}`
-          }}
-        />
+        {/* Таблица для десктопа */}
+        <div className="desktop-table">
+          <Table
+            columns={columns}
+            dataSource={filteredTemplates}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              pageSize: 20,
+              showSizeChanger: true,
+              showTotal: (total) => `Всего: ${total}`
+            }}
+          />
+        </div>
+
+        {/* Карточки для мобильных */}
+        <div className="mobile-cards">
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>Загрузка...</div>
+          ) : filteredTemplates.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+              Шаблоны не найдены
+            </div>
+          ) : (
+            filteredTemplates.map(template => (
+              <Card 
+                key={template.id} 
+                size="small" 
+                className="mobile-template-card"
+                onClick={() => navigate(`/agreements/templates/${template.id}`)}
+              >
+                <div className="mobile-card-header">
+                  <div className="mobile-card-title">{template.name}</div>
+                  <div className="mobile-card-badges">
+                    {getTypeTag(template.type)}
+                    <Tag color={template.is_active ? 'success' : 'default'}>
+                      {template.is_active ? 'Активен' : 'Неактивен'}
+                    </Tag>
+                  </div>
+                </div>
+                
+                <div className="mobile-card-info">
+                  <span>Версия: {template.version}</span>
+                  <span>•</span>
+                  <span>Использован: {template.usage_count || 0} раз</span>
+                </div>
+                
+                <div className="mobile-card-footer">
+                  <div className="mobile-card-date">
+                    {new Date(template.created_at).toLocaleDateString('ru-RU')}
+                  </div>
+                  <Space>
+                    <Button 
+                      type="primary" 
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/agreements/templates/${template.id}/edit`);
+                      }}
+                    >
+                      Редактировать
+                    </Button>
+                  </Space>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
       </Card>
     </div>
   );

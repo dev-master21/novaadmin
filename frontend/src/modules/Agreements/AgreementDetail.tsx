@@ -10,7 +10,10 @@ import {
   message,
   Spin,
   Tabs,
-  Table
+  Table,
+  Drawer,
+  Switch,
+  Tooltip
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -19,12 +22,19 @@ import {
   DownloadOutlined,
   LinkOutlined,
   SaveOutlined,
-  CloseOutlined
+  CloseOutlined,
+  FileTextOutlined,
+  CodeOutlined,
+  MobileOutlined,
+  DesktopOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { agreementsApi, Agreement } from '@/api/agreements.api';
 import { useReactToPrint } from 'react-to-print';
 import DocumentEditor from '@/components/DocumentEditor';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import './AgreementDetail.css';
 
 const AgreementDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,11 +43,33 @@ const AgreementDetail = () => {
   const printRef = useRef<HTMLDivElement>(null);
   const [agreement, setAgreement] = useState<Agreement | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState('document');
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
   const [editedStructure, setEditedStructure] = useState('');
   const [saving, setSaving] = useState(false);
+  const [detailsDrawerVisible, setDetailsDrawerVisible] = useState(false);
+
+  // Режимы просмотра
+  const [viewMode, setViewMode] = useState<'formatted' | 'simple'>('formatted');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Определяем мобильное устройство
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      // По умолчанию для мобильных - упрощенный режим (только если не редактируем)
+      if (mobile && !isEditing) {
+        setViewMode('simple');
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [isEditing]);
 
   useEffect(() => {
     if (id) {
@@ -46,7 +78,6 @@ const AgreementDetail = () => {
   }, [id]);
 
   useEffect(() => {
-    // Проверяем query параметр edit
     const editParam = searchParams.get('edit');
     if (editParam === 'true') {
       setIsEditing(true);
@@ -107,6 +138,10 @@ const AgreementDetail = () => {
     }
   };
 
+  const handleSimpleContentChange = (content: string) => {
+    setEditedContent(content);
+  };
+
   const handleSaveEdit = async () => {
     if (!agreement) return;
     
@@ -138,6 +173,22 @@ const AgreementDetail = () => {
         setEditedStructure(agreement?.structure || '');
       }
     });
+  };
+
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'formatted' ? 'simple' : 'formatted');
+    message.info(viewMode === 'formatted' ? 'Упрощенный режим' : 'Режим с оформлением');
+  };
+
+  const modules = {
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ align: [] }],
+      ['link'],
+      ['clean']
+    ]
   };
 
   if (loading) {
@@ -183,45 +234,97 @@ const AgreementDetail = () => {
       key: 'document',
       label: 'Документ',
       children: (
-        <div style={{ background: '#fff', padding: '24px', borderRadius: '8px' }}>
-          {isEditing ? (
-            <div>
-              <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <Button 
-                  icon={<CloseOutlined />}
-                  onClick={handleCancelEdit}
-                >
-                  Отмена
-                </Button>
-                <Button 
-                  type="primary"
-                  icon={<SaveOutlined />}
-                  onClick={handleSaveEdit}
-                  loading={saving}
-                >
-                  Сохранить изменения
-                </Button>
-              </div>
-              <div style={{ 
-                background: '#fffbe6', 
-                border: '1px solid #ffe58f', 
-                padding: '12px',
-                borderRadius: '4px',
-                marginBottom: '16px'
-              }}>
-                <strong>Режим редактирования:</strong> Кликните на любой текст для редактирования. 
-                Используйте зелёные кнопки для добавления секций, параграфов и списков.
+        <div className="agreement-document-container">
+          {/* Индикатор устройства и переключатель режимов */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '16px',
+            padding: '12px',
+            background: '#1f1f1f',
+            borderRadius: '4px',
+            border: '1px solid #303030',
+            flexWrap: 'wrap',
+            gap: '8px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {isMobile ? <MobileOutlined /> : <DesktopOutlined />}
+              <span style={{ fontSize: '12px', color: '#888' }}>
+                {isMobile ? 'Мобильная версия' : 'Десктопная версия'}
+              </span>
+            </div>
+
+            <Space>
+              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)' }}>
+                {viewMode === 'formatted' ? 'С оформлением' : 'Упрощенный'}
+              </span>
+              <Tooltip title={`Переключить на ${viewMode === 'formatted' ? 'упрощенный' : 'с оформлением'} режим`}>
+                <Switch
+                  checked={viewMode === 'formatted'}
+                  onChange={toggleViewMode}
+                  checkedChildren={<FileTextOutlined />}
+                  unCheckedChildren={<CodeOutlined />}
+                />
+              </Tooltip>
+            </Space>
+          </div>
+
+          {isEditing && (
+            <div style={{ marginBottom: '16px', padding: '12px', background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '4px' }}>
+              <div style={{ fontSize: '14px', color: '#595959' }}>
+                {viewMode === 'formatted' 
+                  ? 'Кликните на любой текст для редактирования. Используйте зелёные кнопки для добавления секций, параграфов и списков.'
+                  : 'Редактируйте текст договора. HTML-разметка поддерживается.'}
               </div>
             </div>
-          ) : null}
+          )}
           
-          <DocumentEditor
-            ref={printRef}
-            agreement={agreement}
-            isEditing={isEditing}
-            onContentChange={handleContentChange}
-            logoUrl="/nova-logo.svg"
-          />
+          {/* РЕЖИМ С ОФОРМЛЕНИЕМ (DocumentEditor) */}
+          {viewMode === 'formatted' && (
+            <div className={`document-editor-wrapper ${isMobile ? 'mobile-zoom' : ''}`}>
+              <DocumentEditor
+                ref={printRef}
+                agreement={agreement}
+                isEditing={isEditing}
+                onContentChange={handleContentChange}
+                logoUrl="/nova-logo.svg"
+              />
+            </div>
+          )}
+
+          {/* Скрытый DocumentEditor для печати (когда показан упрощенный режим) */}
+          {viewMode === 'simple' && (
+            <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '793px' }}>
+              <DocumentEditor
+                ref={printRef}
+                agreement={{ ...agreement, content: editedContent }}
+                isEditing={false}
+                onContentChange={() => {}}
+                logoUrl="/nova-logo.svg"
+              />
+            </div>
+          )}
+
+        {/* УПРОЩЕННЫЙ РЕЖИМ */}
+          {viewMode === 'simple' && (
+            <div className={`agreement-simple-view ${isMobile ? 'mobile-view' : ''}`}>
+              <ReactQuill
+                key={`quill-${isEditing ? 'edit' : 'view'}`}
+                value={editedContent}
+                onChange={isEditing ? handleSimpleContentChange : undefined}
+                readOnly={!isEditing}
+                theme="snow"
+                modules={isEditing ? modules : { toolbar: false }}
+                style={{ 
+                  border: '1px solid #303030',
+                  borderRadius: '4px',
+                  background: '#1f1f1f',
+                  minHeight: isEditing ? '500px' : 'auto'
+                }}
+              />
+            </div>
+          )}
         </div>
       )
     },
@@ -229,10 +332,10 @@ const AgreementDetail = () => {
       key: 'details',
       label: 'Детали',
       children: (
-        <Card>
-          <Descriptions bordered column={2}>
+        <Card className="agreement-details-card">
+          <Descriptions bordered column={{ xs: 1, sm: 1, md: 2 }} size="small">
             <Descriptions.Item label="Номер договора" span={2}>
-              {agreement.agreement_number}
+              <strong>{agreement.agreement_number}</strong>
             </Descriptions.Item>
             <Descriptions.Item label="Тип">
               {getTypeLabel(agreement.type)}
@@ -279,49 +382,33 @@ const AgreementDetail = () => {
       key: 'parties',
       label: 'Стороны',
       children: (
-        <Card>
+        <Card className="agreement-parties-card">
           {agreement.parties && agreement.parties.length > 0 ? (
-            <Table
-              dataSource={agreement.parties}
-              rowKey="id"
-              pagination={false}
-              columns={[
-                {
-                  title: 'Роль',
-                  dataIndex: 'role',
-                  key: 'role',
-                  render: (role) => {
-                    const roles: Record<string, string> = {
-                      landlord: 'Арендодатель',
-                      tenant: 'Арендатор',
-                      agent: 'Агент',
-                      principal: 'Принципал',
-                      seller: 'Продавец',
-                      buyer: 'Покупатель',
-                      party1: 'Сторона 1',
-                      party2: 'Сторона 2',
-                      party3: 'Сторона 3'
-                    };
-                    return roles[role] || role;
-                  }
-                },
-                {
-                  title: 'Имя',
-                  dataIndex: 'name',
-                  key: 'name'
-                },
-                {
-                  title: 'Страна паспорта',
-                  dataIndex: 'passport_country',
-                  key: 'passport_country'
-                },
-                {
-                  title: 'Номер паспорта',
-                  dataIndex: 'passport_number',
-                  key: 'passport_number'
-                }
-              ]}
-            />
+            <div className="parties-list">
+              {agreement.parties.map((party, index) => (
+                <Card 
+                  key={index} 
+                  size="small" 
+                  style={{ marginBottom: '12px' }}
+                  className="party-card"
+                >
+                  <div className="party-info">
+                    <div className="party-role">
+                      <Tag color="blue">{party.role}</Tag>
+                    </div>
+                    <div className="party-details">
+                      <div><strong>{party.name}</strong></div>
+                      <div className="party-passport">
+                        Страна: {party.passport_country}
+                      </div>
+                      <div className="party-passport">
+                        Паспорт: {party.passport_number}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
               Стороны не указаны
@@ -340,9 +427,11 @@ const AgreementDetail = () => {
               dataSource={agreement.signatures}
               rowKey="id"
               pagination={false}
+              size="small"
+              scroll={{ x: 800 }}
               columns={[
                 {
-                  title: 'Имя',
+                  title: 'Подписант',
                   dataIndex: 'signer_name',
                   key: 'signer_name'
                 },
@@ -380,59 +469,111 @@ const AgreementDetail = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card style={{ marginBottom: '16px' }}>
-        <Space style={{ marginBottom: '16px', width: '100%', justifyContent: 'space-between' }}>
-          <Space>
+    <div className="agreement-detail-container">
+      <Card className="agreement-header-card">
+        <div className="agreement-header-content">
+          <div className="agreement-header-left">
             <Button 
               icon={<ArrowLeftOutlined />} 
               onClick={() => navigate('/agreements')}
+              className="back-button"
             >
-              Назад
+              <span className="back-button-text">Назад</span>
             </Button>
-            <h2 style={{ margin: 0 }}>Договор {agreement.agreement_number}</h2>
-            {getStatusTag(agreement.status)}
-          </Space>
+            <div className="agreement-title-section">
+              <h2 className="agreement-title">Договор {agreement.agreement_number}</h2>
+              {getStatusTag(agreement.status)}
+            </div>
+          </div>
           
-          <Space>
-            {!isEditing && (
+          <Space className="agreement-actions" wrap>
+            {!isEditing ? (
               <>
                 <Button 
                   icon={<EditOutlined />}
                   onClick={() => setIsEditing(true)}
+                  className="action-button"
                 >
-                  Редактировать
+                  <span className="action-button-text">Редактировать</span>
                 </Button>
                 <Button 
                   icon={<DownloadOutlined />}
                   onClick={handlePrint}
+                  className="action-button"
                 >
-                  PDF
+                  <span className="action-button-text">PDF</span>
                 </Button>
                 <Button 
                   icon={<LinkOutlined />}
                   onClick={copyPublicLink}
+                  className="action-button"
                 >
-                  Скопировать ссылку
+                  <span className="action-button-text">Ссылка</span>
                 </Button>
                 <Button 
                   danger
                   icon={<DeleteOutlined />}
                   onClick={handleDelete}
+                  className="action-button delete-button"
                 >
-                  Удалить
+                  <span className="action-button-text">Удалить</span>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  onClick={handleSaveEdit}
+                  loading={saving}
+                >
+                  Сохранить
+                </Button>
+                <Button 
+                  icon={<CloseOutlined />}
+                  onClick={handleCancelEdit}
+                >
+                  Отмена
                 </Button>
               </>
             )}
           </Space>
-        </Space>
+        </div>
       </Card>
 
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         items={tabItems}
+        className="agreement-tabs"
       />
+
+      <Drawer
+        title="Детальная информация"
+        placement="bottom"
+        onClose={() => setDetailsDrawerVisible(false)}
+        open={detailsDrawerVisible}
+        height="80%"
+        className="details-drawer"
+      >
+        <Descriptions column={1} size="small" bordered>
+          <Descriptions.Item label="Номер">{agreement.agreement_number}</Descriptions.Item>
+          <Descriptions.Item label="Тип">{getTypeLabel(agreement.type)}</Descriptions.Item>
+          <Descriptions.Item label="Статус">{getStatusTag(agreement.status)}</Descriptions.Item>
+          {agreement.property_name && (
+            <Descriptions.Item label="Объект">
+              {agreement.property_name} ({agreement.property_number})
+            </Descriptions.Item>
+          )}
+          {agreement.description && (
+            <Descriptions.Item label="Описание">{agreement.description}</Descriptions.Item>
+          )}
+          <Descriptions.Item label="Город">{agreement.city}</Descriptions.Item>
+          <Descriptions.Item label="Создан">
+            {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
+          </Descriptions.Item>
+        </Descriptions>
+      </Drawer>
     </div>
   );
 };

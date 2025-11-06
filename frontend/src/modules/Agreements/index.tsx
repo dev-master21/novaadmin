@@ -29,6 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import { agreementsApi, Agreement } from '@/api/agreements.api';
 import CreateAgreementModal from './components/CreateAgreementModal';
 import type { ColumnsType } from 'antd/es/table';
+import './Agreements.css';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -47,7 +48,6 @@ const Agreements = () => {
     total: 0
   });
 
-  // Статистика
   const stats = {
     total: agreements.length,
     draft: agreements.filter(a => a.status === 'draft').length,
@@ -104,16 +104,21 @@ const Agreements = () => {
     });
   };
 
+  const copyPublicLink = (link: string) => {
+    navigator.clipboard.writeText(link);
+    message.success('Ссылка скопирована в буфер обмена');
+  };
+
   const getStatusTag = (status: string) => {
     const statusConfig: Record<string, { color: string; text: string }> = {
       draft: { color: 'default', text: 'Черновик' },
-      pending_signatures: { color: 'processing', text: 'Ожидает подписей' },
+      pending_signatures: { color: 'processing', text: 'На подписи' },
       signed: { color: 'success', text: 'Подписан' },
-      active: { color: 'cyan', text: 'Активен' },
+      active: { color: 'success', text: 'Активен' },
       expired: { color: 'warning', text: 'Истёк' },
       cancelled: { color: 'error', text: 'Отменён' }
     };
-
+    
     const config = statusConfig[status] || { color: 'default', text: status };
     return <Tag color={config.color}>{config.text}</Tag>;
   };
@@ -121,43 +126,45 @@ const Agreements = () => {
   const getTypeTag = (type: string) => {
     const typeConfig: Record<string, { color: string; text: string }> = {
       rent: { color: 'blue', text: 'Аренда' },
-      sale: { color: 'green', text: 'Купля-продажа' },
+      sale: { color: 'green', text: 'Продажа' },
       bilateral: { color: 'purple', text: 'Двухсторонний' },
       trilateral: { color: 'orange', text: 'Трёхсторонний' },
       agency: { color: 'pink', text: 'Агентский' },
       transfer_act: { color: 'cyan', text: 'Акт передачи' }
     };
-
+    
     const config = typeConfig[type] || { color: 'default', text: type };
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
   const columns: ColumnsType<Agreement> = [
     {
-      title: 'Номер договора',
+      title: 'Номер',
       dataIndex: 'agreement_number',
       key: 'agreement_number',
-      fixed: 'left',
       width: 200,
       render: (text, record) => (
         <Button type="link" onClick={() => navigate(`/agreements/${record.id}`)}>
           {text}
         </Button>
-      )
+      ),
+      responsive: ['md']
     },
     {
       title: 'Тип',
       dataIndex: 'type',
       key: 'type',
       width: 150,
-      render: (type) => getTypeTag(type)
+      render: (type) => getTypeTag(type),
+      responsive: ['lg']
     },
     {
       title: 'Статус',
       dataIndex: 'status',
       key: 'status',
-      width: 150,
-      render: (status) => getStatusTag(status)
+      width: 140,
+      render: (status) => getStatusTag(status),
+      responsive: ['md']
     },
     {
       title: 'Объект',
@@ -172,14 +179,16 @@ const Agreements = () => {
         ) : (
           <span style={{ color: '#999' }}>Не указан</span>
         )
-      )
+      ),
+      responsive: ['xl']
     },
     {
       title: 'Описание',
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
-      render: (text) => text || '-'
+      render: (text) => text || '-',
+      responsive: ['xxl']
     },
     {
       title: 'Подписи',
@@ -190,20 +199,16 @@ const Agreements = () => {
         <span>
           {record.signed_count || 0} / {record.signature_count || 0}
         </span>
-      )
+      ),
+      responsive: ['lg']
     },
     {
       title: 'Создан',
       dataIndex: 'created_at',
       key: 'created_at',
-      width: 180,
-      render: (date) => new Date(date).toLocaleDateString('ru-RU')
-    },
-    {
-      title: 'Создал',
-      dataIndex: 'created_by_name',
-      key: 'created_by_name',
-      width: 120
+      width: 120,
+      render: (date) => new Date(date).toLocaleDateString('ru-RU'),
+      responsive: ['xl']
     },
     {
       title: 'Действия',
@@ -230,10 +235,7 @@ const Agreements = () => {
                 key: 'link',
                 icon: <LinkOutlined />,
                 label: 'Публичная ссылка',
-                onClick: () => {
-                  navigator.clipboard.writeText(record.public_link);
-                  message.success('Ссылка скопирована');
-                }
+                onClick: () => copyPublicLink(record.public_link)
               },
               {
                 type: 'divider'
@@ -255,37 +257,37 @@ const Agreements = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="agreements-container">
       {/* Статистика */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6} lg={4}>
+      <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
+        <Col xs={12} sm={6} md={4}>
           <Card>
             <Statistic
               title="Всего"
               value={stats.total}
-              prefix={<FileTextOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6} lg={4}>
-          <Card>
-            <Statistic
-              title="Черновиков"
-              value={stats.draft}
-              valueStyle={{ color: '#999' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6} lg={4}>
-          <Card>
-            <Statistic
-              title="На подписи"
-              value={stats.pending}
               valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6} lg={4}>
+        <Col xs={12} sm={6} md={4}>
+          <Card>
+            <Statistic
+              title="Черновики"
+              value={stats.draft}
+              valueStyle={{ color: '#8c8c8c' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6} md={4}>
+          <Card>
+            <Statistic
+              title="На подписи"
+              value={stats.pending}
+              valueStyle={{ color: '#faad14' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6} md={4}>
           <Card>
             <Statistic
               title="Подписано"
@@ -294,7 +296,7 @@ const Agreements = () => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6} lg={4}>
+        <Col xs={12} sm={6} md={4}>
           <Card>
             <Statistic
               title="Активных"
@@ -314,10 +316,11 @@ const Agreements = () => {
           </Space>
         }
         extra={
-          <Space>
+          <Space wrap className="card-extra-actions">
             <Button
               type="link"
               onClick={() => navigate('/agreements/templates')}
+              className="templates-link"
             >
               Шаблоны
             </Button>
@@ -326,7 +329,7 @@ const Agreements = () => {
               icon={<PlusOutlined />}
               onClick={() => setCreateModalVisible(true)}
             >
-              Создать договор
+              <span className="create-button-text">Создать договор</span>
             </Button>
           </Space>
         }
@@ -375,22 +378,97 @@ const Agreements = () => {
           </Row>
         </Space>
 
-        {/* Таблица */}
-        <Table
-          columns={columns}
-          dataSource={agreements}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            ...pagination,
-            showSizeChanger: true,
-            showTotal: (total) => `Всего: ${total}`,
-            onChange: (page, pageSize) => {
-              setPagination(prev => ({ ...prev, current: page, pageSize }));
-            }
-          }}
-          scroll={{ x: 1200 }}
-        />
+        {/* Таблица для десктопа */}
+        <div className="desktop-table">
+          <Table
+            columns={columns}
+            dataSource={agreements}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              ...pagination,
+              showSizeChanger: true,
+              showTotal: (total) => `Всего: ${total}`,
+              onChange: (page, pageSize) => {
+                setPagination(prev => ({ ...prev, current: page, pageSize }));
+              }
+            }}
+            scroll={{ x: 1200 }}
+          />
+        </div>
+
+        {/* Карточки для мобильных */}
+        <div className="mobile-cards">
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>Загрузка...</div>
+          ) : agreements.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+              Договоры не найдены
+            </div>
+          ) : (
+            <>
+              {agreements.map(agreement => (
+                <Card 
+                  key={agreement.id} 
+                  size="small" 
+                  className="mobile-agreement-card"
+                  onClick={() => navigate(`/agreements/${agreement.id}`)}
+                >
+                  <div className="mobile-card-header">
+                    <div className="mobile-card-number">{agreement.agreement_number}</div>
+                    <div className="mobile-card-badges">
+                      {getTypeTag(agreement.type)}
+                      {getStatusTag(agreement.status)}
+                    </div>
+                  </div>
+                  
+                  {agreement.property_name && (
+                    <div className="mobile-card-property">
+                      <strong>Объект:</strong> {agreement.property_name}
+                    </div>
+                  )}
+                  
+                  <div className="mobile-card-footer">
+                    <div className="mobile-card-date">
+                      {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
+                    </div>
+                    <Button 
+                      type="primary" 
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/agreements/${agreement.id}`);
+                      }}
+                    >
+                      Посмотреть
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+              
+              {/* Пагинация для мобильных */}
+              {pagination.total > pagination.pageSize && (
+                <div className="mobile-pagination">
+                  <Button
+                    disabled={pagination.current === 1}
+                    onClick={() => setPagination(prev => ({ ...prev, current: prev.current - 1 }))}
+                  >
+                    Назад
+                  </Button>
+                  <span className="mobile-pagination-info">
+                    Страница {pagination.current} из {Math.ceil(pagination.total / pagination.pageSize)}
+                  </span>
+                  <Button
+                    disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+                    onClick={() => setPagination(prev => ({ ...prev, current: prev.current + 1 }))}
+                  >
+                    Вперёд
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </Card>
 
       {/* Модальное окно создания */}

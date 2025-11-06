@@ -51,6 +51,13 @@ export interface AgreementParty {
   name: string;
   passport_country: string;
   passport_number: string;
+  is_company?: boolean;
+  company_name?: string;
+  company_address?: string;
+  company_tax_id?: string;
+  director_name?: string;
+  director_passport?: string;
+  director_country?: string;
   created_at?: string;
 }
 
@@ -79,6 +86,16 @@ export interface CreateAgreementDTO {
   date_to?: string;
   city?: string;
   parties?: AgreementParty[];
+  rent_amount_monthly?: number;
+  rent_amount_total?: number;
+  deposit_amount?: number;
+  utilities_included?: string;
+  bank_name?: string;
+  bank_account_name?: string;
+  bank_account_number?: string;
+  property_address_override?: string;
+  property_name_manual?: string;
+  property_number_manual?: string;
 }
 
 export interface UpdateAgreementDTO {
@@ -130,6 +147,10 @@ export const agreementsApi = {
       data
     ),
 
+  // === ОБЪЕКТЫ ===
+  getProperties: (search?: string) =>
+    api.get<{ success: boolean; data: any }>('/agreements/properties', { params: { search } }),
+
   // === ШАБЛОНЫ ===
   getTemplates: (params?: { type?: string; active?: boolean }) =>
     api.get<{ success: boolean; data: AgreementTemplate[] }>('/agreements/templates/list', { params }),
@@ -157,5 +178,5 @@ export const agreementsApi = {
     ),
 
   deleteSignature: (id: number) =>
-    api.delete<{ success: boolean; message: string }>(`/agreements/signatures/${id}`),
+    api.delete<{ success: boolean; message: string }>(`/agreements/signatures/${id}`)
 };

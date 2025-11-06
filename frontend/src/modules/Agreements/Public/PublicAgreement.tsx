@@ -1,17 +1,28 @@
 // frontend/src/modules/Agreements/Public/PublicAgreement.tsx
 import { useState, useEffect, useRef } from 'react';
-import { Card, Button, Spin, message, Tag, Descriptions, QRCode } from 'antd';
-import { DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useParams } from 'react-router-dom';
+import {
+  Card,
+  Button,
+  Descriptions,
+  Tag,
+  Spin,
+  message,
+  QRCode
+} from 'antd';
+import {
+  DownloadOutlined
+} from '@ant-design/icons';
 import { agreementsApi, Agreement } from '@/api/agreements.api';
 import { useReactToPrint } from 'react-to-print';
+import DocumentEditor from '@/components/DocumentEditor';
 import './PublicAgreement.css';
 
 const PublicAgreement = () => {
   const { link } = useParams<{ link: string }>();
+  const printRef = useRef<HTMLDivElement>(null);
   const [agreement, setAgreement] = useState<Agreement | null>(null);
   const [loading, setLoading] = useState(true);
-  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (link) {
@@ -32,29 +43,23 @@ const PublicAgreement = () => {
   };
 
   const handlePrint = useReactToPrint({
-    contentRef: printRef, // ИСПРАВЛЕНО: используем contentRef вместо content
+    contentRef: printRef,
     documentTitle: agreement?.agreement_number || 'agreement'
   });
 
   if (loading) {
     return (
-      <div className="public-agreement-container">
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" />
-          <p style={{ marginTop: 16, color: '#999' }}>Загрузка договора...</p>
-        </div>
+      <div className="public-agreement-loading">
+        <Spin size="large" />
       </div>
     );
   }
 
   if (!agreement) {
     return (
-      <div className="public-agreement-container">
-        <Card style={{ textAlign: 'center', padding: '50px 0' }}>
-          <FileTextOutlined style={{ fontSize: 64, color: '#999' }} />
-          <h2>Договор не найден</h2>
-          <p style={{ color: '#999' }}>Проверьте правильность ссылки</p>
-        </Card>
+      <div className="public-agreement-not-found">
+        <h2>Договор не найден</h2>
+        <p>Проверьте правильность ссылки</p>
       </div>
     );
   }
@@ -64,25 +69,22 @@ const PublicAgreement = () => {
       draft: { color: 'default', text: 'Черновик' },
       pending_signatures: { color: 'processing', text: 'Ожидает подписей' },
       signed: { color: 'success', text: 'Подписан' },
-      active: { color: 'cyan', text: 'Активен' },
+      active: { color: 'success', text: 'Активен' },
       expired: { color: 'warning', text: 'Истёк' },
       cancelled: { color: 'error', text: 'Отменён' }
     };
-
+    
     const config = statusConfig[status] || { color: 'default', text: status };
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
   return (
     <div className="public-agreement-container">
-      {/* Заголовок */}
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 24 }}>{agreement.agreement_number}</h1>
-            <div style={{ marginTop: 8 }}>
-              {getStatusTag(agreement.status)}
-            </div>
+      <Card className="public-header-card">
+        <div className="public-header-content">
+          <div className="public-header-info">
+            <h1 className="public-agreement-title">Договор {agreement.agreement_number}</h1>
+            {getStatusTag(agreement.status)}
           </div>
           <Button
             type="primary"
@@ -95,71 +97,82 @@ const PublicAgreement = () => {
         </div>
       </Card>
 
-      {/* Информация */}
-      <Card title="Информация о договоре" style={{ marginBottom: 16 }}>
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label="Номер">
-            {agreement.agreement_number}
+      {/* Информация о договоре */}
+      <Card title="Информация о договоре" className="public-info-card">
+        <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+          <Descriptions.Item label="Номер договора" span={2}>
+            <strong>{agreement.agreement_number}</strong>
           </Descriptions.Item>
           <Descriptions.Item label="Город">
             {agreement.city}
           </Descriptions.Item>
+          <Descriptions.Item label="Статус">
+            {getStatusTag(agreement.status)}
+          </Descriptions.Item>
           {agreement.property_name && (
-            <>
-              <Descriptions.Item label="Объект недвижимости" span={2}>
-                <div>
-                  {agreement.property_name}
-                  <div style={{ fontSize: '12px', color: '#999' }}>
-                    {agreement.property_number}
-                  </div>
-                </div>
-              </Descriptions.Item>
-            </>
-          )}
-          {agreement.date_from && (
-            <Descriptions.Item label="Период">
-              {new Date(agreement.date_from).toLocaleDateString('ru-RU')}
-              {' - '}
-              {agreement.date_to ? new Date(agreement.date_to).toLocaleDateString('ru-RU') : '...'}
+            <Descriptions.Item label="Объект недвижимости" span={2}>
+              {agreement.property_name} ({agreement.property_number})
             </Descriptions.Item>
           )}
-          <Descriptions.Item label="Создан">
+          {agreement.description && (
+            <Descriptions.Item label="Описание" span={2}>
+              {agreement.description}
+            </Descriptions.Item>
+          )}
+          {agreement.date_from && (
+            <Descriptions.Item label="Дата начала">
+              {new Date(agreement.date_from).toLocaleDateString('ru-RU')}
+            </Descriptions.Item>
+          )}
+          {agreement.date_to && (
+            <Descriptions.Item label="Дата окончания">
+              {new Date(agreement.date_to).toLocaleDateString('ru-RU')}
+            </Descriptions.Item>
+          )}
+          <Descriptions.Item label="Дата создания" span={2}>
             {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
           </Descriptions.Item>
         </Descriptions>
 
         {agreement.qr_code_path && (
-          <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <div className="qr-code-section">
             <QRCode value={agreement.public_link} size={150} />
-            <p style={{ marginTop: 8, color: '#999', fontSize: '12px' }}>
-              Сканируйте для быстрого доступа
-            </p>
+            <p className="qr-code-hint">Сканируйте для быстрого доступа</p>
           </div>
         )}
       </Card>
 
       {/* Стороны */}
       {agreement.parties && agreement.parties.length > 0 && (
-        <Card title="Стороны договора" style={{ marginBottom: 16 }}>
+        <Card title="Стороны договора" className="public-parties-card">
           {agreement.parties.map((party, index) => (
-            <div key={index} style={{ marginBottom: 16 }}>
-              <strong>{party.role}:</strong> {party.name}
-              <br />
-              <span style={{ fontSize: '12px', color: '#666' }}>
-                Паспорт: {party.passport_country}, {party.passport_number}
-              </span>
-            </div>
+            <Card 
+              key={index} 
+              size="small" 
+              className="party-info-card"
+            >
+              <div className="party-role">
+                <Tag color="blue">{party.role}</Tag>
+              </div>
+              <div className="party-details">
+                <div className="party-name"><strong>{party.name}</strong></div>
+                <div className="party-passport">
+                  Паспорт: {party.passport_country}, {party.passport_number}
+                </div>
+              </div>
+            </Card>
           ))}
         </Card>
       )}
 
-      {/* Подписи */}
+      {/* Статус подписей */}
       {agreement.signatures && agreement.signatures.length > 0 && (
-        <Card title="Статус подписей" style={{ marginBottom: 16 }}>
+        <Card title="Статус подписей" className="public-signatures-card">
           {agreement.signatures.map((signature, index) => (
-            <div key={index} style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
-              <div>
-                <strong>{signature.signer_name}</strong> ({signature.signer_role})
+            <div key={index} className="signature-item">
+              <div className="signature-info">
+                <strong>{signature.signer_name}</strong>
+                <span className="signature-role">({signature.signer_role})</span>
               </div>
               <Tag color={signature.is_signed ? 'success' : 'default'}>
                 {signature.is_signed ? 'Подписано' : 'Ожидает подписи'}
@@ -170,9 +183,14 @@ const PublicAgreement = () => {
       )}
 
       {/* Документ */}
-      <Card title="Документ">
-        <div ref={printRef} className="agreement-document">
-          <div dangerouslySetInnerHTML={{ __html: agreement.content }} />
+      <Card title="Документ" className="public-document-card">
+        <div className="document-wrapper">
+          <DocumentEditor
+            ref={printRef}
+            agreement={agreement}
+            isEditing={false}
+            logoUrl="/nova-logo.svg"
+          />
         </div>
       </Card>
     </div>

@@ -1,0 +1,183 @@
+/* frontend/src/modules/Agreements/Agreements.css */
+.agreements-container {
+  padding: 24px;
+}
+
+.card-extra-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.desktop-table {
+  display: block;
+}
+
+.mobile-cards {
+  display: none;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .agreements-container {
+    padding: 12px;
+  }
+
+  .desktop-table {
+    display: none;
+  }
+
+  .mobile-cards {
+    display: block;
+  }
+
+  .mobile-agreement-card {
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 1px solid #d9d9d9;
+  }
+
+  .mobile-agreement-card:hover {
+    border-color: #40a9ff;
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+  }
+
+  .mobile-agreement-card .ant-card-body {
+    padding: 12px;
+  }
+
+  .mobile-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .mobile-card-number {
+    font-size: 13px;
+    font-weight: 600;
+    color: #262626;
+    word-break: break-all;
+  }
+
+  .mobile-card-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .mobile-card-badges .ant-tag {
+    margin: 0;
+    font-size: 11px;
+    padding: 0 6px;
+  }
+
+  .mobile-card-property {
+    font-size: 12px;
+    color: #595959;
+    margin-bottom: 8px;
+  }
+
+  .mobile-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .mobile-card-date {
+    font-size: 11px;
+    color: #8c8c8c;
+  }
+
+  .mobile-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding: 12px;
+    background: #fafafa;
+    border-radius: 4px;
+  }
+
+  .mobile-pagination-info {
+    font-size: 12px;
+    color: #595959;
+  }
+
+  /* Скрываем текст на маленьких кнопках */
+  .create-button-text {
+    display: none;
+  }
+
+  .templates-link {
+    padding: 4px 8px;
+    font-size: 13px;
+  }
+
+  /* Статистика на мобильных */
+  .agreements-container .ant-statistic-title {
+    font-size: 12px;
+  }
+
+  .agreements-container .ant-statistic-content {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .agreements-container {
+    padding: 8px;
+  }
+
+  .mobile-agreement-card {
+    margin-bottom: 8px;
+  }
+
+  .mobile-agreement-card .ant-card-body {
+    padding: 8px;
+  }
+
+  .mobile-card-number {
+    font-size: 12px;
+  }
+
+  .mobile-card-badges .ant-tag {
+    font-size: 10px;
+    padding: 0 4px;
+  }
+
+  .mobile-card-property {
+    font-size: 11px;
+  }
+
+  /* Статистика - уменьшаем отступы */
+  .agreements-container .ant-col {
+    padding: 4px !important;
+  }
+
+  .agreements-container .ant-card {
+    margin-bottom: 0;
+  }
+
+  .agreements-container .ant-card-body {
+    padding: 8px;
+  }
+
+  .agreements-container .ant-statistic-title {
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+
+  .agreements-container .ant-statistic-content {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 769px) {
+  .create-button-text {
+    display: inline;
+  }
+}

@@ -12,11 +12,12 @@ import RolesList from '@/modules/Roles/RolesList';
 import RoleForm from '@/modules/Roles/RoleForm';
 import FileManager from '@/modules/FileManager/FileManager';
 
-// ДОБАВЛЕНО: Импорты для модуля договоров
+// Модуль договоров
 import Agreements from '@/modules/Agreements';
 import AgreementDetail from '@/modules/Agreements/AgreementDetail';
 import AgreementTemplates from '@/modules/Agreements/Templates';
 import CreateTemplate from '@/modules/Agreements/Templates/CreateTemplate';
+import TemplateDetail from '@/modules/Agreements/Templates/TemplateDetail';
 import PublicAgreement from '@/modules/Agreements/Public/PublicAgreement';
 import SignAgreement from '@/modules/Agreements/Public/SignAgreement';
 
@@ -44,17 +45,15 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Public routes */}
+      {/* Публичные роуты */}
       <Route
         path="/login"
         element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
       />
-
-      {/* ДОБАВЛЕНО: Публичные роуты для договоров (без авторизации) */}
       <Route path="/agreement/:link" element={<PublicAgreement />} />
       <Route path="/sign/:link" element={<SignAgreement />} />
 
-      {/* Protected routes */}
+      {/* Защищенные роуты */}
       <Route
         path="/"
         element={
@@ -65,7 +64,7 @@ const AppRoutes = () => {
       >
         <Route index element={<Dashboard />} />
 
-        {/* Properties */}
+        {/* Объекты */}
         <Route path="properties">
           <Route
             index
@@ -93,9 +92,8 @@ const AppRoutes = () => {
           />
         </Route>
 
-        {/* ДОБАВЛЕНО: Agreements (Договоры) */}
+        {/* Договоры */}
         <Route path="agreements">
-          {/* Список договоров */}
           <Route
             index
             element={
@@ -105,7 +103,6 @@ const AppRoutes = () => {
             }
           />
           
-          {/* Детали договора */}
           <Route
             path=":id"
             element={
@@ -117,7 +114,6 @@ const AppRoutes = () => {
 
           {/* Шаблоны договоров */}
           <Route path="templates">
-            {/* Список шаблонов */}
             <Route
               index
               element={
@@ -127,7 +123,6 @@ const AppRoutes = () => {
               }
             />
             
-            {/* Создание шаблона */}
             <Route
               path="create"
               element={
@@ -137,7 +132,6 @@ const AppRoutes = () => {
               }
             />
             
-            {/* Редактирование шаблона */}
             <Route
               path=":id/edit"
               element={
@@ -147,19 +141,18 @@ const AppRoutes = () => {
               }
             />
             
-            {/* Просмотр шаблона */}
             <Route
-              path=":id"
+              path=":id/view"
               element={
                 <ProtectedRoute permission="agreements.manage_templates">
-                  <AgreementDetail />
+                  <TemplateDetail />
                 </ProtectedRoute>
               }
             />
           </Route>
         </Route>
 
-        {/* File Manager */}
+        {/* Файловый менеджер */}
         <Route path="file-manager">
           <Route
             index
@@ -171,7 +164,7 @@ const AppRoutes = () => {
           />
         </Route>
 
-        {/* Users */}
+        {/* Пользователи */}
         <Route path="users">
           <Route
             index
@@ -199,7 +192,7 @@ const AppRoutes = () => {
           />
         </Route>
 
-        {/* Roles */}
+        {/* Роли */}
         <Route path="roles">
           <Route
             index
