@@ -222,8 +222,24 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         );
       }
 
+
+    // Получаем дополнительные данные из запроса
+      const {
+        rent_amount_monthly,
+        rent_amount_total,
+        deposit_amount,
+        utilities_included,
+        bank_name,
+        bank_account_name,
+        bank_account_number,
+        property_address_override,
+        property_name_manual,
+        property_number_manual
+      } = req.body;
+
       // Подготавливаем переменные для замены в шаблоне
       const templateVariables: any = {
+        contract_number: agreement_number,
         agreement_number,
         date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }),
         city: city || 'Phuket',
@@ -231,22 +247,88 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         date_to: date_to ? new Date(date_to).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
       };
 
+      // Добавляем финансовые данные
+      if (rent_amount_monthly) templateVariables.rent_amount = rent_amount_monthly;
+      if (rent_amount_total) templateVariables.rent_amount_total = rent_amount_total;
+      if (deposit_amount) templateVariables.deposit_amount = deposit_amount;
+      if (utilities_included) templateVariables.utilities_included = utilities_included;
+      
+      // Добавляем банковские данные
+      if (bank_name) templateVariables.bank_name = bank_name;
+      if (bank_account_name) templateVariables.bank_account_name = bank_account_name;
+      if (bank_account_number) templateVariables.bank_account_number = bank_account_number;
+
       // Добавляем данные об объекте
       if (propertyData) {
-        templateVariables.property_name = propertyData.property_name || '';
+        const propertyTranslation = await db.queryOne(
+          'SELECT property_name FROM property_translations WHERE property_id = ? AND language_code = ?',
+          [propertyData.id, 'en']
+        );
+        
+        templateVariables.property_name = propertyTranslation?.property_name || propertyData.property_number || '';
         templateVariables.property_number = propertyData.property_number || '';
-        templateVariables.property_address = propertyData.address || '';
+        templateVariables.property_address = property_address_override || propertyData.address || '';
+      } else {
+        // Если объект не выбран, но адрес указан вручную
+        if (property_address_override) {
+          templateVariables.property_address = property_address_override;
+        }
       }
 
-      // Добавляем данные о сторонах
+      // Добавляем данные о сторонах с поддержкой всех ролей
       if (parties && Array.isArray(parties)) {
+        // Счетчики для компаний и свидетелей
+        let companyCount = 1;
+        let witnessCount = 1;
+
         parties.forEach((party: any) => {
-          const role = party.role.toLowerCase();
-          templateVariables[`${role}_name`] = party.name;
-          templateVariables[`${role}_country`] = party.passport_country;
-          templateVariables[`${role}_passport`] = party.passport_number;
-          templateVariables[`${role}_passport_number`] = party.passport_number;
+          const role = party.role.toLowerCase().replace(/[^a-z]/g, '');
+          
+          if (party.is_company) {
+            // Для компаний
+            const companyPrefix = `company${companyCount}`;
+            templateVariables[`${companyPrefix}_name`] = party.company_name || '';
+            templateVariables[`${companyPrefix}_address`] = party.company_address || '';
+            templateVariables[`${companyPrefix}_tax_id`] = party.company_tax_id || '';
+            templateVariables[`${companyPrefix}_director_name`] = party.director_name || '';
+            templateVariables[`${companyPrefix}_director_passport`] = party.director_passport || '';
+            templateVariables[`${companyPrefix}_director_country`] = party.director_country || '';
+            companyCount++;
+          } else if (role === 'witness') {
+            // Для свидетелей (поддержка до 5 свидетелей)
+            const witnessPrefix = witnessCount === 1 ? 'witness' : `witness${witnessCount}`;
+            templateVariables[`${witnessPrefix}_name`] = party.name || '';
+            templateVariables[`${witnessPrefix}_country`] = party.passport_country || '';
+            templateVariables[`${witnessPrefix}_passport`] = party.passport_number || '';
+            witnessCount++;
+          } else {
+            // Для обычных сторон - добавляем оба варианта для совместимости
+            templateVariables[`${role}_name`] = party.name || '';
+            templateVariables[`${role}_country`] = party.passport_country || '';
+            templateVariables[`${role}_passport`] = party.passport_number || '';
+            templateVariables[`${role}_passport_number`] = party.passport_number || '';
+          }
         });
+      }
+
+      // Обработка ручного ввода объекта
+      if (property_name_manual) {
+        templateVariables.property_name = property_name_manual;
+      }
+      if (property_number_manual) {
+        templateVariables.property_number = property_number_manual;
+      }
+      
+      // Форматирование финансовых данных с разделителями
+      if (rent_amount_monthly) {
+        templateVariables.rent_amount = rent_amount_monthly.toLocaleString('en-US') + ' THB';
+        templateVariables.rent_amount_monthly = rent_amount_monthly.toLocaleString('en-US') + ' THB';
+      }
+      if (rent_amount_total) {
+        templateVariables.rent_amount_total = rent_amount_total.toLocaleString('en-US') + ' THB';
+      }
+      if (deposit_amount) {
+        templateVariables.deposit_amount = deposit_amount.toLocaleString('en-US') + ' THB';
       }
 
       // Заменяем переменные в контенте
@@ -264,13 +346,16 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         }
       }
 
-      // Создаем договор
+        // Создаем договор
       const result = await connection.query(`
         INSERT INTO agreements (
           agreement_number, template_id, property_id, type,
           content, structure, description, date_from, date_to,
-          status, public_link, created_by, city
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          status, public_link, created_by, city,
+          rent_amount_monthly, rent_amount_total, deposit_amount,
+          utilities_included, bank_name, bank_account_name, bank_account_number,
+          property_address_override
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         agreement_number,
         template_id,
@@ -284,7 +369,15 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         'draft',
         public_link,
         userId,
-        city || 'Phuket'
+        city || 'Phuket',
+        rent_amount_monthly || null,
+        rent_amount_total || null,
+        deposit_amount || null,
+        utilities_included || null,
+        bank_name || null,
+        bank_account_name || null,
+        bank_account_number || null,
+        property_address_override || null
       ]);
 
       const agreementId = (result as any)[0].insertId;
@@ -294,14 +387,25 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         for (const party of parties) {
           await connection.query(`
             INSERT INTO agreement_parties (
-              agreement_id, role, name, passport_country, passport_number
-            ) VALUES (?, ?, ?, ?, ?)
+              agreement_id, role, name, passport_country, passport_number,
+              is_company, company_name, company_address, company_tax_id,
+              director_name, director_passport, director_country,
+              document_path
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
             agreementId,
             party.role,
-            party.name,
-            party.passport_country,
-            party.passport_number
+            party.is_company ? null : (party.name || null),
+            party.is_company ? null : (party.passport_country || null),
+            party.is_company ? null : (party.passport_number || null),
+            party.is_company ? 1 : 0,
+            party.is_company ? (party.company_name || null) : null,
+            party.is_company ? (party.company_address || null) : null,
+            party.is_company ? (party.company_tax_id || null) : null,
+            party.is_company ? (party.director_name || null) : null,
+            party.is_company ? (party.director_passport || null) : null,
+            party.is_company ? (party.director_country || null) : null,
+            party.document_path || null
           ]);
         }
       }
@@ -649,6 +753,172 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     } catch (error) {
       logger.error('QR code generation error:', error);
       throw error;
+    }
+  }
+  /**
+   * Получить список объектов для выбора
+   * GET /api/agreements/properties
+   */
+  async getProperties(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { search } = req.query;
+
+      let query = `
+        SELECT 
+          p.id,
+          p.property_number,
+          p.complex_name,
+          p.address,
+          pt.property_name,
+          p.deal_type,
+          p.property_type
+        FROM properties p
+        LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'en'
+        WHERE p.deleted_at IS NULL
+      `;
+
+      const queryParams: any[] = [];
+
+      if (search) {
+        query += ` AND (pt.property_name LIKE ? OR p.property_number LIKE ? OR p.complex_name LIKE ? OR p.address LIKE ?)`;
+        queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+      }
+
+      query += ` ORDER BY p.complex_name, p.property_number`;
+
+      const properties = await db.query(query, queryParams);
+
+      // Группируем по комплексам
+      const complexes: any = {};
+      const standalone: any[] = [];
+
+      properties.forEach((prop: any) => {
+        if (prop.complex_name && prop.complex_name.trim() !== '') {
+          if (!complexes[prop.complex_name]) {
+            complexes[prop.complex_name] = [];
+          }
+          complexes[prop.complex_name].push(prop);
+        } else {
+          standalone.push(prop);
+        }
+      });
+
+      res.json({
+        success: true,
+        data: {
+          complexes,
+          standalone,
+          all: properties,
+          total: properties.length,
+          complexCount: Object.keys(complexes).length,
+          standaloneCount: standalone.length
+        }
+      });
+    } catch (error) {
+      logger.error('Get properties error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка получения объектов'
+      });
+    }
+  }
+  /**
+   * Загрузить документ стороны
+   * POST /api/agreements/parties/:partyId/document
+   */
+  async uploadPartyDocument(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { partyId } = req.params;
+
+      if (!req.file) {
+        res.status(400).json({
+          success: false,
+          message: 'Файл не загружен'
+        });
+        return;
+      }
+
+      // Проверяем существование стороны
+      const party = await db.queryOne('SELECT * FROM agreement_parties WHERE id = ?', [partyId]);
+
+      if (!party) {
+        res.status(404).json({
+          success: false,
+          message: 'Сторона не найдена'
+        });
+        return;
+      }
+
+      // Сохраняем путь к файлу
+      const documentPath = `/uploads/party-documents/${req.file.filename}`;
+
+      await db.query(
+        'UPDATE agreement_parties SET document_path = ?, document_uploaded_at = NOW() WHERE id = ?',
+        [documentPath, partyId]
+      );
+
+      logger.info(`Party document uploaded: ${partyId}`);
+
+      res.json({
+        success: true,
+        message: 'Документ успешно загружен',
+        data: { document_path: documentPath }
+      });
+    } catch (error) {
+      logger.error('Upload party document error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка загрузки документа'
+      });
+    }
+  }
+
+  /**
+   * Удалить документ стороны
+   * DELETE /api/agreements/parties/:partyId/document
+   */
+  async deletePartyDocument(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { partyId } = req.params;
+
+      const party = await db.queryOne<any>('SELECT * FROM agreement_parties WHERE id = ?', [partyId]);
+
+      if (!party) {
+        res.status(404).json({
+          success: false,
+          message: 'Сторона не найдена'
+        });
+        return;
+      }
+
+      // Удаляем файл с диска
+      if (party.document_path) {
+        const filePath = path.join(__dirname, '../../public', party.document_path);
+        try {
+          await fs.unlink(filePath);
+        } catch (err) {
+          logger.warn(`Failed to delete file: ${filePath}`, err);
+        }
+      }
+
+      // Обновляем запись в БД
+      await db.query(
+        'UPDATE agreement_parties SET document_path = NULL, document_uploaded_at = NULL WHERE id = ?',
+        [partyId]
+      );
+
+      logger.info(`Party document deleted: ${partyId}`);
+
+      res.json({
+        success: true,
+        message: 'Документ успешно удален'
+      });
+    } catch (error) {
+      logger.error('Delete party document error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка удаления документа'
+      });
     }
   }
 }

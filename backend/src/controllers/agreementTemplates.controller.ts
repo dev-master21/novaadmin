@@ -235,7 +235,7 @@ class AgreementTemplatesController {
 
       // Проверяем использование шаблона
       const usageCount = await db.queryOne<{ count: number }>(
-        'SELECT COUNT(*) as count FROM agreements WHERE template_id = ?',
+        'SELECT COUNT(*) as count FROM agreements WHERE template_id = ? AND deleted_at IS NULL',
         [id]
       );
 
