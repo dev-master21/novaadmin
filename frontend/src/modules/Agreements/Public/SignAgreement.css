@@ -1,0 +1,32 @@
+/* frontend/src/modules/Agreements/Public/SignAgreement.css */
+.sign-agreement-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+.agreement-content {
+  padding: 20px;
+  background: #fff;
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.signature-canvas {
+  border-radius: 4px;
+  cursor: crosshair;
+}
+
+@media (max-width: 768px) {
+  .sign-agreement-container {
+    padding: 12px;
+  }
+
+  .agreement-content {
+    padding: 12px;
+    font-size: 12px;
+  }
+}

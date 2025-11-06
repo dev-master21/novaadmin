@@ -12,6 +12,14 @@ import RolesList from '@/modules/Roles/RolesList';
 import RoleForm from '@/modules/Roles/RoleForm';
 import FileManager from '@/modules/FileManager/FileManager';
 
+// ДОБАВЛЕНО: Импорты для модуля договоров
+import Agreements from '@/modules/Agreements';
+import AgreementDetail from '@/modules/Agreements/AgreementDetail';
+import AgreementTemplates from '@/modules/Agreements/Templates';
+import CreateTemplate from '@/modules/Agreements/Templates/CreateTemplate';
+import PublicAgreement from '@/modules/Agreements/Public/PublicAgreement';
+import SignAgreement from '@/modules/Agreements/Public/SignAgreement';
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
   permission?: string;
@@ -41,6 +49,10 @@ const AppRoutes = () => {
         path="/login"
         element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
       />
+
+      {/* ДОБАВЛЕНО: Публичные роуты для договоров (без авторизации) */}
+      <Route path="/agreement/:link" element={<PublicAgreement />} />
+      <Route path="/sign/:link" element={<SignAgreement />} />
 
       {/* Protected routes */}
       <Route
@@ -81,6 +93,72 @@ const AppRoutes = () => {
           />
         </Route>
 
+        {/* ДОБАВЛЕНО: Agreements (Договоры) */}
+        <Route path="agreements">
+          {/* Список договоров */}
+          <Route
+            index
+            element={
+              <ProtectedRoute permission="agreements.view">
+                <Agreements />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Детали договора */}
+          <Route
+            path=":id"
+            element={
+              <ProtectedRoute permission="agreements.view">
+                <AgreementDetail />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Шаблоны договоров */}
+          <Route path="templates">
+            {/* Список шаблонов */}
+            <Route
+              index
+              element={
+                <ProtectedRoute permission="agreements.manage_templates">
+                  <AgreementTemplates />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Создание шаблона */}
+            <Route
+              path="create"
+              element={
+                <ProtectedRoute permission="agreements.manage_templates">
+                  <CreateTemplate />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Редактирование шаблона */}
+            <Route
+              path=":id/edit"
+              element={
+                <ProtectedRoute permission="agreements.manage_templates">
+                  <CreateTemplate />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Просмотр шаблона */}
+            <Route
+              path=":id"
+              element={
+                <ProtectedRoute permission="agreements.manage_templates">
+                  <AgreementDetail />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+        </Route>
+
         {/* File Manager */}
         <Route path="file-manager">
           <Route
@@ -92,8 +170,8 @@ const AppRoutes = () => {
             }
           />
         </Route>
+
         {/* Users */}
-        
         <Route path="users">
           <Route
             index

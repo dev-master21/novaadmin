@@ -1,0 +1,75 @@
+/* frontend/src/modules/Agreements/Public/PublicAgreement.css */
+.public-agreement-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+.agreement-document {
+  padding: 40px;
+  background: #fff;
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #000;
+}
+
+.agreement-document h1 {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 30px;
+}
+
+.agreement-document h2 {
+  font-size: 18px;
+  margin: 20px 0 10px;
+}
+
+.agreement-document h3 {
+  font-size: 16px;
+  margin: 15px 0 8px;
+}
+
+.agreement-document p {
+  margin: 8px 0;
+}
+
+.agreement-document ul,
+.agreement-document ol {
+  margin: 8px 0;
+  padding-left: 30px;
+}
+
+@media print {
+  .public-agreement-container {
+    background: #fff;
+    padding: 0;
+  }
+
+  .ant-card {
+    border: none;
+    box-shadow: none;
+  }
+
+  .ant-card-head,
+  .ant-btn {
+    display: none !important;
+  }
+
+  .agreement-document {
+    padding: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .public-agreement-container {
+    padding: 12px;
+  }
+
+  .agreement-document {
+    padding: 20px;
+    font-size: 12px;
+  }
+}

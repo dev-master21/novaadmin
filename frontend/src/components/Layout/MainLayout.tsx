@@ -10,7 +10,8 @@ import {
   SafetyOutlined,
   LogoutOutlined,
   GlobalOutlined,
-  FolderOutlined
+  FolderOutlined,
+  FileTextOutlined // ДОБАВЛЕНО для иконки договоров
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -104,6 +105,25 @@ const MainLayout = () => {
         if (isMobile) setDrawerVisible(false);
       }
     }] : []),
+    // ДОБАВЛЕНО: Пункт меню для договоров
+    ...(hasPermission('agreements.view') ? [{
+      key: '/agreements',
+      icon: <FileTextOutlined />,
+      label: t('nav.agreements') || 'Договоры',
+      onClick: () => {
+        navigate('/agreements');
+        if (isMobile) setDrawerVisible(false);
+      }
+    }] : []),
+    ...(hasPermission('file_manager.view') ? [{
+      key: '/file-manager',
+      icon: <FolderOutlined />,
+      label: t('menu.fileManager') || 'Файлообменник',
+      onClick: () => {
+        navigate('/file-manager');
+        if (isMobile) setDrawerVisible(false);
+      }
+    }] : []),
     ...(hasPermission('users.read') ? [{
       key: '/users',
       icon: <UserOutlined />,
@@ -119,15 +139,6 @@ const MainLayout = () => {
       label: t('nav.roles'),
       onClick: () => {
         navigate('/roles');
-        if (isMobile) setDrawerVisible(false);
-      }
-    }] : []),
-    ...(hasPermission('file_manager.view') ? [{
-      key: '/file-manager',
-      icon: <FolderOutlined />,
-      label: t('menu.fileManager') || 'Файлообменник',
-      onClick: () => {
-        navigate('/file-manager');
         if (isMobile) setDrawerVisible(false);
       }
     }] : [])
