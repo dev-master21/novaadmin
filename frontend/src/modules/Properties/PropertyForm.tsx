@@ -35,9 +35,11 @@ import FloorPlanUploader from './components/FloorPlanUploader';
 import VRPanoramaUploader from './components/VRPanoramaUploader';
 import CommissionForm from './components/CommissionForm';
 import SeasonalPricing from './components/SeasonalPricing';
+import MonthlyPricing from './components/MonthlyPricing';
 import { PROPERTY_FEATURES } from './constants/features';
 import dayjs from 'dayjs';
 import VideoUploader from './components/VideoUploader';
+import CalendarManager from './components/CalendarManager';
 
 const { Paragraph } = Typography;
 const { TextArea } = Input;
@@ -954,65 +956,74 @@ const PropertyForm = () => {
           {/* ТАБ 5: ЦЕНООБРАЗОВАНИЕ */}
           <Tabs.TabPane tab={t('properties.tabs.pricing')} key="pricing">
             <Space direction="vertical" style={{ width: '100%' }} size="large">
+              {/* Цены продажи */}
               {(dealType === 'sale' || dealType === 'both') && (
-                <Card title={t('properties.pricing.salePrice')} size="small">
-                  <Form.Item
-                    name="sale_price"
-                    label={t('properties.price')}
-                  >
-                    <InputNumber<number>
-                      style={{ width: '100%' }}
-                      min={0}
-                      addonAfter="฿"
-                      formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={value => Number(value!.replace(/,/g, ''))}
-                    />
-                  </Form.Item>
+                <Card title="Цена продажи">
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="sale_price"
+                        label={t('properties.salePrice')}
+                      >
+                        <InputNumber
+                          min={0}
+                          style={{ width: '100%' }}
+                          addonAfter="฿"
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
                 </Card>
               )}
 
-                {(dealType === 'rent' || dealType === 'both') && (
-                  <Card title={t('properties.pricing.rentalPrices')} size="small">
-                    {isEdit ? (
-                      <Space direction="vertical" style={{ width: '100%' }} size="large">
-                        {/* Годовая цена */}
-                        <div>
-                          <h4 style={{ marginBottom: 16 }}>Цена годового контракта</h4>
-                          <Form.Item
-                            name="year_price"
-                            label="Годовая цена аренды"
-                            extra="Укажите стоимость аренды на 12 месяцев"
-                          >
-                            <InputNumber<number>
-                              style={{ width: '100%' }}
-                              min={0}
-                              addonAfter="฿"
-                              placeholder="0"
-                              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                              parser={value => Number(value!.replace(/,/g, ''))}
-                            />
-                          </Form.Item>
-                        </div>
-
-                        {/* Сезонные цены */}
-                        <div>
-                          <h4 style={{ marginBottom: 16 }}>Сезонные цены (посуточная аренда)</h4>
-                          <Form.Item name="seasonalPricing">
-                            <SeasonalPricing />
-                          </Form.Item>
-                        </div>
-                      </Space>
-                    ) : (
-                      <Alert
-                        message="Настройка цен будет доступна после создания объекта"
-                        description="Вы сможете настроить как постоянную годовую цену, так и гибкие сезонные цены с разными периодами и тарифами."
-                        type="info"
-                        showIcon
-                      />
-                    )}
+              {/* Цены аренды */}
+              {(dealType === 'rent' || dealType === 'both') && (
+                <>
+                  {/* Постоянная цена за год */}
+                  <Card title="Постоянная цена аренды">
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item
+                          name="year_price"
+                          label="Цена за год"
+                        >
+                          <InputNumber
+                            min={0}
+                            style={{ width: '100%' }}
+                            addonAfter="฿"
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
                   </Card>
-                )}
+              
+                  {/* Сезонные цены */}
+                  <SeasonalPricing
+                    value={form.getFieldValue('seasonalPricing')}
+                    onChange={(value) => form.setFieldsValue({ seasonalPricing: value })}
+                  />
 
+                  {/* ✅ НОВОЕ: Месячные цены (только для режима редактирования) */}
+                  {isEdit && (
+                    <MonthlyPricing
+                      propertyId={Number(id)}
+                      initialPricing={propertyData?.monthly_pricing || []}
+                    />
+                  )}
+
+                  {/* Информация если объект еще не создан */}
+                  {!isEdit && (
+                    <Alert
+                      message="Месячные цены"
+                      description="Месячные цены можно будет настроить после создания объекта"
+                      type="info"
+                      showIcon
+                    />
+                  )}
+                </>
+              )}
+
+              {/* Комиссии */}
               <CommissionForm dealType={dealType} />
             </Space>
           </Tabs.TabPane>
@@ -1071,8 +1082,21 @@ const PropertyForm = () => {
               </Card>
             )}
           </Tabs.TabPane>
+                  <Tabs.TabPane tab="📅 Занятость" key="calendar">
+          {isEdit ? (
+            <CalendarManager propertyId={Number(id)} />
+          ) : (
+            <Card>
+              <Alert
+                message="Управление занятостью будет доступно после создания объекта"
+                type="info"
+                showIcon
+              />
+            </Card>
+          )}
+        </Tabs.TabPane>
+        
         </Tabs>
-
         {/* Кнопки сохранения видны со всех вкладок */}
         <div style={{ 
           position: 'sticky', 

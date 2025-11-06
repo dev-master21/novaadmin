@@ -173,7 +173,7 @@ const UsersList = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate('/users/new')}
+            onClick={() => navigate('/users/create')}
           >
             {t('users.add')}
           </Button>

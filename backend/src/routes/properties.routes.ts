@@ -88,7 +88,7 @@ router.delete(
 router.post(
   '/:id/videos',
   authenticate,
-  uploadVideo.array('videos', 10), // Максимум 10 видео за раз
+  uploadVideo.array('videos', 10),
   propertiesController.uploadVideos.bind(propertiesController)
 );
 router.delete(
@@ -108,10 +108,39 @@ router.get(
   authenticate, 
   propertiesController.getPricingDetails.bind(propertiesController)
 );
+
+// ✅ НОВОЕ: Обновление месячных цен
+router.put(
+  '/:id/monthly-pricing',
+  authenticate,
+  propertiesController.updateMonthlyPricing.bind(propertiesController)
+);
+
 router.get(
   '/:id/calendar', 
   authenticate, 
   propertiesController.getCalendar.bind(propertiesController)
+);
+
+// Добавьте эти роуты в файл properties.routes.ts после существующих:
+
+// Управление календарём занятости
+router.post(
+  '/:id/calendar/block',
+  authenticate,
+  propertiesController.addBlockedPeriod.bind(propertiesController)
+);
+
+router.delete(
+  '/:id/calendar/block',
+  authenticate,
+  propertiesController.removeBlockedDates.bind(propertiesController)
+);
+
+router.get(
+  '/:id/ics',
+  authenticate,
+  propertiesController.getICSInfo.bind(propertiesController)
 );
 
 export default router;

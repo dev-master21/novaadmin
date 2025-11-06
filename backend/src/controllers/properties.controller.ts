@@ -7,6 +7,7 @@ import { imageProcessorService } from '../services/imageProcessor.service';
 import fs from 'fs-extra';
 import path from 'path';
 import { getImageUrl } from '../utils/imageUrl';
+import icsGeneratorService from '../services/icsGenerator.service';
 
 class PropertiesController {
 /**
@@ -308,9 +309,15 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       [id]
     );
 
-    // Загружаем ценообразование
+    // Загружаем ценообразование (сезонное)
     const pricing = await db.query(
       'SELECT * FROM property_pricing WHERE property_id = ? ORDER BY start_date_recurring ASC',
+      [id]
+    );
+
+    // ✅ НОВОЕ: Загружаем месячные цены
+    const monthly_pricing = await db.query(
+      'SELECT * FROM property_pricing_monthly WHERE property_id = ? ORDER BY month_number ASC',
       [id]
     );
 
@@ -333,8 +340,8 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
     // Преобразуем все URL изображений
     const photosWithUrls = photos.map((photo: any) => ({
       ...photo,
-      photo_url: getImageUrl(photo.photo_url, false), // полный размер
-      photo_url_thumb: getImageUrl(photo.photo_url, true) // thumbnail
+      photo_url: getImageUrl(photo.photo_url, false),
+      photo_url_thumb: getImageUrl(photo.photo_url, true)
     }));
 
     const vrPanoramasWithUrls = vrPanoramas.map((vr: any) => ({
@@ -342,7 +349,6 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       panorama_url: getImageUrl(vr.panorama_url, false)
     }));
 
-    // Преобразуем URL видео
     const videosWithUrls = (videos || []).map((video: any) => ({
       ...video,
       video_url: video.video_url,
@@ -358,6 +364,7 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
         photos: photosWithUrls,
         features,
         pricing,
+        monthly_pricing,  // ✅ ДОБАВЛЯЕМ В ОТВЕТ
         vrPanoramas: vrPanoramasWithUrls,
         videos: videosWithUrls
       }
@@ -371,137 +378,160 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
   }
 }
 
-  /**
-   * Создать объект недвижимости
-   * POST /api/properties
-   */
-  async create(req: AuthRequest, res: Response): Promise<void> {
-    const connection = await db.beginTransaction();
-    
-    try {
-      const {
-        // Основная информация
+/**
+ * Создать объект недвижимости
+ * POST /api/properties
+ */
+async create(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+  
+  try {
+    const {
+      // Основная информация
+      deal_type, property_type, region, address, google_maps_link,
+      latitude, longitude, property_number, complex_name,
+      bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
+      floors, floor, penthouse_floors, construction_year, construction_month,
+      furniture_status, parking_spaces, pets_allowed, pets_custom,
+      building_ownership, land_ownership, ownership_type,
+      sale_price, year_price, minimum_nights, ics_calendar_url, status, video_url,
+      
+      // Информация о владельце
+      owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
+      
+      // Переводы
+      translations,
+      
+      // Features
+      renovationDates,
+      
+      // Сезонные цены
+      seasonalPricing,
+      
+      // ✅ НОВОЕ: Месячные цены
+      monthlyPricing
+    } = req.body;
+
+    // Создаем объект
+    const propertyResult = await connection.query(
+      `INSERT INTO properties (
         deal_type, property_type, region, address, google_maps_link,
         latitude, longitude, property_number, complex_name,
         bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
         floors, floor, penthouse_floors, construction_year, construction_month,
         furniture_status, parking_spaces, pets_allowed, pets_custom,
         building_ownership, land_ownership, ownership_type,
-        sale_price, year_price, minimum_nights, ics_calendar_url, status, video_url,
-        
-        // Информация о владельце
-        owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
-        
-        // Переводы
-        translations,
-        
-        // Features
-        renovationDates,
-        
-        // Сезонные цены
-        seasonalPricing
-      } = req.body;
+        sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status, created_by,
+        owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        deal_type, property_type, region, address, google_maps_link,
+        latitude, longitude, property_number, complex_name,
+        bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
+        floors, floor, penthouse_floors, construction_year, construction_month,
+        furniture_status, parking_spaces, pets_allowed, pets_custom,
+        building_ownership, land_ownership, ownership_type,
+        sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status || 'draft',
+        req.admin?.id,
+        owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes
+      ]
+    );
 
-      // Создаем объект
-      const propertyResult = await connection.query(
-        `INSERT INTO properties (
-          deal_type, property_type, region, address, google_maps_link,
-          latitude, longitude, property_number, complex_name,
-          bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
-          floors, floor, penthouse_floors, construction_year, construction_month,
-          furniture_status, parking_spaces, pets_allowed, pets_custom,
-          building_ownership, land_ownership, ownership_type,
-          sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status, created_by,
-          owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          deal_type, property_type, region, address, google_maps_link,
-          latitude, longitude, property_number, complex_name,
-          bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
-          floors, floor, penthouse_floors, construction_year, construction_month,
-          furniture_status, parking_spaces, pets_allowed, pets_custom,
-          building_ownership, land_ownership, ownership_type,
-          sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status || 'draft',
-          req.admin?.id,
-          owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes
-        ]
-      );
+    const propertyId = (propertyResult as any)[0].insertId;
+    logger.info(`Property created: ${propertyId} by user ${req.admin?.username}`);
 
-      const propertyId = (propertyResult as any)[0].insertId;
-      logger.info(`Property created: ${propertyId} by user ${req.admin?.username}`);
-
-      // Добавляем переводы
-      if (translations && Object.keys(translations).length > 0) {
-        for (const [lang, data] of Object.entries(translations)) {
-          const translationData = data as { property_name?: string; description?: string };
-          if (translationData.property_name || translationData.description) {
-            await connection.query(
-              `INSERT INTO property_translations (property_id, language_code, property_name, description)
-               VALUES (?, ?, ?, ?)`,
-              [propertyId, lang, translationData.property_name || null, translationData.description || null]
-            );
-          }
-        }
-      }
-
-      // Добавляем features
-      const featureTypes: { [key: string]: string } = {
-        propertyFeatures: 'property',
-        outdoorFeatures: 'outdoor',
-        rentalFeatures: 'rental',
-        locationFeatures: 'location',
-        views: 'view'
-      };
-
-      for (const [key, type] of Object.entries(featureTypes)) {
-        const featuresArray = req.body[key];
-        if (featuresArray && Array.isArray(featuresArray) && featuresArray.length > 0) {
-          for (const feature of featuresArray) {
-            const renovationDate = renovationDates?.[feature] || null;
-            await connection.query(
-              `INSERT INTO property_features (property_id, feature_type, feature_value, renovation_date)
-               VALUES (?, ?, ?, ?)`,
-              [propertyId, type, feature, renovationDate]
-            );
-          }
-        }
-      }
-
-      // Добавляем сезонные цены
-      if (seasonalPricing && Array.isArray(seasonalPricing) && seasonalPricing.length > 0) {
-        for (const price of seasonalPricing) {
+    // Добавляем переводы
+    if (translations && Object.keys(translations).length > 0) {
+      for (const [lang, data] of Object.entries(translations)) {
+        const translationData = data as { property_name?: string; description?: string };
+        if (translationData.property_name || translationData.description) {
           await connection.query(
-            `INSERT INTO property_pricing (property_id, season_type, start_date_recurring, end_date_recurring, price_per_night, source_price_per_night, minimum_nights)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-              propertyId,
-              price.season_type || null,
-              price.start_date_recurring,
-              price.end_date_recurring,
-              price.price_per_night,
-              price.source_price_per_night || null,
-              price.minimum_nights || null
-            ]
+            `INSERT INTO property_translations (property_id, language_code, property_name, description)
+             VALUES (?, ?, ?, ?)`,
+            [propertyId, lang, translationData.property_name || null, translationData.description || null]
           );
         }
       }
-
-      await db.commit(connection);
-
-      res.status(201).json({
-        success: true,
-        message: 'Объект успешно создан',
-        data: { propertyId }
-      });
-    } catch (error) {
-      await db.rollback(connection);
-      logger.error('Create property error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка создания объекта'
-      });
     }
+
+    // Добавляем features
+    const featureTypes: { [key: string]: string } = {
+      propertyFeatures: 'property',
+      outdoorFeatures: 'outdoor',
+      rentalFeatures: 'rental',
+      locationFeatures: 'location',
+      views: 'view'
+    };
+
+    for (const [key, type] of Object.entries(featureTypes)) {
+      const featuresArray = req.body[key];
+      if (featuresArray && Array.isArray(featuresArray) && featuresArray.length > 0) {
+        for (const feature of featuresArray) {
+          const renovationDate = renovationDates?.[feature] || null;
+          await connection.query(
+            `INSERT INTO property_features (property_id, feature_type, feature_value, renovation_date)
+             VALUES (?, ?, ?, ?)`,
+            [propertyId, type, feature, renovationDate]
+          );
+        }
+      }
+    }
+
+    // ✅ ОБНОВЛЕНО: Добавляем сезонные цены с полем pricing_type
+    if (seasonalPricing && Array.isArray(seasonalPricing) && seasonalPricing.length > 0) {
+      for (const price of seasonalPricing) {
+        await connection.query(
+          `INSERT INTO property_pricing (
+            property_id, season_type, start_date_recurring, end_date_recurring, 
+            price_per_night, source_price_per_night, minimum_nights, pricing_type
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            propertyId,
+            price.season_type || null,
+            price.start_date_recurring,
+            price.end_date_recurring,
+            price.price_per_night,
+            price.source_price_per_night || null,
+            price.minimum_nights || null,
+            price.pricing_type || 'per_night'  // ✅ НОВОЕ ПОЛЕ
+          ]
+        );
+      }
+    }
+
+    // ✅ НОВОЕ: Добавляем месячные цены
+    if (monthlyPricing && Array.isArray(monthlyPricing) && monthlyPricing.length > 0) {
+      for (const price of monthlyPricing) {
+        await connection.query(
+          `INSERT INTO property_pricing_monthly 
+           (property_id, month_number, price_per_month, minimum_days)
+           VALUES (?, ?, ?, ?)`,
+          [
+            propertyId,
+            price.month_number,
+            price.price_per_month,
+            price.minimum_days || null
+          ]
+        );
+      }
+    }
+
+    await db.commit(connection);
+
+    res.status(201).json({
+      success: true,
+      message: 'Объект успешно создан',
+      data: { propertyId }
+    });
+  } catch (error) {
+    await db.rollback(connection);
+    logger.error('Create property error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка создания объекта'
+    });
   }
+}
 
 /**
  * Обновить объект недвижимости
@@ -541,11 +571,10 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       // Сезонные цены
       seasonalPricing,
       
-      // ✅ ИГНОРИРУЕМ videos - они обрабатываются отдельно через другой endpoint
-      // videos - не используется здесь
+      // ✅ НОВОЕ: Месячные цены
+      monthlyPricing
     } = req.body;
 
-    // ✅ ИСПРАВЛЕНО: используем query вместо queryOne
     const existingPropertyResult: any = await connection.query(
       'SELECT id FROM properties WHERE id = ? AND deleted_at IS NULL',
       [id]
@@ -598,10 +627,8 @@ async update(req: AuthRequest, res: Response): Promise<void> {
 
     // Обновляем переводы
     if (translations && Object.keys(translations).length > 0) {
-      // Удаляем старые переводы
       await connection.query('DELETE FROM property_translations WHERE property_id = ?', [id]);
 
-      // Добавляем новые переводы
       for (const [lang, data] of Object.entries(translations)) {
         const translationData = data as { property_name?: string; description?: string };
         if (translationData.property_name || translationData.description) {
@@ -639,17 +666,17 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // Обновляем сезонные цены
+    // ✅ ОБНОВЛЕНО: Обновляем сезонные цены с полем pricing_type
     if (seasonalPricing !== undefined) {
-      // Удаляем старые цены
       await connection.query('DELETE FROM property_pricing WHERE property_id = ?', [id]);
 
-      // Добавляем новые цены
       if (Array.isArray(seasonalPricing) && seasonalPricing.length > 0) {
         for (const price of seasonalPricing) {
           await connection.query(
-            `INSERT INTO property_pricing (property_id, season_type, start_date_recurring, end_date_recurring, price_per_night, source_price_per_night, minimum_nights)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO property_pricing (
+              property_id, season_type, start_date_recurring, end_date_recurring, 
+              price_per_night, source_price_per_night, minimum_nights, pricing_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id,
               price.season_type || 'custom',
@@ -657,7 +684,29 @@ async update(req: AuthRequest, res: Response): Promise<void> {
               price.end_date_recurring,
               price.price_per_night,
               price.source_price_per_night || null,
-              price.minimum_nights || null
+              price.minimum_nights || null,
+              price.pricing_type || 'per_night'  // ✅ НОВОЕ ПОЛЕ
+            ]
+          );
+        }
+      }
+    }
+
+    // ✅ НОВОЕ: Обновляем месячные цены
+    if (monthlyPricing !== undefined) {
+      await connection.query('DELETE FROM property_pricing_monthly WHERE property_id = ?', [id]);
+
+      if (Array.isArray(monthlyPricing) && monthlyPricing.length > 0) {
+        for (const price of monthlyPricing) {
+          await connection.query(
+            `INSERT INTO property_pricing_monthly 
+             (property_id, month_number, price_per_month, minimum_days)
+             VALUES (?, ?, ?, ?)`,
+            [
+              id,
+              price.month_number,
+              price.price_per_month,
+              price.minimum_days || null
             ]
           );
         }
@@ -800,6 +849,274 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       });
     }
   }
+
+/**
+ * Добавить период занятости
+ * POST /api/properties/:id/calendar/block
+ */
+async addBlockedPeriod(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+  
+  try {
+    const { id } = req.params;
+    const { start_date, end_date, reason } = req.body;
+
+    const propertyResult: any = await connection.query(
+      'SELECT id, property_number FROM properties WHERE id = ? AND deleted_at IS NULL',
+      [id]
+    );
+
+    const property = Array.isArray(propertyResult[0]) 
+      ? propertyResult[0][0] 
+      : propertyResult[0];
+
+    if (!property) {
+      await connection.rollback();
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден'
+      });
+      return;
+    }
+
+    // ✅ ИСПРАВЛЕНО: Правильная генерация дат без учета timezone
+    const startDate = new Date(start_date + 'T00:00:00Z');
+    const endDate = new Date(end_date + 'T00:00:00Z');
+    const dates: string[] = [];
+
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const year = currentDate.getUTCFullYear();
+      const month = String(currentDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getUTCDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
+      
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    }
+
+    if (dates.length === 0) {
+      await connection.rollback();
+      res.status(400).json({
+        success: false,
+        message: 'Некорректный период дат'
+      });
+      return;
+    }
+
+    const existingBlocksResult: any = await connection.query(
+      `SELECT blocked_date FROM property_calendar 
+       WHERE property_id = ? AND blocked_date IN (${dates.map(() => '?').join(',')})`,
+      [id, ...dates]
+    );
+
+    const existingBlocks = Array.isArray(existingBlocksResult[0]) 
+      ? existingBlocksResult[0] 
+      : [];
+
+    if (existingBlocks.length > 0) {
+      await connection.rollback();
+      res.status(400).json({
+        success: false,
+        message: `Некоторые даты уже заблокированы: ${existingBlocks.map((b: any) => b.blocked_date).join(', ')}`
+      });
+      return;
+    }
+
+    for (const date of dates) {
+      await connection.query(
+        'INSERT INTO property_calendar (property_id, blocked_date, reason) VALUES (?, ?, ?)',
+        [id, date, reason || null]
+      );
+    }
+
+    const allBlockedDatesResult: any = await connection.query(
+      'SELECT blocked_date, reason FROM property_calendar WHERE property_id = ? ORDER BY blocked_date',
+      [id]
+    );
+
+    const allBlockedDates = Array.isArray(allBlockedDatesResult[0]) 
+      ? allBlockedDatesResult[0] 
+      : [];
+
+    const icsData = await icsGeneratorService.generateICSFile(
+      property.id,
+      property.property_number,
+      allBlockedDates
+    );
+
+    await connection.query(
+      `INSERT INTO property_ics (property_id, ics_url, ics_filename, ics_file_path, total_blocked_days)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE 
+         ics_url = VALUES(ics_url),
+         ics_filename = VALUES(ics_filename),
+         ics_file_path = VALUES(ics_file_path),
+         total_blocked_days = VALUES(total_blocked_days),
+         updated_at = NOW()`,
+      [id, icsData.url, icsData.filename, icsData.filepath, allBlockedDates.length]
+    );
+
+    await connection.commit();
+
+    logger.info(`Blocked period added for property ${id}: ${start_date} to ${end_date}`);
+
+    res.json({
+      success: true,
+      message: `Заблокировано ${dates.length} дней`,
+      data: {
+        blocked_dates: dates,
+        ics_url: icsData.url
+      }
+    });
+  } catch (error) {
+    await connection.rollback();
+    logger.error('Add blocked period error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка добавления периода занятости'
+    });
+  }
+}
+
+/**
+ * Удалить заблокированные даты
+ * DELETE /api/properties/:id/calendar/block
+ */
+async removeBlockedDates(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+  
+  try {
+    const { id } = req.params;
+    const { dates } = req.body; // Массив дат для удаления
+
+    if (!dates || !Array.isArray(dates) || dates.length === 0) {
+      await connection.rollback();
+      res.status(400).json({
+        success: false,
+        message: 'Необходимо указать даты для удаления'
+      });
+      return;
+    }
+
+    // Проверяем существование объекта
+    const propertyResult: any = await connection.query(
+      'SELECT id, property_number FROM properties WHERE id = ? AND deleted_at IS NULL',
+      [id]
+    );
+
+    const property = Array.isArray(propertyResult[0]) 
+      ? propertyResult[0][0] 
+      : propertyResult[0];
+
+    if (!property) {
+      await connection.rollback();
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден'
+      });
+      return;
+    }
+
+    // Удаляем указанные даты
+    await connection.query(
+      `DELETE FROM property_calendar 
+       WHERE property_id = ? AND blocked_date IN (${dates.map(() => '?').join(',')})`,
+      [id, ...dates]
+    );
+
+    // Получаем оставшиеся заблокированные даты
+    const remainingDates = await connection.query<any>(
+      'SELECT blocked_date, reason FROM property_calendar WHERE property_id = ? ORDER BY blocked_date',
+      [id]
+    );
+
+    const remainingDatesArray = Array.isArray(remainingDates[0]) 
+      ? remainingDates[0] 
+      : remainingDates;
+
+    // Обновляем .ics файл
+    if (remainingDatesArray.length > 0) {
+      const icsData = await icsGeneratorService.generateICSFile(
+        property.id,
+        property.property_number,
+        remainingDatesArray
+      );
+
+      await connection.query(
+        `UPDATE property_ics 
+         SET ics_url = ?, ics_filename = ?, ics_file_path = ?, 
+             total_blocked_days = ?, updated_at = NOW()
+         WHERE property_id = ?`,
+        [icsData.url, icsData.filename, icsData.filepath, remainingDatesArray.length, id]
+      );
+    } else {
+      // Если дат не осталось, удаляем .ics файл
+      const icsInfoResult: any = await connection.query(
+        'SELECT ics_file_path FROM property_ics WHERE property_id = ?',
+        [id]
+      );
+
+      const icsInfo = Array.isArray(icsInfoResult[0]) 
+        ? icsInfoResult[0][0] 
+        : icsInfoResult[0];
+
+      if (icsInfo) {
+        await icsGeneratorService.deleteICSFile(icsInfo.ics_file_path);
+        await connection.query('DELETE FROM property_ics WHERE property_id = ?', [id]);
+      }
+    }
+
+    await connection.commit();
+
+    logger.info(`Removed ${dates.length} blocked dates for property ${id}`);
+
+    res.json({
+      success: true,
+      message: `Удалено ${dates.length} заблокированных дат`
+    });
+  } catch (error) {
+    await connection.rollback();
+    logger.error('Remove blocked dates error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка удаления заблокированных дат'
+    });
+  }
+}
+
+/**
+ * Получить информацию о .ics файле
+ * GET /api/properties/:id/ics
+ */
+async getICSInfo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const icsInfo = await db.queryOne<any>(
+      'SELECT * FROM property_ics WHERE property_id = ?',
+      [id]
+    );
+
+    if (!icsInfo) {
+      res.json({
+        success: true,
+        data: null
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: icsInfo
+    });
+  } catch (error) {
+    logger.error('Get ICS info error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения информации о .ics файле'
+    });
+  }
+}
 
 /**
  * Загрузить фотографии для объекта
@@ -1459,124 +1776,203 @@ async updateVideo(req: AuthRequest, res: Response): Promise<void> {
  * Получить детальную информацию по ценам
  * GET /api/properties/:id/pricing-details
  */
-  async getPricingDetails(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-    
-      // Базовые цены
-      const property = await db.queryOne<any>(
-        'SELECT sale_price, year_price, deal_type FROM properties WHERE id = ? AND deleted_at IS NULL',
-        [id]
-      );
-    
-      if (!property) {
-        res.status(404).json({
-          success: false,
-          message: 'Объект не найден'
-        });
-        return;
-      }
-    
-      // Сезонные цены аренды
-      const seasonalPricing = await db.query(
-        `SELECT 
-          season_type,
-          start_date_recurring,
-          end_date_recurring,
-          price_per_night,
-          source_price_per_night,
-          minimum_nights
-        FROM property_pricing 
-        WHERE property_id = ? 
-        ORDER BY start_date_recurring ASC`,
-        [id]
-      );
-    
+async getPricingDetails(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const property = await db.queryOne<any>(
+      `SELECT sale_price, year_price, deal_type 
+       FROM properties 
+       WHERE id = ? AND deleted_at IS NULL`,
+      [id]
+    );
+
+    if (!property) {
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден'
+      });
+      return;
+    }
+
+    // Сезонные цены аренды
+    const seasonalPricing = await db.query(
+      `SELECT 
+        id,
+        season_type,
+        start_date_recurring,
+        end_date_recurring,
+        price_per_night,
+        source_price_per_night,
+        minimum_nights,
+        pricing_type
+      FROM property_pricing 
+      WHERE property_id = ? 
+      ORDER BY start_date_recurring ASC`,
+      [id]
+    );
+
+    // Месячные цены
+    const monthlyPricing = await db.query(
+      `SELECT 
+        id,
+        month_number,
+        price_per_month,
+        minimum_days
+      FROM property_pricing_monthly 
+      WHERE property_id = ? 
+      ORDER BY month_number ASC`,
+      [id]
+    );
+
     res.json({
       success: true,
       data: {
         sale_price: property.sale_price,
         year_price: property.year_price,
         deal_type: property.deal_type,
-        seasonal_pricing: seasonalPricing
+        seasonal_pricing: seasonalPricing,
+        monthly_pricing: monthlyPricing
       }
     });
-    } catch (error) {
-      logger.error('Get pricing details error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка получения цен'
-      });
-    }
+  } catch (error) {
+    logger.error('Get pricing details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения цен'
+    });
   }
+}
   
-  /**
-   * Получить календарь занятости
-   * GET /api/properties/:id/calendar
-   */
-  async getCalendar(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { start_date, end_date } = req.query;
-    
-      let query = `
-        SELECT 
-          id,
-          property_id,
-          blocked_date,
-          reason,
-          created_at
-        FROM property_calendar 
-        WHERE property_id = ?
-      `;
-    
-      const params: any[] = [id];
-    
-      if (start_date) {
-        query += ' AND blocked_date >= ?';
-        params.push(start_date);
-      }
-    
-      if (end_date) {
-        query += ' AND blocked_date <= ?';
-        params.push(end_date);
-      }
-    
-      query += ' ORDER BY blocked_date ASC';
-    
-      const calendar = await db.query(query, params);
-    
-      // Получаем также бронирования
-      const bookings = await db.query(
-        `SELECT 
-          id,
-          guest_name,
-          check_in_date,
-          check_out_date,
-          status,
-          booking_source
-        FROM property_bookings 
-        WHERE property_id = ? 
-        AND status != 'cancelled'
-        ORDER BY check_in_date ASC`,
-        [id]
-      );
-    
-      res.json({
-        success: true,
-        data: {
-          blocked_dates: calendar,
-          bookings: bookings
-        }
-      });
-    } catch (error) {
-      logger.error('Get calendar error:', error);
-      res.status(500).json({
+
+async updateMonthlyPricing(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+  
+  try {
+    const { id } = req.params;
+    const { monthlyPricing } = req.body;
+
+    // Проверяем существование объекта
+    const property = await db.queryOne(
+      'SELECT id FROM properties WHERE id = ? AND deleted_at IS NULL',
+      [id]
+    );
+
+    if (!property) {
+      await connection.rollback();
+      res.status(404).json({
         success: false,
-        message: 'Ошибка получения календаря'
+        message: 'Объект не найден'
       });
+      return;
     }
+
+    // Удаляем старые месячные цены
+    await connection.query(
+      'DELETE FROM property_pricing_monthly WHERE property_id = ?',
+      [id]
+    );
+
+    // Добавляем новые месячные цены
+    if (Array.isArray(monthlyPricing) && monthlyPricing.length > 0) {
+      for (const price of monthlyPricing) {
+        await connection.query(
+          `INSERT INTO property_pricing_monthly 
+           (property_id, month_number, price_per_month, minimum_days)
+           VALUES (?, ?, ?, ?)`,
+          [
+            id,
+            price.month_number,
+            price.price_per_month,
+            price.minimum_days || null
+          ]
+        );
+      }
+    }
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: 'Месячные цены успешно обновлены'
+    });
+  } catch (error) {
+    await connection.rollback();
+    logger.error('Update monthly pricing error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка обновления месячных цен'
+    });
   }
+}
+
+/**
+ * Получить календарь занятости
+ * GET /api/properties/:id/calendar
+ */
+async getCalendar(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { start_date, end_date } = req.query;
+  
+    let query = `
+      SELECT 
+        id,
+        property_id,
+        DATE_FORMAT(blocked_date, '%Y-%m-%d') as blocked_date,
+        reason,
+        created_at
+      FROM property_calendar 
+      WHERE property_id = ?
+    `;
+  
+    const params: any[] = [id];
+  
+    if (start_date) {
+      query += ' AND blocked_date >= ?';
+      params.push(start_date);
+    }
+  
+    if (end_date) {
+      query += ' AND blocked_date <= ?';
+      params.push(end_date);
+    }
+  
+    query += ' ORDER BY blocked_date ASC';
+  
+    const calendar = await db.query(query, params);
+  
+    // Получаем также бронирования
+    const bookings = await db.query(
+      `SELECT 
+        id,
+        guest_name,
+        DATE_FORMAT(check_in_date, '%Y-%m-%d') as check_in_date,
+        DATE_FORMAT(check_out_date, '%Y-%m-%d') as check_out_date,
+        status,
+        booking_source
+      FROM property_bookings 
+      WHERE property_id = ? 
+      AND status != 'cancelled'
+      ORDER BY check_in_date ASC`,
+      [id]
+    );
+  
+    res.json({
+      success: true,
+      data: {
+        blocked_dates: calendar,
+        bookings: bookings
+      }
+    });
+  } catch (error) {
+    logger.error('Get calendar error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения календаря'
+    });
+  }
+}
 }
 
 export default new PropertiesController();

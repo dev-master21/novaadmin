@@ -35,6 +35,13 @@ export interface PropertiesResponse {
   };
 }
 
+// ✅ НОВЫЙ ТИП
+export interface MonthlyPrice {
+  month_number: number;
+  price_per_month: number;
+  minimum_days?: number;
+}
+
 export const propertiesApi = {
   getAll: (params?: {
     page?: number;
@@ -57,7 +64,7 @@ export const propertiesApi = {
   restore: (id: number) => api.post(`/properties/${id}/restore`),
 
   getUniqueOwners: () => api.get<{ success: boolean; data: string[] }>('/properties/owners/unique'),
-  
+
   // Скачать фотографии
   downloadPhotos: (propertyId: number, photoIds?: number[]) => 
     api.post(`/properties/${propertyId}/photos/download`, 
@@ -81,6 +88,7 @@ export const propertiesApi = {
       },
     });
   },
+  
   uploadVideos: (id: number, formData: FormData, onProgress?: (progress: number) => void) => {
     return api.post(`/properties/${id}/videos`, formData, {
       headers: {
@@ -102,6 +110,7 @@ export const propertiesApi = {
   updateVideo: (propertyId: number, videoId: number, data: any) => {
     return api.put(`/properties/${propertyId}/videos/${videoId}`, data);
   },
+  
   deletePhoto: (photoId: number) => api.delete(`/properties/photos/${photoId}`),
 
   updatePhotosOrder: (id: number, photos: any[]) => 
@@ -127,9 +136,23 @@ export const propertiesApi = {
   deleteVRPanorama: (panoramaId: number) => 
     api.delete(`/properties/vr-panoramas/${panoramaId}`),
 
+  // Управление календарём занятости
+  addBlockedPeriod: (propertyId: number, data: { start_date: string; end_date: string; reason?: string }) =>
+    api.post(`/properties/${propertyId}/calendar/block`, data),
+  
+  removeBlockedDates: (propertyId: number, dates: string[]) =>
+    api.delete(`/properties/${propertyId}/calendar/block`, { data: { dates } }),
+  
+  getICSInfo: (propertyId: number) =>
+    api.get(`/properties/${propertyId}/ics`),
+
   // Получить детальную информацию по ценам
   getPricingDetails: (id: number) => 
     api.get(`/properties/${id}/pricing-details`),
+
+  // ✅ НОВОЕ: Обновить месячные цены
+  updateMonthlyPricing: (id: number, monthlyPricing: MonthlyPrice[]) =>
+    api.put(`/properties/${id}/monthly-pricing`, { monthlyPricing }),
 
   // Получить календарь занятости
   getCalendar: (id: number, params?: { start_date?: string; end_date?: string }) => 
@@ -137,20 +160,19 @@ export const propertiesApi = {
   
   updateVRPanoramasOrder: (propertyId: number, panoramas: any[]) => 
     api.put(`/properties/${propertyId}/vr-panoramas/order`, { panoramas }),
-  // Добавить в propertiesApi:
 
-   uploadVideo: (id: number, file: File, onProgress?: (progress: number) => void) => {
-     const formData = new FormData();
-     formData.append('video', file);
-   
-     return api.post(`/properties/${id}/video`, formData, {
-       headers: { 'Content-Type': 'multipart/form-data' },
-       onUploadProgress: (progressEvent) => {
-         if (onProgress && progressEvent.total) {
-           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-           onProgress(progress);
-         }
-       }
-     });
-   },
+  uploadVideo: (id: number, file: File, onProgress?: (progress: number) => void) => {
+    const formData = new FormData();
+    formData.append('video', file);
+  
+    return api.post(`/properties/${id}/video`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(progress);
+        }
+      }
+    });
+  },
 };

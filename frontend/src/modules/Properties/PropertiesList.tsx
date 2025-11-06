@@ -517,7 +517,7 @@ const PropertiesList = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate('/properties/new')}
+            onClick={() => navigate('/properties/create')}
             size={isMobile ? 'middle' : 'large'}
           >
             {!isMobile && t('properties.add')}

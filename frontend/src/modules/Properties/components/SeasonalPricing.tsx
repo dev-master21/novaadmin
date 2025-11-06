@@ -1,10 +1,12 @@
 // frontend/src/modules/Properties/components/SeasonalPricing.tsx
 import { useState, useEffect } from 'react';
-import { Card, Button, Space, Form, InputNumber, DatePicker, Select, Table, Popconfirm, message, Modal, Descriptions } from 'antd';
+import { Card, Button, Space, Form, InputNumber, DatePicker, Select, Table, Popconfirm, message, Modal, Descriptions, Alert, Radio, Typography } from 'antd';
 import { PlusOutlined, DeleteOutlined, EditOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
+
+const { Text } = Typography;
 
 interface PricingPeriod {
   id?: number;
@@ -14,6 +16,7 @@ interface PricingPeriod {
   price_per_night: number;
   source_price_per_night?: number | null;
   minimum_nights: number | null;
+  pricing_type?: 'per_night' | 'per_period';  // ✅ НОВОЕ ПОЛЕ
 }
 
 interface SeasonalPricingProps {
@@ -65,12 +68,14 @@ const SeasonalPricing = ({ value = [], onChange }: SeasonalPricingProps) => {
         season_type: null,
         price_per_night: null,
         source_price_per_night: null,
-        minimum_nights: 1
+        minimum_nights: 1,
+        pricing_type: 'per_night'  // ✅ Значение по умолчанию
       });
     } else {
       form.resetFields();
       form.setFieldsValue({
-        minimum_nights: 1
+        minimum_nights: 1,
+        pricing_type: 'per_night'  // ✅ Значение по умолчанию
       });
     }
   };
@@ -86,7 +91,8 @@ const SeasonalPricing = ({ value = [], onChange }: SeasonalPricingProps) => {
       ],
       price_per_night: period.price_per_night,
       source_price_per_night: period.source_price_per_night,
-      minimum_nights: period.minimum_nights
+      minimum_nights: period.minimum_nights,
+      pricing_type: period.pricing_type || 'per_night'  // ✅ НОВОЕ ПОЛЕ
     });
   };
 
@@ -106,7 +112,8 @@ const SeasonalPricing = ({ value = [], onChange }: SeasonalPricingProps) => {
         end_date_recurring: values.dates[1].format('DD-MM'),
         price_per_night: values.price_per_night,
         source_price_per_night: values.source_price_per_night || null,
-        minimum_nights: values.minimum_nights || null
+        minimum_nights: values.minimum_nights || null,
+        pricing_type: values.pricing_type || 'per_night'  // ✅ НОВОЕ ПОЛЕ
       };
 
       let updated: PricingPeriod[];
@@ -171,14 +178,21 @@ const SeasonalPricing = ({ value = [], onChange }: SeasonalPricingProps) => {
       )
     },
     {
-      title: t('properties.pricing.pricePerNight'),
-      dataIndex: 'price_per_night',
-      key: 'price_per_night',
-      width: 120,
-      render: (price: number) => (
-        <strong style={{ color: '#1890ff' }}>
-          {price.toLocaleString()} ฿
-        </strong>
+      title: t('properties.pricing.price'),
+      key: 'price',
+      width: 150,
+      render: (_: any, record: PricingPeriod) => (
+        <Space direction="vertical" size={0}>
+          <strong style={{ color: '#1890ff', fontSize: 16 }}>
+            {record.price_per_night.toLocaleString()} ฿
+          </strong>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {record.pricing_type === 'per_period' 
+              ? t('properties.pricing.forWholePeriod')
+              : t('properties.pricing.perNight')
+            }
+          </Text>
+        </Space>
       )
     },
     {
@@ -233,6 +247,12 @@ const SeasonalPricing = ({ value = [], onChange }: SeasonalPricingProps) => {
           <div style={{ color: '#1890ff', fontSize: 15, fontWeight: 'bold' }}>
             {record.price_per_night.toLocaleString()} ฿
           </div>
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            {record.pricing_type === 'per_period' 
+              ? t('properties.pricing.forWholePeriod')
+              : t('properties.pricing.perNight')
+            }
+          </Text>
         </div>
       )
     },
@@ -279,6 +299,15 @@ const SeasonalPricing = ({ value = [], onChange }: SeasonalPricingProps) => {
   return (
     <Card title={t('properties.pricing.title')}>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
+        {/* ✅ НОВЫЙ ДИСКЛЕЙМЕР */}
+        <Alert
+          message={t('properties.pricing.seasonalDisclaimer')}
+          description={t('properties.pricing.seasonalDisclaimerDescription')}
+          type="info"
+          showIcon
+          closable
+        />
+
         {!isAdding && (
           <Button
             type="dashed"
@@ -332,6 +361,35 @@ const SeasonalPricing = ({ value = [], onChange }: SeasonalPricingProps) => {
                     return trigger.parentElement || document.body;
                   }}
                 />
+              </Form.Item>
+
+              {/* ✅ НОВОЕ: Тип ценообразования */}
+              <Form.Item
+                name="pricing_type"
+                label={t('properties.pricing.pricingType')}
+                rules={[{ required: true }]}
+                initialValue="per_night"
+              >
+                <Radio.Group>
+                  <Space direction="vertical">
+                    <Radio value="per_night">
+                      <Space direction="vertical" size={0}>
+                        <Text>{t('properties.pricing.perNightOption')}</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {t('properties.pricing.perNightHint')}
+                        </Text>
+                      </Space>
+                    </Radio>
+                    <Radio value="per_period">
+                      <Space direction="vertical" size={0}>
+                        <Text>{t('properties.pricing.perPeriodOption')}</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {t('properties.pricing.perPeriodHint')}
+                        </Text>
+                      </Space>
+                    </Radio>
+                  </Space>
+                </Radio.Group>
               </Form.Item>
 
               <Form.Item
@@ -424,7 +482,14 @@ const SeasonalPricing = ({ value = [], onChange }: SeasonalPricingProps) => {
               <Descriptions.Item label="Период">
                 {selectedPeriod.start_date_recurring} — {selectedPeriod.end_date_recurring}
               </Descriptions.Item>
-              <Descriptions.Item label="Цена за ночь">
+              {/* ✅ НОВОЕ: Отображение типа цены */}
+              <Descriptions.Item label="Тип ценообразования">
+                {selectedPeriod.pricing_type === 'per_period' 
+                  ? t('properties.pricing.forWholePeriod')
+                  : t('properties.pricing.perNight')
+                }
+              </Descriptions.Item>
+              <Descriptions.Item label="Цена">
                 <strong style={{ color: '#1890ff', fontSize: 16 }}>
                   {selectedPeriod.price_per_night.toLocaleString()} ฿
                 </strong>
