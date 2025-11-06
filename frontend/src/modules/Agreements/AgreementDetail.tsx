@@ -10,9 +10,7 @@ import {
   message,
   Spin,
   Tabs,
-  Table,
-  Divider,
-  QRCode
+  Table
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -20,19 +18,26 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   LinkOutlined,
-  PlusOutlined
+  SaveOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { agreementsApi, Agreement } from '@/api/agreements.api';
 import { useReactToPrint } from 'react-to-print';
+import DocumentEditor from '@/components/DocumentEditor';
 
 const AgreementDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const printRef = useRef<HTMLDivElement>(null);
   const [agreement, setAgreement] = useState<Agreement | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [editedStructure, setEditedStructure] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -40,11 +45,22 @@ const AgreementDetail = () => {
     }
   }, [id]);
 
+  useEffect(() => {
+    // Проверяем query параметр edit
+    const editParam = searchParams.get('edit');
+    if (editParam === 'true') {
+      setIsEditing(true);
+      setActiveTab('document');
+    }
+  }, [searchParams]);
+
   const fetchAgreement = async () => {
     setLoading(true);
     try {
       const response = await agreementsApi.getById(Number(id));
       setAgreement(response.data.data);
+      setEditedContent(response.data.data.content || '');
+      setEditedStructure(response.data.data.structure || '');
     } catch (error: any) {
       message.error(error.response?.data?.message || 'Ошибка загрузки договора');
       navigate('/agreements');
@@ -73,7 +89,7 @@ const AgreementDetail = () => {
   };
 
   const handlePrint = useReactToPrint({
-    contentRef: printRef, // ИСПРАВЛЕНО: используем contentRef вместо content
+    contentRef: printRef,
     documentTitle: agreement?.agreement_number || 'agreement'
   });
 
@@ -82,6 +98,46 @@ const AgreementDetail = () => {
       navigator.clipboard.writeText(agreement.public_link);
       message.success('Ссылка скопирована в буфер обмена');
     }
+  };
+
+  const handleContentChange = (content: string, structure?: string) => {
+    setEditedContent(content);
+    if (structure) {
+      setEditedStructure(structure);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!agreement) return;
+    
+    setSaving(true);
+    try {
+      await agreementsApi.update(agreement.id, {
+        content: editedContent,
+        structure: editedStructure
+      });
+      message.success('Договор успешно сохранён');
+      setIsEditing(false);
+      await fetchAgreement();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Ошибка сохранения договора');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    Modal.confirm({
+      title: 'Отменить редактирование?',
+      content: 'Несохранённые изменения будут потеряны',
+      okText: 'Да, отменить',
+      cancelText: 'Продолжить редактирование',
+      onOk: () => {
+        setIsEditing(false);
+        setEditedContent(agreement?.content || '');
+        setEditedStructure(agreement?.structure || '');
+      }
+    });
   };
 
   if (loading) {
@@ -101,130 +157,132 @@ const AgreementDetail = () => {
       draft: { color: 'default', text: 'Черновик' },
       pending_signatures: { color: 'processing', text: 'Ожидает подписей' },
       signed: { color: 'success', text: 'Подписан' },
-      active: { color: 'cyan', text: 'Активен' },
+      active: { color: 'success', text: 'Активен' },
       expired: { color: 'warning', text: 'Истёк' },
       cancelled: { color: 'error', text: 'Отменён' }
     };
-
+    
     const config = statusConfig[status] || { color: 'default', text: status };
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
-  const getRoleLabel = (role: string) => {
-    const roleLabels: Record<string, string> = {
-      landlord: 'Арендодатель',
-      tenant: 'Арендатор',
-      agent: 'Агент',
-      principal: 'Принципал',
-      seller: 'Продавец',
-      buyer: 'Покупатель'
+  const getTypeLabel = (type: string) => {
+    const types: Record<string, string> = {
+      rent: 'Аренда',
+      sale: 'Продажа',
+      bilateral: 'Двухсторонний',
+      trilateral: 'Трёхсторонний',
+      agency: 'Агентский',
+      transfer_act: 'Акт передачи'
     };
-    return roleLabels[role] || role;
+    return types[type] || type;
   };
 
-  return (
-    <div style={{ padding: '24px' }}>
-      {/* Заголовок */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Space>
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/agreements')}
-            >
-              Назад
-            </Button>
+  const tabItems = [
+    {
+      key: 'document',
+      label: 'Документ',
+      children: (
+        <div style={{ background: '#fff', padding: '24px', borderRadius: '8px' }}>
+          {isEditing ? (
             <div>
-              <h2 style={{ margin: 0 }}>{agreement.agreement_number}</h2>
-              <div style={{ color: '#999', fontSize: '14px' }}>
-                {getStatusTag(agreement.status)}
+              <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <Button 
+                  icon={<CloseOutlined />}
+                  onClick={handleCancelEdit}
+                >
+                  Отмена
+                </Button>
+                <Button 
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  onClick={handleSaveEdit}
+                  loading={saving}
+                >
+                  Сохранить изменения
+                </Button>
+              </div>
+              <div style={{ 
+                background: '#fffbe6', 
+                border: '1px solid #ffe58f', 
+                padding: '12px',
+                borderRadius: '4px',
+                marginBottom: '16px'
+              }}>
+                <strong>Режим редактирования:</strong> Кликните на любой текст для редактирования. 
+                Используйте зелёные кнопки для добавления секций, параграфов и списков.
               </div>
             </div>
-          </Space>
-
-          <Space>
-            <Button icon={<LinkOutlined />} onClick={copyPublicLink}>
-              Копировать ссылку
-            </Button>
-            <Button icon={<DownloadOutlined />} onClick={handlePrint}>
-              Скачать PDF
-            </Button>
-            <Button icon={<EditOutlined />}>
-              Редактировать
-            </Button>
-            <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-              Удалить
-            </Button>
-          </Space>
-        </Space>
-      </Card>
-
-      {/* Вкладки */}
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        {/* Детали */}
-        <Tabs.TabPane tab="Детали" key="details">
-          <Card>
-            <Descriptions bordered column={2}>
-              <Descriptions.Item label="Номер договора">
-                {agreement.agreement_number}
+          ) : null}
+          
+          <DocumentEditor
+            ref={printRef}
+            agreement={agreement}
+            isEditing={isEditing}
+            onContentChange={handleContentChange}
+            logoUrl="/nova-logo.svg"
+          />
+        </div>
+      )
+    },
+    {
+      key: 'details',
+      label: 'Детали',
+      children: (
+        <Card>
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="Номер договора" span={2}>
+              {agreement.agreement_number}
+            </Descriptions.Item>
+            <Descriptions.Item label="Тип">
+              {getTypeLabel(agreement.type)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Статус">
+              {getStatusTag(agreement.status)}
+            </Descriptions.Item>
+            {agreement.property_name && (
+              <Descriptions.Item label="Объект" span={2}>
+                {agreement.property_name} ({agreement.property_number})
               </Descriptions.Item>
-              <Descriptions.Item label="Тип">
-                {agreement.type}
-              </Descriptions.Item>
-              <Descriptions.Item label="Статус">
-                {getStatusTag(agreement.status)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Город">
-                {agreement.city}
-              </Descriptions.Item>
-              <Descriptions.Item label="Объект недвижимости" span={2}>
-                {agreement.property_name ? (
-                  <div>
-                    {agreement.property_name}
-                    <div style={{ fontSize: '12px', color: '#999' }}>
-                      {agreement.property_number}
-                    </div>
-                  </div>
-                ) : (
-                  'Не указан'
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Дата начала">
-                {agreement.date_from ? new Date(agreement.date_from).toLocaleDateString('ru-RU') : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Дата окончания">
-                {agreement.date_to ? new Date(agreement.date_to).toLocaleDateString('ru-RU') : '-'}
-              </Descriptions.Item>
+            )}
+            {agreement.description && (
               <Descriptions.Item label="Описание" span={2}>
-                {agreement.description || '-'}
+                {agreement.description}
               </Descriptions.Item>
-              <Descriptions.Item label="Создан">
-                {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
+            )}
+            {agreement.date_from && (
+              <Descriptions.Item label="Дата начала">
+                {new Date(agreement.date_from).toLocaleDateString('ru-RU')}
               </Descriptions.Item>
-              <Descriptions.Item label="Создал">
+            )}
+            {agreement.date_to && (
+              <Descriptions.Item label="Дата окончания">
+                {new Date(agreement.date_to).toLocaleDateString('ru-RU')}
+              </Descriptions.Item>
+            )}
+            <Descriptions.Item label="Город">
+              {agreement.city}
+            </Descriptions.Item>
+            <Descriptions.Item label="Создан">
+              {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
+            </Descriptions.Item>
+            {agreement.created_by_name && (
+              <Descriptions.Item label="Создал" span={2}>
                 {agreement.created_by_name}
               </Descriptions.Item>
-              <Descriptions.Item label="Публичная ссылка" span={2}>
-                <a href={agreement.public_link} target="_blank" rel="noopener noreferrer">
-                  {agreement.public_link}
-                </a>
-              </Descriptions.Item>
-            </Descriptions>
-
-            {agreement.qr_code_path && (
-              <div style={{ marginTop: 24, textAlign: 'center' }}>
-                <Divider>QR код для быстрого доступа</Divider>
-                <QRCode value={agreement.public_link} size={200} />
-              </div>
             )}
-          </Card>
-        </Tabs.TabPane>
-
-        {/* Стороны */}
-        <Tabs.TabPane tab="Стороны" key="parties">
-          <Card>
+          </Descriptions>
+        </Card>
+      )
+    },
+    {
+      key: 'parties',
+      label: 'Стороны',
+      children: (
+        <Card>
+          {agreement.parties && agreement.parties.length > 0 ? (
             <Table
-              dataSource={agreement.parties || []}
+              dataSource={agreement.parties}
               rowKey="id"
               pagination={false}
               columns={[
@@ -232,10 +290,23 @@ const AgreementDetail = () => {
                   title: 'Роль',
                   dataIndex: 'role',
                   key: 'role',
-                  render: (role) => getRoleLabel(role) // ИСПОЛЬЗУЕМ функцию getRoleLabel
+                  render: (role) => {
+                    const roles: Record<string, string> = {
+                      landlord: 'Арендодатель',
+                      tenant: 'Арендатор',
+                      agent: 'Агент',
+                      principal: 'Принципал',
+                      seller: 'Продавец',
+                      buyer: 'Покупатель',
+                      party1: 'Сторона 1',
+                      party2: 'Сторона 2',
+                      party3: 'Сторона 3'
+                    };
+                    return roles[role] || role;
+                  }
                 },
                 {
-                  title: 'ФИО',
+                  title: 'Имя',
                   dataIndex: 'name',
                   key: 'name'
                 },
@@ -251,25 +322,27 @@ const AgreementDetail = () => {
                 }
               ]}
             />
-          </Card>
-        </Tabs.TabPane>
-
-        {/* Подписи */}
-        <Tabs.TabPane tab="Подписи" key="signatures">
-          <Card
-            extra={
-              <Button type="primary" icon={<PlusOutlined />}>
-                Настроить подписи
-              </Button>
-            }
-          >
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+              Стороны не указаны
+            </div>
+          )}
+        </Card>
+      )
+    },
+    {
+      key: 'signatures',
+      label: 'Подписи',
+      children: (
+        <Card>
+          {agreement.signatures && agreement.signatures.length > 0 ? (
             <Table
-              dataSource={agreement.signatures || []}
+              dataSource={agreement.signatures}
               rowKey="id"
               pagination={false}
               columns={[
                 {
-                  title: 'Подписант',
+                  title: 'Имя',
                   dataIndex: 'signer_name',
                   key: 'signer_name'
                 },
@@ -289,44 +362,77 @@ const AgreementDetail = () => {
                   )
                 },
                 {
-                  title: 'Дата подписи',
+                  title: 'Дата подписания',
                   dataIndex: 'signed_at',
                   key: 'signed_at',
-                  render: (date) => date ? new Date(date).toLocaleString('ru-RU') : '-'
-                },
-                {
-                  title: 'Ссылка',
-                  key: 'link',
-                  render: (_, record) => (
-                    record.signature_link && !record.is_signed ? (
-                      <Button
-                        type="link"
-                        size="small"
-                        onClick={() => {
-                          const link = `${window.location.origin}/sign/${record.signature_link}`;
-                          navigator.clipboard.writeText(link);
-                          message.success('Ссылка скопирована');
-                        }}
-                      >
-                        Копировать
-                      </Button>
-                    ) : null
-                  )
+                  render: (date) => date ? new Date(date).toLocaleDateString('ru-RU') : '-'
                 }
               ]}
             />
-          </Card>
-        </Tabs.TabPane>
-
-        {/* Документ */}
-        <Tabs.TabPane tab="Документ" key="document">
-          <Card>
-            <div ref={printRef}>
-              <div dangerouslySetInnerHTML={{ __html: agreement.content }} />
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+              Подписи не настроены
             </div>
-          </Card>
-        </Tabs.TabPane>
-      </Tabs>
+          )}
+        </Card>
+      )
+    }
+  ];
+
+  return (
+    <div style={{ padding: '24px' }}>
+      <Card style={{ marginBottom: '16px' }}>
+        <Space style={{ marginBottom: '16px', width: '100%', justifyContent: 'space-between' }}>
+          <Space>
+            <Button 
+              icon={<ArrowLeftOutlined />} 
+              onClick={() => navigate('/agreements')}
+            >
+              Назад
+            </Button>
+            <h2 style={{ margin: 0 }}>Договор {agreement.agreement_number}</h2>
+            {getStatusTag(agreement.status)}
+          </Space>
+          
+          <Space>
+            {!isEditing && (
+              <>
+                <Button 
+                  icon={<EditOutlined />}
+                  onClick={() => setIsEditing(true)}
+                >
+                  Редактировать
+                </Button>
+                <Button 
+                  icon={<DownloadOutlined />}
+                  onClick={handlePrint}
+                >
+                  PDF
+                </Button>
+                <Button 
+                  icon={<LinkOutlined />}
+                  onClick={copyPublicLink}
+                >
+                  Скопировать ссылку
+                </Button>
+                <Button 
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={handleDelete}
+                >
+                  Удалить
+                </Button>
+              </>
+            )}
+          </Space>
+        </Space>
+      </Card>
+
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabItems}
+      />
     </div>
   );
 };
