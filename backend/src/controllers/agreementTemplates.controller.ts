@@ -58,52 +58,55 @@ class AgreementTemplatesController {
    * Получить шаблон по ID
    * GET /api/agreement-templates/:id
    */
-  async getById(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
+async getById(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
 
-      const template = await db.queryOne(`
-        SELECT 
-          t.*,
-          u.username as created_by_name
-        FROM agreement_templates t
-        LEFT JOIN admin_users u ON t.created_by = u.id
-        WHERE t.id = ?
-      `, [id]);
+    const template = await db.queryOne(`
+      SELECT 
+        t.*,
+        u.username as created_by_name
+      FROM agreement_templates t
+      LEFT JOIN admin_users u ON t.created_by = u.id
+      WHERE t.id = ?
+    `, [id]);
 
-      if (!template) {
-        res.status(404).json({
-          success: false,
-          message: 'Шаблон не найден'
-        });
-        return;
-      }
-
-      // Получаем объекты где использовался шаблон
-      const usedProperties = await db.query(`
-        SELECT DISTINCT p.*, pt.property_name
-        FROM agreements a
-        JOIN properties p ON a.property_id = p.id
-        LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'en'
-        WHERE a.template_id = ?
-        LIMIT 10
-      `, [id]);
-
-      res.json({
-        success: true,
-        data: {
-          ...template,
-          used_properties: usedProperties
-        }
-      });
-    } catch (error) {
-      logger.error('Get agreement template error:', error);
-      res.status(500).json({
+    if (!template) {
+      res.status(404).json({
         success: false,
-        message: 'Ошибка получения шаблона'
+        message: 'Шаблон не найден'
       });
+      return;
     }
+
+    // Получаем объекты где использовался шаблон
+    const usedProperties = await db.query(`
+      SELECT DISTINCT 
+        p.*,
+        COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name, CONCAT('Объект ', p.property_number)) as property_nameы
+      FROM agreements a
+      JOIN properties p ON a.property_id = p.id
+      LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
+      LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
+      WHERE a.template_id = ?
+      LIMIT 10
+    `, [id]);
+
+    res.json({
+      success: true,
+      data: {
+        ...template,
+        used_properties: usedProperties
+      }
+    });
+  } catch (error) {
+    logger.error('Get agreement template error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения шаблона'
+    });
   }
+}
 
   /**
    * Создать шаблон

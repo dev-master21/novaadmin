@@ -18,149 +18,151 @@ class AgreementsController {
    * Получить список всех договоров
    * GET /api/agreements
    */
-  async getAll(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { type, status, property_id, search, page = 1, limit = 20 } = req.query;
+async getAll(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { type, status, property_id, search, page = 1, limit = 20 } = req.query;
 
-      const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
-      const limitNum = Math.max(1, Math.min(100, parseInt(String(limit), 10) || 20));
-      const offset = (pageNum - 1) * limitNum;
+    const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(String(limit), 10) || 20));
+    const offset = (pageNum - 1) * limitNum;
 
-      const whereConditions: string[] = ['a.deleted_at IS NULL'];
-      const queryParams: any[] = [];
+    const whereConditions: string[] = ['a.deleted_at IS NULL'];
+    const queryParams: any[] = [];
 
-      if (type) {
-        whereConditions.push('a.type = ?');
-        queryParams.push(type);
-      }
-
-      if (status) {
-        whereConditions.push('a.status = ?');
-        queryParams.push(status);
-      }
-
-      if (property_id) {
-        whereConditions.push('a.property_id = ?');
-        queryParams.push(property_id);
-      }
-
-      if (search) {
-        whereConditions.push('(a.agreement_number LIKE ? OR a.description LIKE ?)');
-        queryParams.push(`%${search}%`, `%${search}%`);
-      }
-
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-      // Получаем общее количество
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM agreements a
-        ${whereClause}
-      `;
-      const countResult = await db.queryOne<{ total: number }>(countQuery, queryParams);
-      const total = countResult?.total || 0;
-
-      // Получаем договоры
-      const query = `
-        SELECT 
-          a.*,
-          at.name as template_name,
-          pt.property_name as property_name,
-          p.property_number,
-          u.username as created_by_name,
-          (SELECT COUNT(*) FROM agreement_signatures WHERE agreement_id = a.id) as signature_count,
-          (SELECT COUNT(*) FROM agreement_signatures WHERE agreement_id = a.id AND is_signed = 1) as signed_count
-        FROM agreements a
-        LEFT JOIN agreement_templates at ON a.template_id = at.id
-        LEFT JOIN properties p ON a.property_id = p.id
-        LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'en'
-        LEFT JOIN admin_users u ON a.created_by = u.id
-        ${whereClause}
-        ORDER BY a.created_at DESC
-        LIMIT ? OFFSET ?
-      `;
-
-      queryParams.push(limitNum, offset);
-      const agreements = await db.query(query, queryParams);
-
-      res.json({
-        success: true,
-        data: agreements,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          totalPages: Math.ceil(total / limitNum)
-        }
-      });
-    } catch (error) {
-      logger.error('Get agreements error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка получения договоров'
-      });
+    if (type) {
+      whereConditions.push('a.type = ?');
+      queryParams.push(type);
     }
+
+    if (status) {
+      whereConditions.push('a.status = ?');
+      queryParams.push(status);
+    }
+
+    if (property_id) {
+      whereConditions.push('a.property_id = ?');
+      queryParams.push(property_id);
+    }
+
+    if (search) {
+      whereConditions.push('(a.agreement_number LIKE ? OR a.description LIKE ?)');
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Получаем общее количество
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM agreements a
+      ${whereClause}
+    `;
+    const countResult = await db.queryOne<{ total: number }>(countQuery, queryParams);
+    const total = countResult?.total || 0;
+
+    // Получаем договоры с правильным language_code и fallback
+    const query = `
+      SELECT 
+        a.*,
+        at.name as template_name,
+        COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name, CONCAT('Объект ', p.property_number)) as property_name,
+        p.property_number,
+        u.username as created_by_name,
+        (SELECT COUNT(*) FROM agreement_signatures WHERE agreement_id = a.id) as signature_count,
+        (SELECT COUNT(*) FROM agreement_signatures WHERE agreement_id = a.id AND is_signed = 1) as signed_count
+      FROM agreements a
+      LEFT JOIN agreement_templates at ON a.template_id = at.id
+      LEFT JOIN properties p ON a.property_id = p.id
+      LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
+      LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
+      LEFT JOIN admin_users u ON a.created_by = u.id
+      ${whereClause}
+      ORDER BY a.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    queryParams.push(limitNum, offset);
+    const agreements = await db.query(query, queryParams);
+
+    res.json({
+      success: true,
+      data: agreements,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    logger.error('Get agreements error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения договоров'
+    });
   }
+}
 
   /**
    * Получить договор по ID
    * GET /api/agreements/:id
    */
-  async getById(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
+async getById(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
 
-      const agreement = await db.queryOne(`
-        SELECT 
-          a.*,
-          at.name as template_name,
-          pt.property_name,
-          p.property_number,
-          u.username as created_by_name
-        FROM agreements a
-        LEFT JOIN agreement_templates at ON a.template_id = at.id
-        LEFT JOIN properties p ON a.property_id = p.id
-        LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'en'
-        LEFT JOIN admin_users u ON a.created_by = u.id
-        WHERE a.id = ? AND a.deleted_at IS NULL
-      `, [id]);
+    const agreement = await db.queryOne(`
+      SELECT 
+        a.*,
+        at.name as template_name,
+        COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name, CONCAT('Объект ', p.property_number)) as property_name,
+        p.property_number,
+        u.username as created_by_name
+      FROM agreements a
+      LEFT JOIN agreement_templates at ON a.template_id = at.id
+      LEFT JOIN properties p ON a.property_id = p.id
+      LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
+      LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
+      LEFT JOIN admin_users u ON a.created_by = u.id
+      WHERE a.id = ? AND a.deleted_at IS NULL
+    `, [id]);
 
-      if (!agreement) {
-        res.status(404).json({
-          success: false,
-          message: 'Договор не найден'
-        });
-        return;
-      }
-
-      // Получаем подписи
-      const signatures = await db.query(
-        'SELECT * FROM agreement_signatures WHERE agreement_id = ? ORDER BY created_at',
-        [id]
-      );
-
-      // Получаем стороны договора
-      const parties = await db.query(
-        'SELECT * FROM agreement_parties WHERE agreement_id = ? ORDER BY id',
-        [id]
-      );
-
-      res.json({
-        success: true,
-        data: {
-          ...agreement,
-          signatures,
-          parties
-        }
-      });
-    } catch (error) {
-      logger.error('Get agreement error:', error);
-      res.status(500).json({
+    if (!agreement) {
+      res.status(404).json({
         success: false,
-        message: 'Ошибка получения договора'
+        message: 'Договор не найден'
       });
+      return;
     }
+
+    // Получаем подписи
+    const signatures = await db.query(
+      'SELECT * FROM agreement_signatures WHERE agreement_id = ? ORDER BY created_at',
+      [id]
+    );
+
+    // Получаем стороны договора
+    const parties = await db.query(
+      'SELECT * FROM agreement_parties WHERE agreement_id = ? ORDER BY id',
+      [id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        ...agreement,
+        signatures,
+        parties
+      }
+    });
+  } catch (error) {
+    logger.error('Get agreement error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения договора'
+    });
   }
+}
 
 /**
  * Создать договор
@@ -193,6 +195,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       property_number_manual
     } = req.body;
 
+    console.log('🎯 Extracted property_id:', property_id);
     console.log('🎯 Extracted template_id:', template_id);
     
     const userId = req.admin!.id;
@@ -212,15 +215,21 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    // Получаем информацию об объекте если указан
+    // Получаем информацию об объекте если указан (с правильным language_code и fallback)
     let property = null;
     if (property_id) {
+      console.log('🔍 Fetching property with ID:', property_id);
       property = await db.queryOne(`
-        SELECT p.*, pt.property_name
+        SELECT 
+          p.*,
+          COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name, CONCAT('Объект ', p.property_number)) as property_name
         FROM properties p
-        LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'en'
+        LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
+        LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
         WHERE p.id = ?
       `, [property_id]);
+      
+      console.log('📦 Property fetched:', property);
     }
 
     // Генерируем номер договора
@@ -235,13 +244,15 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     // Подготавливаем переменные для замены
     const variables: any = {
       agreement_number,
-      property_name: property_name_manual || (property as any)?.property_name || 'N/A',
-      property_number: property_number_manual || (property as any)?.property_number || 'N/A',
-      property_address: property_address_override || (property as any)?.address || 'N/A',
+      contract_number: agreement_number,
+      property_name: property_name_manual || (property as any)?.property_name || '',
+      property_number: property_number_manual || (property as any)?.property_number || '',
+      property_address: property_address_override || (property as any)?.address || '',
       date_from: date_from || new Date().toISOString().split('T')[0],
       date_to: date_to || '',
       city: city || 'Phuket',
       rent_amount_monthly: rent_amount_monthly || 0,
+      rent_amount: rent_amount_monthly || 0,
       rent_amount_total: rent_amount_total || 0,
       deposit_amount: deposit_amount || 0,
       utilities_included: utilities_included || '',
@@ -249,6 +260,8 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       bank_account_name: bank_account_name || '',
       bank_account_number: bank_account_number || ''
     };
+
+    console.log('🔧 Variables prepared:', variables);
 
     // Добавляем данные сторон
     if (parties && Array.isArray(parties)) {
@@ -351,6 +364,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
 
         const partyId = (partyResult as any)[0].insertId;
 
+
         // Если есть документы в base64, сохраняем их
         if (party.documents && Array.isArray(party.documents) && party.documents.length > 0) {
           for (const doc of party.documents) {
@@ -403,12 +417,15 @@ async create(req: AuthRequest, res: Response): Promise<void> {
 
     await db.commit(connection);
 
-    logger.info(`Agreement created: ${agreement_number} by user ${req.admin?.username}`);
+    logger.info(`Agreement created: ${agreement_number} (ID: ${agreementId}) by user ${req.admin?.username}`);
 
     res.status(201).json({
       success: true,
       message: 'Договор успешно создан',
-      data: { id: agreementId, agreement_number }
+      data: {
+        id: agreementId,
+        agreement_number
+      }
     });
   } catch (error) {
     await db.rollback(connection);
@@ -419,7 +436,6 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     });
   }
 }
-
   /**
    * Обновить договор
    * PUT /api/agreements/:id
@@ -545,59 +561,60 @@ async create(req: AuthRequest, res: Response): Promise<void> {
    * Получить договор по публичной ссылке (без авторизации)
    * GET /api/agreements/public/:link
    */
-  async getByPublicLink(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { link } = req.params;
+async getByPublicLink(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { link } = req.params;
 
-      const agreement = await db.queryOne(`
-        SELECT 
-          a.*,
-          at.name as template_name,
-          pt.property_name,
-          p.property_number
-        FROM agreements a
-        LEFT JOIN agreement_templates at ON a.template_id = at.id
-        LEFT JOIN properties p ON a.property_id = p.id
-        LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'en'
-        WHERE a.public_link LIKE ? AND a.deleted_at IS NULL
-      `, [`%${link}%`]);
+    const agreement = await db.queryOne(`
+      SELECT 
+        a.*,
+        at.name as template_name,
+        COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name, CONCAT('Объект ', p.property_number)) as property_name,
+        p.property_number
+      FROM agreements a
+      LEFT JOIN agreement_templates at ON a.template_id = at.id
+      LEFT JOIN properties p ON a.property_id = p.id
+      LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
+      LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
+      WHERE a.public_link LIKE ? AND a.deleted_at IS NULL
+    `, [`%${link}%`]);
 
-      if (!agreement) {
-        res.status(404).json({
-          success: false,
-          message: 'Договор не найден'
-        });
-        return;
-      }
-
-      // Получаем подписи
-      const signatures = await db.query(
-        'SELECT * FROM agreement_signatures WHERE agreement_id = ? ORDER BY created_at',
-        [(agreement as any).id]
-      );
-
-      // Получаем стороны
-      const parties = await db.query(
-        'SELECT * FROM agreement_parties WHERE agreement_id = ? ORDER BY id',
-        [(agreement as any).id]
-      );
-
-      res.json({
-        success: true,
-        data: {
-          ...agreement,
-          signatures,
-          parties
-        }
-      });
-    } catch (error) {
-      logger.error('Get agreement by public link error:', error);
-      res.status(500).json({
+    if (!agreement) {
+      res.status(404).json({
         success: false,
-        message: 'Ошибка получения договора'
+        message: 'Договор не найден'
       });
+      return;
     }
+
+    // Получаем подписи
+    const signatures = await db.query(
+      'SELECT * FROM agreement_signatures WHERE agreement_id = ? ORDER BY created_at',
+      [(agreement as any).id]
+    );
+
+    // Получаем стороны
+    const parties = await db.query(
+      'SELECT * FROM agreement_parties WHERE agreement_id = ? ORDER BY id',
+      [(agreement as any).id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        ...agreement,
+        signatures,
+        parties
+      }
+    });
+  } catch (error) {
+    logger.error('Get agreement by public link error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения договора'
+    });
   }
+}
 
 /**
  * Создать зоны для подписей
@@ -791,69 +808,66 @@ async createSignatures(req: AuthRequest, res: Response): Promise<void> {
    * Получить список объектов для выбора
    * GET /api/agreements/properties
    */
-  async getProperties(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { search } = req.query;
+async getProperties(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { search } = req.query;
 
-      let query = `
-        SELECT 
-          p.id,
-          p.property_number,
-          p.complex_name,
-          p.address,
-          pt.property_name,
-          p.deal_type,
-          p.property_type
-        FROM properties p
-        LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'en'
-        WHERE p.deleted_at IS NULL
-      `;
+    let query = `
+      SELECT 
+        p.id,
+        p.property_number,
+        p.complex_name,
+        p.address,
+        COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name, CONCAT('Объект ', p.property_number)) as property_name,
+        p.deal_type,
+        p.property_type
+      FROM properties p
+      LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
+      LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
+      WHERE p.deleted_at IS NULL
+    `;
 
-      const queryParams: any[] = [];
+    const queryParams: any[] = [];
 
-      if (search) {
-        query += ` AND (pt.property_name LIKE ? OR p.property_number LIKE ? OR p.complex_name LIKE ? OR p.address LIKE ?)`;
-        queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
-      }
-
-      query += ` ORDER BY p.complex_name, p.property_number`;
-
-      const properties = await db.query(query, queryParams);
-
-      // Группируем по комплексам
-      const complexes: any = {};
-      const standalone: any[] = [];
-
-      properties.forEach((prop: any) => {
-        if (prop.complex_name && prop.complex_name.trim() !== '') {
-          if (!complexes[prop.complex_name]) {
-            complexes[prop.complex_name] = [];
-          }
-          complexes[prop.complex_name].push(prop);
-        } else {
-          standalone.push(prop);
-        }
-      });
-
-      res.json({
-        success: true,
-        data: {
-          complexes,
-          standalone,
-          all: properties,
-          total: properties.length,
-          complexCount: Object.keys(complexes).length,
-          standaloneCount: standalone.length
-        }
-      });
-    } catch (error) {
-      logger.error('Get properties error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка получения объектов'
-      });
+    if (search) {
+      query += ` AND (COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name) LIKE ? OR p.property_number LIKE ? OR p.address LIKE ?)`;
+      queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
+
+    query += ` ORDER BY p.complex_name, p.property_number`;
+
+    const properties = await db.query(query, queryParams);
+
+    // Группируем по комплексам
+    const grouped: any = {
+      complexes: {} as Record<string, any[]>,
+      standalone: [] as any[],
+      all: properties
+    };
+
+    (properties as any[]).forEach((prop: any) => {
+      if (prop.complex_name) {
+        if (!grouped.complexes[prop.complex_name]) {
+          grouped.complexes[prop.complex_name] = [];
+        }
+        grouped.complexes[prop.complex_name].push(prop);
+      } else {
+        grouped.standalone.push(prop);
+      }
+    });
+
+    res.json({
+      success: true,
+      data: grouped
+    });
+  } catch (error) {
+    logger.error('Get properties error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения списка объектов'
+    });
   }
+}
   /**
    * Загрузить документ стороны
    * POST /api/agreements/parties/:partyId/document
