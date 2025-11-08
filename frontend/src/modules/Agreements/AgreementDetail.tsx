@@ -13,7 +13,12 @@ import {
   Table,
   Drawer,
   Switch,
-  Tooltip
+  Tooltip,
+  Dropdown,
+  Row,
+  Col,
+  Typography,
+  Input
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -26,7 +31,11 @@ import {
   FileTextOutlined,
   CodeOutlined,
   MobileOutlined,
-  DesktopOutlined
+  DesktopOutlined,
+  CheckOutlined,
+  ReloadOutlined,
+  CopyOutlined,
+  MoreOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { agreementsApi, Agreement } from '@/api/agreements.api';
@@ -35,6 +44,9 @@ import DocumentEditor from '@/components/DocumentEditor';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './AgreementDetail.css';
+import SignaturesModal from './components/SignaturesModal';
+
+const { Text } = Typography;
 
 const AgreementDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,6 +61,7 @@ const AgreementDetail = () => {
   const [editedStructure, setEditedStructure] = useState('');
   const [saving, setSaving] = useState(false);
   const [detailsDrawerVisible, setDetailsDrawerVisible] = useState(false);
+  const [signaturesModalVisible, setSignaturesModalVisible] = useState(false);
 
   // Режимы просмотра
   const [viewMode, setViewMode] = useState<'formatted' | 'simple'>('formatted');
@@ -306,7 +319,7 @@ const AgreementDetail = () => {
             </div>
           )}
 
-        {/* УПРОЩЕННЫЙ РЕЖИМ */}
+          {/* УПРОЩЕННЫЙ РЕЖИМ */}
           {viewMode === 'simple' && (
             <div className={`agreement-simple-view ${isMobile ? 'mobile-view' : ''}`}>
               <ReactQuill
@@ -422,45 +435,286 @@ const AgreementDetail = () => {
       label: 'Подписи',
       children: (
         <Card>
+          <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => setSignaturesModalVisible(true)}
+              disabled={!agreement.parties || agreement.parties.length === 0}
+            >
+              {agreement.signatures && agreement.signatures.length > 0 
+                ? 'Управление подписями' 
+                : 'Отправить на подпись'}
+            </Button>
+            {agreement.signatures && agreement.signatures.length > 0 && (
+              <Tag color={agreement.signatures.every(s => s.is_signed) ? 'success' : 'processing'}>
+                Подписано: {agreement.signatures.filter(s => s.is_signed).length} / {agreement.signatures.length}
+              </Tag>
+            )}
+          </Space>
+
           {agreement.signatures && agreement.signatures.length > 0 ? (
             <Table
               dataSource={agreement.signatures}
               rowKey="id"
               pagination={false}
               size="small"
-              scroll={{ x: 800 }}
+              scroll={{ x: 1200 }}
+              expandable={{
+                expandedRowRender: (record) => (
+                  <div style={{ padding: '16px', background: '#fafafa', borderRadius: '8px' }}>
+                    <h4 style={{ marginBottom: 16 }}>Детальная аналитика подписи</h4>
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} md={12}>
+                        <Card size="small" title="Информация о сессии">
+                          <Space direction="vertical" style={{ width: '100%' }} size="small">
+                            <div>
+                              <Text type="secondary">IP адрес:</Text>
+                              <br />
+                              <Text strong>{record.ip_address || 'Не определён'}</Text>
+                            </div>
+                            <div>
+                              <Text type="secondary">Устройство:</Text>
+                              <br />
+                              <Text strong>{record.device_type || 'Не определено'}</Text>
+                            </div>
+                            <div>
+                              <Text type="secondary">Браузер:</Text>
+                              <br />
+                              <Text strong>{record.browser || 'Не определён'}</Text>
+                            </div>
+                            <div>
+                              <Text type="secondary">Операционная система:</Text>
+                              <br />
+                              <Text strong>{record.os || 'Не определена'}</Text>
+                            </div>
+                          </Space>
+                        </Card>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Card size="small" title="Временные метрики">
+                          <Space direction="vertical" style={{ width: '100%' }} size="small">
+                            <div>
+                              <Text type="secondary">Первый визит:</Text>
+                              <br />
+                              <Text strong>
+                                {record.first_visit_at 
+                                  ? new Date(record.first_visit_at).toLocaleString('ru-RU')
+                                  : 'Не посещал'}
+                              </Text>
+                            </div>
+                            <div>
+                              <Text type="secondary">Время просмотра договора:</Text>
+                              <br />
+                              <Text strong>
+                                {record.agreement_view_duration 
+                                  ? `${Math.floor(record.agreement_view_duration / 60)} мин ${record.agreement_view_duration % 60} сек`
+                                  : '0 сек'}
+                              </Text>
+                            </div>
+                            <div>
+                              <Text type="secondary">Общее время на странице:</Text>
+                              <br />
+                              <Text strong>
+                                {record.total_session_duration 
+                                  ? `${Math.floor(record.total_session_duration / 60)} мин ${record.total_session_duration % 60} сек`
+                                  : '0 сек'}
+                              </Text>
+                            </div>
+                            <div>
+                              <Text type="secondary">Количество очисток подписи:</Text>
+                              <br />
+                              <Text strong>{record.signature_clear_count || 0}</Text>
+                            </div>
+                          </Space>
+                        </Card>
+                      </Col>
+                      {record.is_signed && record.signature_data && (
+                        <Col xs={24}>
+                          <Card size="small" title="Подпись">
+                            <div style={{ textAlign: 'center' }}>
+                              <img 
+                                src={record.signature_data} 
+                                alt="Signature" 
+                                style={{ 
+                                  maxWidth: '300px', 
+                                  border: '1px solid #d9d9d9',
+                                  borderRadius: '4px',
+                                  padding: '8px',
+                                  background: 'white'
+                                }} 
+                              />
+                            </div>
+                          </Card>
+                        </Col>
+                      )}
+                      {record.signature_link && (
+                        <Col xs={24}>
+                          <Card size="small" title="Ссылка для подписания">
+                            <Input.Group compact>
+                              <Input
+                                style={{ width: 'calc(100% - 100px)' }}
+                                value={`https://agreement.novaestate.company/sign/${record.signature_link}`}
+                                readOnly
+                              />
+                              <Button 
+                                icon={<CopyOutlined />}
+                                onClick={() => {
+                                  navigator.clipboard.writeText(
+                                    `https://agreement.novaestate.company/sign/${record.signature_link}`
+                                  );
+                                  message.success('Ссылка скопирована');
+                                }}
+                              >
+                                Копировать
+                              </Button>
+                            </Input.Group>
+                          </Card>
+                        </Col>
+                      )}
+                    </Row>
+                  </div>
+                ),
+                rowExpandable: () => true,
+              }}
               columns={[
                 {
                   title: 'Подписант',
                   dataIndex: 'signer_name',
-                  key: 'signer_name'
-                },
-                {
-                  title: 'Роль',
-                  dataIndex: 'signer_role',
-                  key: 'signer_role'
+                  key: 'signer_name',
+                  width: 200,
+                  render: (text, record) => (
+                    <Space direction="vertical" size="small">
+                      <Text strong>{text}</Text>
+                      <Tag color="blue">{record.signer_role}</Tag>
+                    </Space>
+                  )
                 },
                 {
                   title: 'Статус',
                   dataIndex: 'is_signed',
                   key: 'is_signed',
-                  render: (is_signed) => (
-                    <Tag color={is_signed ? 'success' : 'default'}>
-                      {is_signed ? 'Подписано' : 'Ожидает'}
-                    </Tag>
+                  width: 120,
+                  render: (is_signed, record) => (
+                    <Space direction="vertical" size="small">
+                      <Tag color={is_signed ? 'success' : 'default'} icon={is_signed ? <CheckOutlined /> : null}>
+                        {is_signed ? 'Подписано' : 'Ожидает'}
+                      </Tag>
+                      {record.first_visit_at && !is_signed && (
+                        <Text type="secondary" style={{ fontSize: 11 }}>
+                          Посещал
+                        </Text>
+                      )}
+                    </Space>
                   )
                 },
                 {
                   title: 'Дата подписания',
                   dataIndex: 'signed_at',
                   key: 'signed_at',
-                  render: (date) => date ? new Date(date).toLocaleDateString('ru-RU') : '-'
+                  width: 180,
+                  render: (date) => date ? new Date(date).toLocaleString('ru-RU') : '-'
+                },
+                {
+                  title: 'Устройство',
+                  dataIndex: 'device_type',
+                  key: 'device_type',
+                  width: 120,
+                  render: (device) => device ? (
+                    <Tag>{device}</Tag>
+                  ) : '-'
+                },
+                {
+                  title: 'Браузер',
+                  dataIndex: 'browser',
+                  key: 'browser',
+                  width: 150,
+                  render: (browser) => browser || '-'
+                },
+                {
+                  title: 'IP адрес',
+                  dataIndex: 'ip_address',
+                  key: 'ip_address',
+                  width: 140,
+                  render: (ip) => ip || '-'
+                },
+                {
+                  title: 'Действия',
+                  key: 'actions',
+                  width: 100,
+                  fixed: 'right',
+                  render: (_, record) => (
+                    <Dropdown
+                      menu={{
+                        items: [
+                          {
+                            key: 'copy',
+                            icon: <CopyOutlined />,
+                            label: 'Копировать ссылку',
+                            onClick: () => {
+                              navigator.clipboard.writeText(
+                                `https://agreement.novaestate.company/sign/${record.signature_link}`
+                              );
+                              message.success('Ссылка скопирована');
+                            }
+                          },
+                          {
+                            key: 'regenerate',
+                            icon: <ReloadOutlined />,
+                            label: 'Перегенерировать ссылку',
+                            onClick: async () => {
+                              try {
+                                await agreementsApi.regenerateSignatureLink(record.id);
+                                message.success('Ссылка перегенерирована');
+                                fetchAgreement();
+                              } catch (error: any) {
+                                message.error('Ошибка перегенерации');
+                              }
+                            }
+                          },
+                          {
+                            type: 'divider'
+                          },
+                          {
+                            key: 'delete',
+                            icon: <DeleteOutlined />,
+                            label: 'Удалить подпись',
+                            danger: true,
+                            onClick: () => {
+                              Modal.confirm({
+                                title: 'Удалить подпись?',
+                                content: 'Это действие нельзя отменить',
+                                okText: 'Удалить',
+                                okType: 'danger',
+                                cancelText: 'Отмена',
+                                onOk: async () => {
+                                  try {
+                                    await agreementsApi.deleteSignature(record.id);
+                                    message.success('Подпись удалена');
+                                    fetchAgreement();
+                                  } catch (error: any) {
+                                    message.error('Ошибка удаления');
+                                  }
+                                }
+                              });
+                            }
+                          }
+                        ]
+                      }}
+                    >
+                      <Button size="small" icon={<MoreOutlined />} />
+                    </Dropdown>
+                  )
                 }
               ]}
             />
           ) : (
             <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-              Подписи не настроены
+              <FileTextOutlined style={{ fontSize: 48, marginBottom: 16, color: '#d9d9d9' }} />
+              <div>Подписи не настроены</div>
+              <div style={{ fontSize: 12, marginTop: 8 }}>
+                Нажмите "Отправить на подпись" для создания подписей
+              </div>
             </div>
           )}
         </Card>
@@ -574,6 +828,18 @@ const AgreementDetail = () => {
           </Descriptions.Item>
         </Descriptions>
       </Drawer>
+
+      <SignaturesModal
+        visible={signaturesModalVisible}
+        onCancel={() => setSignaturesModalVisible(false)}
+        onSuccess={() => {
+          fetchAgreement();
+          setSignaturesModalVisible(false);
+        }}
+        agreementId={agreement.id}
+        parties={agreement.parties || []}
+        existingSignatures={agreement.signatures}
+      />
     </div>
   );
 };

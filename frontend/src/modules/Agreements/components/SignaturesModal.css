@@ -1,0 +1,76 @@
+/* frontend/src/modules/Agreements/components/SignaturesModal.css */
+.signatures-modal-dark .ant-modal-content {
+  background: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-modal-header {
+  background: #1f1f1f;
+  border-bottom-color: #303030;
+}
+
+.signatures-modal-dark .ant-modal-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-modal-close {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.signatures-modal-dark .ant-card {
+  background: #141414;
+  border-color: #303030;
+}
+
+.signatures-modal-dark .ant-card-head {
+  background: #1f1f1f;
+  border-bottom-color: #303030;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-card-head-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-input,
+.signatures-modal-dark .ant-select-selector {
+  background: #141414 !important;
+  border-color: #303030 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.signatures-modal-dark .ant-input::placeholder,
+.signatures-modal-dark .ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.signatures-modal-dark .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.signatures-modal-dark .ant-table {
+  background: #141414;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-table-thead > tr > th {
+  background: #1f1f1f;
+  border-bottom-color: #303030;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-table-tbody > tr > td {
+  border-bottom-color: #303030;
+}
+
+.signatures-modal-dark .ant-table-tbody > tr:hover > td {
+  background: #262626;
+}
+
+.signatures-modal-dark .ant-typography {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-typography-secondary {
+  color: rgba(255, 255, 255, 0.45) !important;
+}

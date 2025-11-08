@@ -560,3 +560,54 @@
     padding: 0;
   }
 }
+/* Адаптация таблицы подписей для мобильных */
+@media (max-width: 768px) {
+  .ant-table-wrapper .ant-table {
+    font-size: 12px;
+  }
+
+  .ant-table-wrapper .ant-table-thead > tr > th,
+  .ant-table-wrapper .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+  }
+
+  /* Скрываем некоторые колонки на мобильных */
+  .ant-table-wrapper .ant-table-thead > tr > th:nth-child(4),
+  .ant-table-wrapper .ant-table-tbody > tr > td:nth-child(4),
+  .ant-table-wrapper .ant-table-thead > tr > th:nth-child(5),
+  .ant-table-wrapper .ant-table-tbody > tr > td:nth-child(5),
+  .ant-table-wrapper .ant-table-thead > tr > th:nth-child(6),
+  .ant-table-wrapper .ant-table-tbody > tr > td:nth-child(6) {
+    display: none;
+  }
+
+  /* Адаптация expandable row */
+  .ant-table-expanded-row > .ant-table-cell {
+    padding: 12px 8px !important;
+  }
+
+  .ant-table-expanded-row .ant-row {
+    margin: 0 -4px;
+  }
+
+  .ant-table-expanded-row .ant-col {
+    padding: 0 4px;
+  }
+
+  .ant-table-expanded-row .ant-card {
+    margin-bottom: 8px;
+  }
+
+  .ant-table-expanded-row .ant-card-head {
+    padding: 8px 12px;
+    min-height: auto;
+  }
+
+  .ant-table-expanded-row .ant-card-head-title {
+    font-size: 13px;
+  }
+
+  .ant-table-expanded-row .ant-card-body {
+    padding: 12px;
+  }
+}

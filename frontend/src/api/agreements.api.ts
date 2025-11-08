@@ -13,6 +13,14 @@ export interface Agreement {
   date_from?: string;
   date_to?: string;
   city: string;
+  rent_amount_monthly?: number;
+  rent_amount_total?: number;
+  deposit_amount?: number;
+  utilities_included?: string;
+  bank_name?: string;
+  bank_account_name?: string;
+  bank_account_number?: string;
+  property_address_override?: string;
   status: string;
   public_link: string;
   qr_code_path?: string;
@@ -58,6 +66,7 @@ export interface AgreementParty {
   director_name?: string;
   director_passport?: string;
   director_country?: string;
+  document_path?: string;
   created_at?: string;
 }
 
@@ -76,6 +85,15 @@ export interface AgreementSignature {
   ip_address?: string;
   geolocation?: string;
   created_at: string;
+  // Новые поля для аналитики
+  user_agent?: string;
+  device_type?: string;
+  browser?: string;
+  os?: string;
+  first_visit_at?: string;
+  agreement_view_duration?: number;
+  signature_clear_count?: number;
+  total_session_duration?: number;
 }
 
 export interface CreateAgreementDTO {
@@ -109,9 +127,9 @@ export interface CreateSignaturesDTO {
   signatures: {
     signer_name: string;
     signer_role: string;
-    position_x: number;
-    position_y: number;
-    position_page: number;
+    position_x?: number;
+    position_y?: number;
+    position_page?: number;
   }[];
 }
 
@@ -171,10 +189,23 @@ export const agreementsApi = {
   getSignatureByLink: (link: string) =>
     api.get<{ success: boolean; data: any }>(`/agreements/signatures/link/${link}`),
 
-  signAgreement: (link: string, data: { signature_data: string }) =>
-    api.post<{ success: boolean; message: string; data: { all_signed: boolean } }>(
-      `/agreements/signatures/sign/${link}`,
-      data
+signAgreement: (link: string, data: { 
+  signature_data: string;
+  agreement_view_duration?: number;
+  signature_clear_count?: number;
+  total_session_duration?: number;
+}) =>
+  api.post<{ success: boolean; message: string; data: { all_signed: boolean } }>(
+    `/agreements/signatures/sign/${link}`,
+    data
+  ),
+
+  updateSignature: (id: number, data: { signer_name?: string; signer_role?: string }) =>
+    api.put<{ success: boolean; message: string }>(`/agreements/signatures/${id}`, data),
+
+  regenerateSignatureLink: (id: number) =>
+    api.post<{ success: boolean; message: string; data: { signature_link: string; public_url: string } }>(
+      `/agreements/signatures/${id}/regenerate`
     ),
 
   deleteSignature: (id: number) =>

@@ -321,7 +321,7 @@
 .document-preview-item {
   position: relative;
   border: 1px solid #303030;
-  borderRadius: 4px;
+  border-radius: 4px;
   overflow: hidden;
   background: #141414;
 }
