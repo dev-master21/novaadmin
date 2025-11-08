@@ -270,7 +270,8 @@ async delete(req: AuthRequest, res: Response): Promise<void> {
     });
   }
 }
-  /**
+
+/**
  * Обновить подпись (имя, роль)
  * PUT /api/agreements/signatures/:id
  */
@@ -280,6 +281,9 @@ async update(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     const { signer_name, signer_role } = req.body;
+
+    // Логируем входные данные
+    logger.info(`UPDATE REQUEST - ID: ${id}, signer_name: ${signer_name}, signer_role: ${signer_role}`);
 
     const signature = await db.queryOne<any>(
       'SELECT * FROM agreement_signatures WHERE id = ?',
@@ -295,41 +299,47 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    const fields: string[] = [];
-    const values: any[] = [];
+    // Логируем текущие значения из БД
+    logger.info(`CURRENT VALUES - signer_name: ${signature.signer_name}, signer_role: ${signature.signer_role}`);
 
-    if (signer_name !== undefined) {
-      fields.push('signer_name = ?');
-      values.push(signer_name);
-    }
+    const newSignerName = signer_name !== undefined ? signer_name : signature.signer_name;
+    const newSignerRole = signer_role !== undefined ? signer_role : signature.signer_role;
 
-    if (signer_role !== undefined) {
-      fields.push('signer_role = ?');
-      values.push(signer_role);
-    }
+    // Логируем новые значения которые будем сохранять
+    logger.info(`NEW VALUES - signer_name: ${newSignerName}, signer_role: ${newSignerRole}`);
 
-    if (fields.length > 0) {
-      values.push(id);
-      await connection.query(
-        `UPDATE agreement_signatures SET ${fields.join(', ')} WHERE id = ?`,
-        values
-      );
+    // ✅ Выполняем UPDATE с явным логированием
+    const updateResult = await connection.query(
+      'UPDATE agreement_signatures SET signer_name = ?, signer_role = ? WHERE id = ?',
+      [newSignerName, newSignerRole, id]
+    );
 
-      // Логируем
-      await connection.query(`
-        INSERT INTO agreement_logs (agreement_id, action, description, user_id)
-        VALUES (?, ?, ?, ?)
-      `, [
-        signature.agreement_id,
-        'signature_updated',
-        `Подпись обновлена: ${signer_name || signature.signer_name}`,
-        req.admin!.id
-      ]);
-    }
+    // Логируем результат UPDATE
+    logger.info(`UPDATE RESULT:`, updateResult);
 
+    // Логируем
+    await connection.query(`
+      INSERT INTO agreement_logs (agreement_id, action, description, user_id)
+      VALUES (?, ?, ?, ?)
+    `, [
+      signature.agreement_id,
+      'signature_updated',
+      `Подпись обновлена: ${newSignerName} (${newSignerRole})`,
+      req.admin!.id
+    ]);
+
+    // Коммитим транзакцию
     await db.commit(connection);
+    
+    logger.info(`TRANSACTION COMMITTED for signature ${id}`);
 
-    logger.info(`Signature updated: ${id} by user ${req.admin?.username}`);
+    // ✅ КРИТИЧЕСКИ ВАЖНО: Проверяем что реально сохранилось в БД ПОСЛЕ коммита
+    const verifySignature = await db.queryOne<any>(
+      'SELECT signer_name, signer_role FROM agreement_signatures WHERE id = ?',
+      [id]
+    );
+    
+    logger.info(`VERIFICATION AFTER COMMIT - signer_name: ${verifySignature?.signer_name}, signer_role: ${verifySignature?.signer_role}`);
 
     res.json({
       success: true,

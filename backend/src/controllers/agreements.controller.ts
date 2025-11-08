@@ -266,11 +266,11 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         } else {
           // Добавляем ВСЕ возможные варианты переменных для каждой стороны
           variables[`${prefix}_name`] = party.name || '';
-          
+
           // Варианты для страны паспорта
           variables[`${prefix}_passport_country`] = party.passport_country || '';
           variables[`${prefix}_country`] = party.passport_country || '';
-          
+
           // Варианты для номера паспорта  
           variables[`${prefix}_passport_number`] = party.passport_number || '';
           variables[`${prefix}_passport`] = party.passport_number || '';
@@ -599,10 +599,10 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     }
   }
 
-  /**
-   * Создать зоны для подписей
-   * POST /api/agreements/:id/signatures
-   */
+/**
+ * Создать зоны для подписей
+ * POST /api/agreements/:id/signatures
+ */
 async createSignatures(req: AuthRequest, res: Response): Promise<void> {
   const connection = await db.beginTransaction();
 
@@ -621,8 +621,39 @@ async createSignatures(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    // Удаляем существующие подписи
-    await connection.query('DELETE FROM agreement_signatures WHERE agreement_id = ?', [id]);
+    // ✅ УБРАЛИ УДАЛЕНИЕ СУЩЕСТВУЮЩИХ ПОДПИСЕЙ - теперь только добавляем новые!
+    // await connection.query('DELETE FROM agreement_signatures WHERE agreement_id = ?', [id]); // <-- ЭТА СТРОКА УДАЛЕНА
+
+    // ✅ Проверяем уникальность ролей среди новых подписей
+    const newRoles = signatures.map((s: any) => s.signer_role);
+    const uniqueNewRoles = new Set(newRoles);
+    
+    if (newRoles.length !== uniqueNewRoles.size) {
+      await db.rollback(connection);
+      res.status(400).json({
+        success: false,
+        message: 'Роли подписантов должны быть уникальными'
+      });
+      return;
+    }
+
+    // ✅ Проверяем конфликт с существующими ролями
+    const existingSignatures = await db.query<any>(
+      'SELECT signer_role FROM agreement_signatures WHERE agreement_id = ?',
+      [id]
+    );
+    
+    const existingRoles = existingSignatures.map((s: any) => s.signer_role);
+    const conflictingRoles = newRoles.filter((role: string) => existingRoles.includes(role));
+    
+    if (conflictingRoles.length > 0) {
+      await db.rollback(connection);
+      res.status(400).json({
+        success: false,
+        message: `Роль "${conflictingRoles[0]}" уже используется в существующих подписях`
+      });
+      return;
+    }
 
     // Создаем новые подписи
     const { v4: uuidv4 } = require('uuid');
@@ -654,15 +685,30 @@ async createSignatures(req: AuthRequest, res: Response): Promise<void> {
       });
     }
 
-    // Обновляем статус договора
-    await connection.query(
-      'UPDATE agreements SET status = ? WHERE id = ?',
-      ['pending_signatures', id]
-    );
+    // Обновляем статус договора только если это первые подписи
+    if (existingSignatures.length === 0) {
+      await connection.query(
+        'UPDATE agreements SET status = ? WHERE id = ?',
+        ['pending_signatures', id]
+      );
+    }
 
-    // Генерируем QR код
-    const qrCodePath = await this.generateQRCode((agreement as any).public_link, (agreement as any).agreement_number);
-    await connection.query('UPDATE agreements SET qr_code_path = ? WHERE id = ?', [qrCodePath, id]);
+    // Генерируем QR код (если ещё не был сгенерирован)
+    if (!(agreement as any).qr_code_path) {
+      const qrCodePath = await this.generateQRCode((agreement as any).public_link, (agreement as any).agreement_number);
+      await connection.query('UPDATE agreements SET qr_code_path = ? WHERE id = ?', [qrCodePath, id]);
+    }
+
+    // Логируем
+    await connection.query(`
+      INSERT INTO agreement_logs (agreement_id, action, description, user_id)
+      VALUES (?, ?, ?, ?)
+    `, [
+      id,
+      'signatures_added',
+      `Добавлено подписей: ${signatures.length}`,
+      req.admin!.id
+    ]);
 
     await db.commit(connection);
 
