@@ -1,3 +1,4 @@
+// frontend/src/components/DocumentEditor/DocumentEditor.tsx
 import { useState, useEffect, forwardRef } from 'react';
 import styled from 'styled-components';
 import { 
@@ -248,7 +249,7 @@ const SectionHeader = styled.div<{ isEditing?: boolean }>`
   color: white;
   padding: 1.5mm 4mm;
   font-size: 4.5mm;
-  font-weight: 400;
+  font-weight: 700;
   margin: -1mm 0 -4mm 0;
   letter-spacing: 0.2mm;
   position: relative;
@@ -330,159 +331,7 @@ const EditControls = styled.div`
   }
 `;
 
-const EditButton = styled.button<{ variant?: 'add' | 'remove' | 'edit' }>`
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  position: relative;
-  
-  background: ${props => {
-    switch(props.variant) {
-      case 'add': return '#4CAF50';
-      case 'remove': return '#F44336';
-      case 'edit': return '#2196F3';
-      default: return '#666';
-    }
-  }};
-  
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-`;
-
-const InlineEditInput = styled.input`
-  background: transparent;
-  border: none;
-  outline: none;
-  font: inherit;
-  color: inherit;
-  width: 100%;
-  padding: 1mm;
-  border-bottom: 2px solid #4A9EFF;
-`;
-
-const InlineEditTextarea = styled.textarea`
-  background: transparent;
-  border: none;
-  outline: none;
-  font: inherit;
-  color: inherit;
-  width: 100%;
-  resize: none;
-  padding: 1mm;
-  border-bottom: 2px solid #4A9EFF;
-  min-height: 20mm;
-`;
-
-const AddNodeMenu = styled.div`
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 5px;
-  background: #1E2128;
-  border: 1px solid #2A2E38;
-  border-radius: 8px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  z-index: 2000;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  min-width: 180px;
-`;
-
-const AddNodeButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
-  background: transparent;
-  border: none;
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 14px;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  text-align: left;
-  
-  &:hover {
-    background: #2A2E38;
-  }
-`;
-
-const ContextMenu = styled.div<{ x: number; y: number }>`
-  position: fixed;
-  left: ${props => props.x}px;
-  top: ${props => props.y}px;
-  background: #1E2128;
-  border: 1px solid #2A2E38;
-  border-radius: 8px;
-  padding: 8px;
-  z-index: 3000;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  
-  @media print {
-    display: none !important;
-  }
-`;
-
-const ContextMenuButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: transparent;
-  border: none;
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 14px;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  text-align: left;
-  min-width: 100px;
-  
-  &:hover {
-    background: #2A2E38;
-  }
-`;
-
-const BulletItemContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  
-  &:hover .bullet-controls {
-    opacity: 1;
-  }
-`;
-
-const BulletControls = styled.div`
-  display: flex;
-  gap: 3px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  
-  @media print {
-    display: none !important;
-  }
-`;
-
-const BulletButton = styled.button<{ variant?: 'add' | 'remove' }>`
+const EditButton = styled.button<{ variant: 'add' | 'remove' }>`
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -567,7 +416,89 @@ const Watermark = styled.div`
   }
 `;
 
-// Helper функция для оценки высоты элемента
+const ContextMenu = styled.div<{ x: number; y: number }>`
+  position: fixed;
+  left: ${props => props.x}px;
+  top: ${props => props.y}px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 9999;
+  padding: 4px 0;
+  
+  @media print {
+    display: none !important;
+  }
+`;
+
+const ContextMenuButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  
+  &:hover {
+    background: #f0f0f0;
+  }
+`;
+
+const BulletItemEditable = styled.div<{ isEditing: boolean }>`
+  display: inline-block;
+  width: 100%;
+  cursor: ${props => props.isEditing ? 'text' : 'default'};
+  min-height: 5mm;
+  
+  &:focus {
+    outline: 1px dashed #4CAF50;
+    outline-offset: 1mm;
+  }
+`;
+
+const BulletControls = styled.div`
+  position: absolute;
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  
+  li:hover & {
+    opacity: 1;
+  }
+  
+  @media print {
+    display: none !important;
+  }
+`;
+
+const BulletButton = styled.button<{ variant: 'add' | 'remove' }>`
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.2s ease;
+  
+  background: ${props => props.variant === 'add' ? '#4CAF50' : '#F44336'};
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
+// Helper function to estimate node height
 const estimateNodeHeight = (node: DocumentNode): number => {
   switch (node.type) {
     case 'section':
@@ -581,6 +512,19 @@ const estimateNodeHeight = (node: DocumentNode): number => {
     default:
       return 10;
   }
+};
+
+// Function to calculate full section height with all children
+const calculateFullSectionHeight = (node: DocumentNode): number => {
+  let totalHeight = estimateNodeHeight(node);
+  
+  if (node.children && node.children.length > 0) {
+    node.children.forEach(child => {
+      totalHeight += estimateNodeHeight(child);
+    });
+  }
+  
+  return totalHeight;
 };
 
 interface DocumentEditorProps {
@@ -603,11 +547,18 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
     const [showAddMenu, setShowAddMenu] = useState<string | null>(null);
     const [pages, setPages] = useState<PageContent[]>([]);
     
-    const [contextMenu, setContextMenu] = useState<{ show: boolean; x: number; y: number; selectedText: string }>({
+    const [contextMenu, setContextMenu] = useState<{ 
+      show: boolean; 
+      x: number; 
+      y: number; 
+      selectedText: string;
+      nodeId?: string;
+    }>({
       show: false,
       x: 0,
       y: 0,
-      selectedText: ''
+      selectedText: '',
+      nodeId: undefined
     });
 
     // ФУНКЦИЯ ПЕРЕНУМЕРАЦИИ
@@ -661,8 +612,8 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
         if (showAddMenu && !(e.target as HTMLElement).closest('.add-node-menu') && !(e.target as HTMLElement).closest('.add-button')) {
           setShowAddMenu(null);
         }
-        if (contextMenu.show && !(e.target as HTMLElement).closest('.context-menu-button')) {
-          setContextMenu({ show: false, x: 0, y: 0, selectedText: '' });
+        if (contextMenu.show && !(e.target as HTMLElement).closest('.context-menu')) {
+          setContextMenu({ show: false, x: 0, y: 0, selectedText: '', nodeId: undefined });
         }
       };
 
@@ -670,41 +621,82 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [showAddMenu, contextMenu.show]);
 
+    // Обработчик выделения текста
+    useEffect(() => {
+      if (!isEditing) return;
+
+      const handleTextSelection = (e: MouseEvent) => {
+        const selection = window.getSelection();
+        if (selection && selection.toString().length > 0) {
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          
+          // Находим nodeId элемента
+          let target = e.target as HTMLElement;
+          let nodeId: string | undefined;
+          
+          while (target && !nodeId) {
+            nodeId = target.getAttribute('data-node-id') || undefined;
+            target = target.parentElement as HTMLElement;
+          }
+          
+          setContextMenu({
+            show: true,
+            x: rect.left + (rect.width / 2),
+            y: rect.bottom + window.scrollY + 5,
+            selectedText: selection.toString(),
+            nodeId
+          });
+        }
+      };
+
+      document.addEventListener('mouseup', handleTextSelection);
+      return () => document.removeEventListener('mouseup', handleTextSelection);
+    }, [isEditing]);
+
+    // IMPROVED PAGINATION LOGIC
     const splitContentIntoPages = () => {
       const pagesContent: PageContent[] = [];
       let currentPage: PageContent = { nodes: [], pageNumber: 1 };
       let currentPageHeight = 0;
 
       const addNodeToPages = (node: DocumentNode) => {
-        const nodeHeight = estimateNodeHeight(node);
-        
-        const pageLimit = currentPage.pageNumber === 1 ? 
-          FIRST_PAGE_CONTENT_HEIGHT_MM : PAGE_CONTENT_HEIGHT_MM;
+        const pageLimit = currentPage.pageNumber === 1 ? FIRST_PAGE_CONTENT_HEIGHT_MM : PAGE_CONTENT_HEIGHT_MM;
 
-        if (currentPageHeight + nodeHeight > pageLimit) {
-          pagesContent.push(currentPage);
-          currentPage = { nodes: [], pageNumber: pagesContent.length + 1 };
-          currentPageHeight = 0;
-        }
-        
-        if (node.children && node.children.length > 0) {
-          currentPage.nodes.push({ ...node, children: [] });
-          currentPageHeight += 15;
+        // If this is a section with children - check if it fits completely
+        if (node.type === 'section' && node.children && node.children.length > 0) {
+          const fullSectionHeight = calculateFullSectionHeight(node);
           
-          node.children.forEach(child => {
-            const childHeight = estimateNodeHeight(child);
-            
-            if (currentPageHeight + childHeight > (currentPage.pageNumber === 1 ? 
-                FIRST_PAGE_CONTENT_HEIGHT_MM : PAGE_CONTENT_HEIGHT_MM)) {
+          // If section doesn't fit completely on current page
+          if (currentPageHeight + fullSectionHeight > pageLimit) {
+            // And if current page already has content
+            if (currentPage.nodes.length > 0) {
+              // Move entire section to new page
               pagesContent.push(currentPage);
-              currentPage = { nodes: [], pageNumber: pagesContent.length + 2 };
+              currentPage = { nodes: [], pageNumber: pagesContent.length + 1 };
               currentPageHeight = 0;
             }
-            
+          }
+          
+          // Add section header
+          currentPage.nodes.push({ ...node, children: [] });
+          currentPageHeight += estimateNodeHeight({ ...node, children: [] });
+          
+          // Add all children
+          node.children.forEach(child => {
             currentPage.nodes.push(child);
-            currentPageHeight += childHeight;
+            currentPageHeight += estimateNodeHeight(child);
           });
         } else {
+          // For regular elements use standard logic
+          const nodeHeight = estimateNodeHeight(node);
+          
+          if (currentPageHeight + nodeHeight > pageLimit) {
+            pagesContent.push(currentPage);
+            currentPage = { nodes: [], pageNumber: pagesContent.length + 1 };
+            currentPageHeight = 0;
+          }
+          
           currentPage.nodes.push(node);
           currentPageHeight += nodeHeight;
         }
@@ -1031,82 +1023,116 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
       });
     };
 
+    // Функция для применения жирного шрифта к выделенному тексту
     const toggleBold = () => {
+      if (!contextMenu.nodeId) return;
+
       const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const selectedText = range.toString();
-        
-        if (selectedText) {
-          const parentElement = range.commonAncestorContainer.parentElement;
-          if (parentElement && (parentElement.tagName === 'STRONG' || parentElement.tagName === 'B')) {
-            const textNode = document.createTextNode(selectedText);
-            range.deleteContents();
-            range.insertNode(textNode);
-          } else {
-            const strongElement = document.createElement('strong');
-            strongElement.textContent = selectedText;
-            range.deleteContents();
-            range.insertNode(strongElement);
-          }
-          
-          selection.removeAllRanges();
-          setContextMenu({ show: false, x: 0, y: 0, selectedText: '' });
-        }
+      if (!selection || selection.rangeCount === 0) return;
+
+      const range = selection.getRangeAt(0);
+      const selectedText = range.toString();
+      
+      if (!selectedText) return;
+
+      // Получаем содержимое контейнера
+      const container = range.commonAncestorContainer;
+      const parentElement = container.nodeType === Node.TEXT_NODE 
+        ? container.parentElement 
+        : container as HTMLElement;
+
+      if (!parentElement) return;
+
+      // Получаем HTML контейнера
+      let containerHtml = parentElement.innerHTML;
+      
+      // Проверяем, обернут ли выделенный текст в <strong>
+      const isAlreadyBold = parentElement.querySelector('strong')?.textContent === selectedText;
+      
+      let newHtml: string;
+      if (isAlreadyBold) {
+        // Убираем жирность
+        newHtml = containerHtml.replace(new RegExp(`<strong>${selectedText}</strong>`, 'g'), selectedText);
+      } else {
+        // Добавляем жирность
+        newHtml = containerHtml.replace(selectedText, `<strong>${selectedText}</strong>`);
       }
+
+      // Обновляем HTML
+      parentElement.innerHTML = newHtml;
+
+      // Обновляем node в structure
+      updateNode(contextMenu.nodeId, parentElement.textContent || '');
+
+      // Закрываем контекстное меню
+      setContextMenu({ show: false, x: 0, y: 0, selectedText: '', nodeId: undefined });
+      
+      // Снимаем выделение
+      selection.removeAllRanges();
     };
 
-    const renderNode = (node: DocumentNode, _parentId?: string, level: number = 0) => (
+    const renderNode = (node: DocumentNode, level: number = 0) => (
       <NodeContainer key={node.id} level={level} isEditing={isEditing}>
         {node.type === 'section' && (
-          <SectionHeader isEditing={isEditing}>
+          <SectionHeader isEditing={isEditing} data-node-id={node.id}>
             {editingNode === node.id ? (
-              <InlineEditInput
+              <input
+                type="text"
                 value={node.content}
                 onChange={(e) => updateNode(node.id, e.target.value)}
                 onBlur={() => setEditingNode(null)}
                 onKeyDown={(e) => e.key === 'Enter' && setEditingNode(null)}
+                style={{ background: 'transparent', border: 'none', color: 'inherit', width: '100%', outline: 'none' }}
                 autoFocus
               />
             ) : (
-              <span onClick={() => isEditing && setEditingNode(node.id)}>
-                {node.content}
-              </span>
+              <span 
+                onClick={() => isEditing && setEditingNode(node.id)}
+                dangerouslySetInnerHTML={{ __html: node.content }}
+              />
             )}
           </SectionHeader>
         )}
 
         {node.type === 'subsection' && (
-          <SubSection isEditing={isEditing} level={level}>
-            {editingNode === node.id ? (
-              <InlineEditTextarea
-                value={node.content}
-                onChange={(e) => updateNode(node.id, e.target.value)}
-                onBlur={() => setEditingNode(null)}
-                autoFocus
-              />
-            ) : (
-              <div onClick={() => isEditing && setEditingNode(node.id)}>
-                <NumberSpan>{node.number}.</NumberSpan>
-                <span dangerouslySetInnerHTML={{ __html: node.content }} />
-              </div>
-            )}
+          <SubSection isEditing={isEditing} level={level} data-node-id={node.id}>
+            <div>
+              <NumberSpan>{node.number}.</NumberSpan>
+              {editingNode === node.id ? (
+                <input
+                  type="text"
+                  value={node.content}
+                  onChange={(e) => updateNode(node.id, e.target.value)}
+                  onBlur={() => setEditingNode(null)}
+                  onKeyDown={(e) => e.key === 'Enter' && setEditingNode(null)}
+                  style={{ background: 'transparent', border: 'none', width: '90%', outline: 'none' }}
+                  autoFocus
+                />
+              ) : (
+                <span 
+                  onClick={() => isEditing && setEditingNode(node.id)}
+                  dangerouslySetInnerHTML={{ __html: node.content }}
+                />
+              )}
+            </div>
           </SubSection>
         )}
 
         {node.type === 'paragraph' && (
-          <Paragraph isEditing={isEditing}>
+          <Paragraph isEditing={isEditing} data-node-id={node.id}>
             {editingNode === node.id ? (
-              <InlineEditTextarea
+              <textarea
                 value={node.content}
                 onChange={(e) => updateNode(node.id, e.target.value)}
                 onBlur={() => setEditingNode(null)}
+                style={{ background: 'transparent', border: 'none', width: '100%', minHeight: '50px', outline: 'none', resize: 'vertical' }}
                 autoFocus
               />
             ) : (
-              <span onClick={() => isEditing && setEditingNode(node.id)}>
-                <span dangerouslySetInnerHTML={{ __html: node.content }} />
-              </span>
+              <span 
+                onClick={() => isEditing && setEditingNode(node.id)}
+                dangerouslySetInnerHTML={{ __html: node.content }}
+              />
             )}
           </Paragraph>
         )}
@@ -1114,58 +1140,62 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
         {node.type === 'bulletList' && node.items && (
           <BulletList>
             {node.items.map((item, index) => (
-              <li key={index}>
-                <BulletItemContainer>
-                  {editingNode === `${node.id}-${index}` ? (
-                    <InlineEditInput
-                      value={item}
-                      onChange={(e) => updateBulletItem(node.id, index, e.target.value)}
-                      onBlur={() => setEditingNode(null)}
-                      onKeyDown={(e) => e.key === 'Enter' && setEditingNode(null)}
-                      autoFocus
-                    />
-                  ) : (
-                    <span 
-                      onClick={() => isEditing && setEditingNode(`${node.id}-${index}`)}
-                      dangerouslySetInnerHTML={{ __html: item }}
-                    />
-                  )}
-                  
-                  {isEditing && (
-                    <BulletControls className="bullet-controls">
+              <li key={index} style={{ position: 'relative' }}>
+                {editingNode === `${node.id}-item-${index}` ? (
+                  <input
+                    type="text"
+                    value={item}
+                    onChange={(e) => updateBulletItem(node.id, index, e.target.value)}
+                    onBlur={() => setEditingNode(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setEditingNode(null);
+                        addBulletItem(node.id, index);
+                      }
+                    }}
+                    style={{ background: 'transparent', border: 'none', width: '100%', outline: 'none' }}
+                    autoFocus
+                  />
+                ) : (
+                  <BulletItemEditable
+                    isEditing={isEditing}
+                    onClick={() => isEditing && setEditingNode(`${node.id}-item-${index}`)}
+                    data-node-id={node.id}
+                    dangerouslySetInnerHTML={{ __html: item }}
+                  />
+                )}
+                {isEditing && (
+                  <BulletControls>
+                    <BulletButton
+                      variant="add"
+                      onClick={() => addBulletItem(node.id, index)}
+                      title="Add item"
+                    >
+                      <FiPlus size={8} />
+                    </BulletButton>
+                    {node.items && node.items.length > 1 && (
                       <BulletButton
-                        variant="add"
-                        onClick={() => addBulletItem(node.id, index)}
-                        title="Add item"
+                        variant="remove"
+                        onClick={() => removeBulletItem(node.id, index)}
+                        title="Remove item"
                       >
-                        <FiPlus size={10} />
+                        <FiX size={8} />
                       </BulletButton>
-                      {node.items && node.items.length > 1 && (
-                        <BulletButton
-                          variant="remove"
-                          onClick={() => removeBulletItem(node.id, index)}
-                          title="Remove item"
-                        >
-                          <FiX size={10} />
-                        </BulletButton>
-                      )}
-                    </BulletControls>
-                  )}
-                </BulletItemContainer>
+                    )}
+                  </BulletControls>
+                )}
               </li>
             ))}
           </BulletList>
         )}
 
-        {node.children && node.children.map(child => renderNode(child, node.id, level + 1))}
-
         {isEditing && (
-          <EditControls className="edit-controls">
+          <EditControls>
             <EditButton
               variant="add"
-              className="add-button"
               onClick={() => setShowAddMenu(showAddMenu === node.id ? null : node.id)}
               title="Add element"
+              className="add-button"
             >
               <FiPlus size={14} />
             </EditButton>
@@ -1178,25 +1208,42 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
             </EditButton>
             
             {showAddMenu === node.id && (
-              <AddNodeMenu className="add-node-menu">
+              <div 
+                className="add-node-menu"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '5px',
+                  background: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  padding: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  zIndex: 2000,
+                  minWidth: '150px'
+                }}
+              >
                 {node.type === 'section' && (
-                  <AddNodeButton onClick={() => addNode(node.id, 'subsection')}>
-                    <FiHash size={16} />
+                  <button onClick={() => addNode(node.id, 'subsection')} style={{ display: 'block', width: '100%', padding: '6px 12px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                    <FiHash size={16} style={{ marginRight: '8px' }} />
                     Add Subsection
-                  </AddNodeButton>
+                  </button>
                 )}
-                <AddNodeButton onClick={() => addNode(node.id, 'paragraph')}>
-                  <FiType size={16} />
+                <button onClick={() => addNode(node.id, 'paragraph')} style={{ display: 'block', width: '100%', padding: '6px 12px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                  <FiType size={16} style={{ marginRight: '8px' }} />
                   Add Paragraph
-                </AddNodeButton>
-                <AddNodeButton onClick={() => addNode(node.id, 'bulletList')}>
-                  <FiList size={16} />
+                </button>
+                <button onClick={() => addNode(node.id, 'bulletList')} style={{ display: 'block', width: '100%', padding: '6px 12px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                  <FiList size={16} style={{ marginRight: '8px' }} />
                   Add Bullet List
-                </AddNodeButton>
-              </AddNodeMenu>
+                </button>
+              </div>
             )}
           </EditControls>
         )}
+
+        {node.children && node.children.map(child => renderNode(child, level + 1))}
       </NodeContainer>
     );
 
@@ -1272,11 +1319,13 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                   
                   <Title isEditing={true}>
                     {editingNode === 'title' ? (
-                      <InlineEditInput
+                      <input
+                        type="text"
                         value={structure.title}
                         onChange={(e) => setStructure({ ...structure, title: e.target.value })}
                         onBlur={() => setEditingNode(null)}
                         onKeyDown={(e) => e.key === 'Enter' && setEditingNode(null)}
+                        style={{ background: 'transparent', border: 'none', width: '100%', textAlign: 'center', outline: 'none' }}
                         autoFocus
                       />
                     ) : (
@@ -1289,11 +1338,13 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                   <DateLocation>
                     <span>
                       City: {editingNode === 'city' ? (
-                        <InlineEditInput
+                        <input
+                          type="text"
                           value={structure.city}
                           onChange={(e) => setStructure({ ...structure, city: e.target.value })}
                           onBlur={() => setEditingNode(null)}
                           onKeyDown={(e) => e.key === 'Enter' && setEditingNode(null)}
+                          style={{ background: 'transparent', border: 'none', width: '100px', outline: 'none' }}
                           autoFocus
                         />
                       ) : (
@@ -1311,7 +1362,7 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                   {structure.nodes.map(node => renderNode(node))}
                   
                   {isEditing && (
-                    <div style={{ textAlign: 'center', marginTop: '10mm' }} className="no-print">
+                    <div style={{ textAlign: 'center', marginTop: '10mm' }}>
                       <EditButton
                         variant="add"
                         onClick={() => addNode(null, 'section')}
@@ -1328,7 +1379,7 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
           </ContractContainer>
           
           {contextMenu.show && (
-            <ContextMenu x={contextMenu.x} y={contextMenu.y}>
+            <ContextMenu x={contextMenu.x} y={contextMenu.y} className="context-menu">
               <ContextMenuButton onClick={toggleBold}>
                 <FiBold size={16} />
                 Жирный
@@ -1387,12 +1438,12 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                 <PageContent>
                   {page.nodes.map(node => renderNodeForPrint(node))}
                 </PageContent>
-                <PageNumber>Page {index + 2} of {totalPages}</PageNumber>
+                <PageNumber>Page {page.pageNumber} of {totalPages}</PageNumber>
               </PageInner>
             </Page>
           ))}
 
-          {agreement?.signatures && agreement.signatures.length > 0 && (
+          {agreement?.signatures?.length > 0 && (
             <Page>
               <PageInner>
                 {logoUrl && (
@@ -1400,9 +1451,11 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                     <img src={logoUrl} alt="Logo" />
                   </Watermark>
                 )}
+                
                 <PageContent>
+                  <SectionHeader isEditing={false}>SIGNATURES</SectionHeader>
+                  
                   <SignatureSection>
-                    <h2 style={{ fontSize: '5mm', marginBottom: '5mm' }}>SIGNATURES</h2>
                     <SignatureTable>
                       <thead>
                         <tr>
@@ -1413,25 +1466,23 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                         </tr>
                       </thead>
                       <tbody>
-                        {agreement.signatures.map((sig: any) => (
-                          <tr key={sig.id}>
-                            <td>{sig.signer_role}</td>
-                            <td>{sig.signer_name}</td>
-                            <td>
-                              {sig.is_signed && sig.signature_data ? (
-                                <SignatureImage src={sig.signature_data} alt="Signature" />
+                        {agreement.signatures.map((signature: any) => (
+                          <tr key={signature.id}>
+                            <td>{signature.signer_role}</td>
+                            <td>{signature.signer_name}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              {signature.is_signed && signature.signature_data ? (
+                                <SignatureImage 
+                                  src={signature.signature_data}
+                                />
                               ) : (
-                                <span style={{ color: '#999' }}>Not signed</span>
+                                '___________'
                               )}
                             </td>
                             <td>
-                              {sig.signed_at ? 
-                                new Date(sig.signed_at).toLocaleDateString('en-US', { 
-                                  day: 'numeric', 
-                                  month: 'long', 
-                                  year: 'numeric' 
-                                }) : 
-                                '-'
+                              {signature.signed_at 
+                                ? formatDate(new Date(signature.signed_at))
+                                : '«____» __________ 20__'
                               }
                             </td>
                           </tr>
@@ -1439,18 +1490,17 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                       </tbody>
                     </SignatureTable>
                   </SignatureSection>
-
-                  {agreement.qr_code_path && (
+                      
+                  {agreement?.qr_code_path && (
                     <QRCodeSection>
-                      <div style={{ textAlign: 'center' }}>
-                        <img src={agreement.qr_code_path} alt="QR Code" />
-                        <p style={{ fontSize: '3mm', marginTop: '2mm', color: '#666' }}>
-                          Scan to verify document authenticity
-                        </p>
-                      </div>
+                      <img 
+                        src={agreement.qr_code_path?.startsWith('http') ? agreement.qr_code_path : `http://localhost:5000${agreement.qr_code_path}`}
+                        alt="QR Code"
+                      />
                     </QRCodeSection>
                   )}
                 </PageContent>
+                
                 <PageNumber>Page {totalPages} of {totalPages}</PageNumber>
               </PageInner>
             </Page>
