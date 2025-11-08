@@ -3,7 +3,6 @@ import { Response } from 'express';
 import { AuthRequest } from '../types';
 import db from '../config/database';
 import logger from '../utils/logger';
-import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 import path from 'path';
 import fs from 'fs-extra';
@@ -163,10 +162,10 @@ class AgreementsController {
     }
   }
 
-  /**
-   * Создать договор
-   * POST /api/agreements
-   */
+/**
+ * Создать договор
+ * POST /api/agreements
+ */
 async create(req: AuthRequest, res: Response): Promise<void> {
   console.log('🎯 Controller create called');
   console.log('🎯 Request body:', JSON.stringify(req.body, null, 2));
@@ -181,7 +180,17 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       date_from,
       date_to,
       city,
-      parties
+      parties,
+      rent_amount_monthly,
+      rent_amount_total,
+      deposit_amount,
+      utilities_included,
+      bank_name,
+      bank_account_name,
+      bank_account_number,
+      property_address_override,
+      property_name_manual,
+      property_number_manual
     } = req.body;
 
     console.log('🎯 Extracted template_id:', template_id);
@@ -190,14 +199,11 @@ async create(req: AuthRequest, res: Response): Promise<void> {
 
     // Получаем шаблон
     const template = await db.queryOne<any>(
-      'SELECT * FROM agreement_templates WHERE id = ? AND is_active = TRUE',
+      'SELECT * FROM agreement_templates WHERE id = ?',
       [template_id]
     );
 
-    console.log('🎯 Template found:', template);
-
     if (!template) {
-      console.log('❌ Template not found for id:', template_id);
       await db.rollback(connection);
       res.status(404).json({
         success: false,
@@ -206,234 +212,203 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-      // Генерируем номер договора
-      const agreement_number = `NOVA-${template.type.toUpperCase()}-${Date.now()}`;
+    // Получаем информацию об объекте если указан
+    let property = null;
+    if (property_id) {
+      property = await db.queryOne(`
+        SELECT p.*, pt.property_name
+        FROM properties p
+        LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'en'
+        WHERE p.id = ?
+      `, [property_id]);
+    }
 
-      // Генерируем публичную ссылку
-      const publicLinkId = uuidv4();
-      const public_link = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/agreement/${publicLinkId}`;
+    // Генерируем номер договора
+    const timestamp = Date.now();
+    const agreement_number = `NOVA-${template.type.toUpperCase()}-${timestamp}`;
 
-      // Получаем данные об объекте если указан
-      let propertyData: any = null;
-      if (property_id) {
-        propertyData = await db.queryOne(
-          'SELECT * FROM properties WHERE id = ?',
-          [property_id]
-        );
-      }
+    // Генерируем публичную ссылку
+    const { v4: uuidv4 } = require('uuid');
+    const uniqueLink = uuidv4();
+    const public_link = `https://agreement.novaestate.company/${uniqueLink}`;
 
+    // Подготавливаем переменные для замены
+    const variables: any = {
+      agreement_number,
+      property_name: property_name_manual || (property as any)?.property_name || 'N/A',
+      property_number: property_number_manual || (property as any)?.property_number || 'N/A',
+      property_address: property_address_override || (property as any)?.address || 'N/A',
+      date_from: date_from || new Date().toISOString().split('T')[0],
+      date_to: date_to || '',
+      city: city || 'Phuket',
+      rent_amount_monthly: rent_amount_monthly || 0,
+      rent_amount_total: rent_amount_total || 0,
+      deposit_amount: deposit_amount || 0,
+      utilities_included: utilities_included || '',
+      bank_name: bank_name || '',
+      bank_account_name: bank_account_name || '',
+      bank_account_number: bank_account_number || ''
+    };
 
-    // Получаем дополнительные данные из запроса
-      const {
-        rent_amount_monthly,
-        rent_amount_total,
-        deposit_amount,
-        utilities_included,
-        bank_name,
-        bank_account_name,
-        bank_account_number,
-        property_address_override,
-        property_name_manual,
-        property_number_manual
-      } = req.body;
-
-      // Подготавливаем переменные для замены в шаблоне
-      const templateVariables: any = {
-        contract_number: agreement_number,
-        agreement_number,
-        date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }),
-        city: city || 'Phuket',
-        date_from: date_from ? new Date(date_from).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : '',
-        date_to: date_to ? new Date(date_to).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
-      };
-
-      // Добавляем финансовые данные
-      if (rent_amount_monthly) templateVariables.rent_amount = rent_amount_monthly;
-      if (rent_amount_total) templateVariables.rent_amount_total = rent_amount_total;
-      if (deposit_amount) templateVariables.deposit_amount = deposit_amount;
-      if (utilities_included) templateVariables.utilities_included = utilities_included;
-      
-      // Добавляем банковские данные
-      if (bank_name) templateVariables.bank_name = bank_name;
-      if (bank_account_name) templateVariables.bank_account_name = bank_account_name;
-      if (bank_account_number) templateVariables.bank_account_number = bank_account_number;
-
-      // Добавляем данные об объекте
-      if (propertyData) {
-        const propertyTranslation = await db.queryOne(
-          'SELECT property_name FROM property_translations WHERE property_id = ? AND language_code = ?',
-          [propertyData.id, 'en']
-        );
-        
-        templateVariables.property_name = propertyTranslation?.property_name || propertyData.property_number || '';
-        templateVariables.property_number = propertyData.property_number || '';
-        templateVariables.property_address = property_address_override || propertyData.address || '';
-      } else {
-        // Если объект не выбран, но адрес указан вручную
-        if (property_address_override) {
-          templateVariables.property_address = property_address_override;
+    // Добавляем данные сторон
+    if (parties && Array.isArray(parties)) {
+      parties.forEach((party: any, index: number) => {
+        const prefix = party.role || `party_${index + 1}`;
+        if (party.is_company) {
+          variables[`${prefix}_name`] = party.company_name || '';
+          variables[`${prefix}_company_name`] = party.company_name || '';
+          variables[`${prefix}_tax_id`] = party.company_tax_id || '';
+          variables[`${prefix}_address`] = party.company_address || '';
+          variables[`${prefix}_director`] = party.director_name || '';
+        } else {
+          variables[`${prefix}_name`] = party.name || '';
+          variables[`${prefix}_passport_country`] = party.passport_country || '';
+          variables[`${prefix}_passport_number`] = party.passport_number || '';
         }
-      }
-
-      // Добавляем данные о сторонах с поддержкой всех ролей
-      if (parties && Array.isArray(parties)) {
-        // Счетчики для компаний и свидетелей
-        let companyCount = 1;
-        let witnessCount = 1;
-
-        parties.forEach((party: any) => {
-          const role = party.role.toLowerCase().replace(/[^a-z]/g, '');
-          
-          if (party.is_company) {
-            // Для компаний
-            const companyPrefix = `company${companyCount}`;
-            templateVariables[`${companyPrefix}_name`] = party.company_name || '';
-            templateVariables[`${companyPrefix}_address`] = party.company_address || '';
-            templateVariables[`${companyPrefix}_tax_id`] = party.company_tax_id || '';
-            templateVariables[`${companyPrefix}_director_name`] = party.director_name || '';
-            templateVariables[`${companyPrefix}_director_passport`] = party.director_passport || '';
-            templateVariables[`${companyPrefix}_director_country`] = party.director_country || '';
-            companyCount++;
-          } else if (role === 'witness') {
-            // Для свидетелей (поддержка до 5 свидетелей)
-            const witnessPrefix = witnessCount === 1 ? 'witness' : `witness${witnessCount}`;
-            templateVariables[`${witnessPrefix}_name`] = party.name || '';
-            templateVariables[`${witnessPrefix}_country`] = party.passport_country || '';
-            templateVariables[`${witnessPrefix}_passport`] = party.passport_number || '';
-            witnessCount++;
-          } else {
-            // Для обычных сторон - добавляем оба варианта для совместимости
-            templateVariables[`${role}_name`] = party.name || '';
-            templateVariables[`${role}_country`] = party.passport_country || '';
-            templateVariables[`${role}_passport`] = party.passport_number || '';
-            templateVariables[`${role}_passport_number`] = party.passport_number || '';
-          }
-        });
-      }
-
-      // Обработка ручного ввода объекта
-      if (property_name_manual) {
-        templateVariables.property_name = property_name_manual;
-      }
-      if (property_number_manual) {
-        templateVariables.property_number = property_number_manual;
-      }
-      
-      // Форматирование финансовых данных с разделителями
-      if (rent_amount_monthly) {
-        templateVariables.rent_amount = rent_amount_monthly.toLocaleString('en-US') + ' THB';
-        templateVariables.rent_amount_monthly = rent_amount_monthly.toLocaleString('en-US') + ' THB';
-      }
-      if (rent_amount_total) {
-        templateVariables.rent_amount_total = rent_amount_total.toLocaleString('en-US') + ' THB';
-      }
-      if (deposit_amount) {
-        templateVariables.deposit_amount = deposit_amount.toLocaleString('en-US') + ' THB';
-      }
-
-      // Заменяем переменные в контенте
-      let finalContent = this.replaceTemplateVariables(template.content, templateVariables);
-      let finalStructure = template.structure;
-
-      // Заменяем переменные в структуре если она есть
-      if (finalStructure) {
-        try {
-          const structureObj = typeof finalStructure === 'string' ? JSON.parse(finalStructure) : finalStructure;
-          finalStructure = JSON.stringify(this.replaceVariablesInStructure(structureObj, templateVariables));
-        } catch (e) {
-          logger.error('Error processing structure:', e);
-          finalStructure = null;
-        }
-      }
-
-        // Создаем договор
-      const result = await connection.query(`
-        INSERT INTO agreements (
-          agreement_number, template_id, property_id, type,
-          content, structure, description, date_from, date_to,
-          status, public_link, created_by, city,
-          rent_amount_monthly, rent_amount_total, deposit_amount,
-          utilities_included, bank_name, bank_account_name, bank_account_number,
-          property_address_override
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        agreement_number,
-        template_id,
-        property_id || null,
-        template.type,
-        finalContent,
-        finalStructure,
-        description,
-        date_from,
-        date_to,
-        'draft',
-        public_link,
-        userId,
-        city || 'Phuket',
-        rent_amount_monthly || null,
-        rent_amount_total || null,
-        deposit_amount || null,
-        utilities_included || null,
-        bank_name || null,
-        bank_account_name || null,
-        bank_account_number || null,
-        property_address_override || null
-      ]);
-
-      const agreementId = (result as any)[0].insertId;
-
-      // Сохраняем стороны договора
-      if (parties && Array.isArray(parties) && parties.length > 0) {
-        for (const party of parties) {
-          await connection.query(`
-            INSERT INTO agreement_parties (
-              agreement_id, role, name, passport_country, passport_number,
-              is_company, company_name, company_address, company_tax_id,
-              director_name, director_passport, director_country,
-              document_path
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `, [
-            agreementId,
-            party.role,
-            party.is_company ? null : (party.name || null),
-            party.is_company ? null : (party.passport_country || null),
-            party.is_company ? null : (party.passport_number || null),
-            party.is_company ? 1 : 0,
-            party.is_company ? (party.company_name || null) : null,
-            party.is_company ? (party.company_address || null) : null,
-            party.is_company ? (party.company_tax_id || null) : null,
-            party.is_company ? (party.director_name || null) : null,
-            party.is_company ? (party.director_passport || null) : null,
-            party.is_company ? (party.director_country || null) : null,
-            party.document_path || null
-          ]);
-        }
-      }
-
-      // Логируем создание
-      await connection.query(`
-        INSERT INTO agreement_logs (agreement_id, action, description, user_id)
-        VALUES (?, ?, ?, ?)
-      `, [agreementId, 'created', 'Договор создан', userId]);
-
-      await db.commit(connection);
-
-      logger.info(`Agreement created: ${agreement_number} by user ${req.admin?.username}`);
-
-      res.status(201).json({
-        success: true,
-        message: 'Договор успешно создан',
-        data: { id: agreementId, agreement_number }
-      });
-    } catch (error) {
-      await db.rollback(connection);
-      logger.error('Create agreement error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка создания договора'
       });
     }
+
+    // Заменяем переменные
+    const finalContent = this.replaceTemplateVariables(template.content, variables);
+    let finalStructure = template.structure;
+    if (finalStructure) {
+      try {
+        const structureObj = JSON.parse(finalStructure);
+        finalStructure = JSON.stringify(this.replaceVariablesInStructure(structureObj, variables));
+      } catch (e) {
+        finalStructure = this.replaceTemplateVariables(finalStructure, variables);
+      }
+    }
+
+    // Создаем договор
+    const result = await connection.query(`
+      INSERT INTO agreements (
+        agreement_number, template_id, property_id, type, content, structure,
+        description, date_from, date_to, status, public_link, created_by, city,
+        rent_amount_monthly, rent_amount_total, deposit_amount, utilities_included,
+        bank_name, bank_account_name, bank_account_number, property_address_override
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      agreement_number,
+      template_id,
+      property_id || null,
+      template.type,
+      finalContent,
+      finalStructure,
+      description,
+      date_from,
+      date_to,
+      'draft',
+      public_link,
+      userId,
+      city || 'Phuket',
+      rent_amount_monthly || null,
+      rent_amount_total || null,
+      deposit_amount || null,
+      utilities_included || null,
+      bank_name || null,
+      bank_account_name || null,
+      bank_account_number || null,
+      property_address_override || null
+    ]);
+
+    const agreementId = (result as any)[0].insertId;
+
+    // Сохраняем стороны договора с документами
+    if (parties && Array.isArray(parties) && parties.length > 0) {
+      for (const party of parties) {
+        // Сначала создаем запись стороны
+        const partyResult = await connection.query(`
+          INSERT INTO agreement_parties (
+            agreement_id, role, name, passport_country, passport_number,
+            is_company, company_name, company_address, company_tax_id,
+            director_name, director_passport, director_country
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          agreementId,
+          party.role,
+          party.is_company ? null : (party.name || null),
+          party.is_company ? null : (party.passport_country || null),
+          party.is_company ? null : (party.passport_number || null),
+          party.is_company ? 1 : 0,
+          party.is_company ? (party.company_name || null) : null,
+          party.is_company ? (party.company_address || null) : null,
+          party.is_company ? (party.company_tax_id || null) : null,
+          party.is_company ? (party.director_name || null) : null,
+          party.is_company ? (party.director_passport || null) : null,
+          party.is_company ? (party.director_country || null) : null
+        ]);
+
+        const partyId = (partyResult as any)[0].insertId;
+
+        // Если есть документы в base64, сохраняем их
+        if (party.documents && Array.isArray(party.documents) && party.documents.length > 0) {
+          for (const doc of party.documents) {
+            if (doc.preview && doc.preview.startsWith('data:')) {
+              try {
+                // Декодируем base64 и сохраняем файл
+                const base64Data = doc.preview.split(',')[1];
+                const buffer = Buffer.from(base64Data, 'base64');
+                
+                // Определяем расширение файла
+                const mimeType = doc.preview.split(';')[0].split(':')[1];
+                const ext = mimeType.split('/')[1] || 'jpg';
+                
+                // Генерируем имя файла
+                const fs = require('fs-extra');
+                const path = require('path');
+                const filename = `${uuidv4()}.${ext}`;
+                const uploadDir = path.join(__dirname, '../../public/uploads/party-documents');
+                await fs.ensureDir(uploadDir);
+                
+                const filepath = path.join(uploadDir, filename);
+                await fs.writeFile(filepath, buffer);
+                
+                const documentPath = `/uploads/party-documents/${filename}`;
+                
+                // Обновляем запись стороны с путем к документу
+                await connection.query(
+                  'UPDATE agreement_parties SET document_path = ?, document_uploaded_at = NOW() WHERE id = ?',
+                  [documentPath, partyId]
+                );
+                
+                logger.info(`Document saved for party ${partyId}: ${documentPath}`);
+                
+                // Сохраняем только первый документ, если их несколько
+                break;
+              } catch (err) {
+                logger.error('Error saving party document:', err);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Логируем создание
+    await connection.query(`
+      INSERT INTO agreement_logs (agreement_id, action, description, user_id)
+      VALUES (?, ?, ?, ?)
+    `, [agreementId, 'created', 'Договор создан', userId]);
+
+    await db.commit(connection);
+
+    logger.info(`Agreement created: ${agreement_number} by user ${req.admin?.username}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Договор успешно создан',
+      data: { id: agreementId, agreement_number }
+    });
+  } catch (error) {
+    await db.rollback(connection);
+    logger.error('Create agreement error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка создания договора'
+    });
   }
+}
 
   /**
    * Обновить договор
@@ -618,84 +593,85 @@ async create(req: AuthRequest, res: Response): Promise<void> {
    * Создать зоны для подписей
    * POST /api/agreements/:id/signatures
    */
-  async createSignatures(req: AuthRequest, res: Response): Promise<void> {
-    const connection = await db.beginTransaction();
+async createSignatures(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
 
-    try {
-      const { id } = req.params;
-      const { signatures } = req.body;
+  try {
+    const { id } = req.params;
+    const { signatures } = req.body;
 
-      const agreement = await db.queryOne('SELECT * FROM agreements WHERE id = ? AND deleted_at IS NULL', [id]);
+    const agreement = await db.queryOne('SELECT * FROM agreements WHERE id = ? AND deleted_at IS NULL', [id]);
 
-      if (!agreement) {
-        await db.rollback(connection);
-        res.status(404).json({
-          success: false,
-          message: 'Договор не найден'
-        });
-        return;
-      }
-
-      // Удаляем существующие подписи
-      await connection.query('DELETE FROM agreement_signatures WHERE agreement_id = ?', [id]);
-
-      // Создаем новые подписи
-      const signatureLinks: any[] = [];
-
-      for (const signature of signatures) {
-        const uniqueLink = uuidv4();
-        const publicLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/sign/${uniqueLink}`;
-
-        await connection.query(`
-          INSERT INTO agreement_signatures (
-            agreement_id, signer_name, signer_role,
-            position_x, position_y, position_page,
-            signature_link
-          ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [
-          id,
-          signature.signer_name,
-          signature.signer_role,
-          signature.position_x,
-          signature.position_y,
-          signature.position_page,
-          uniqueLink
-        ]);
-
-        signatureLinks.push({
-          signer_name: signature.signer_name,
-          link: publicLink
-        });
-      }
-
-      // Обновляем статус договора
-      await connection.query(
-        'UPDATE agreements SET status = ? WHERE id = ?',
-        ['pending_signatures', id]
-      );
-
-      // Генерируем QR код
-      const qrCodePath = await this.generateQRCode((agreement as any).public_link, (agreement as any).agreement_number);
-      await connection.query('UPDATE agreements SET qr_code_path = ? WHERE id = ?', [qrCodePath, id]);
-
-      await db.commit(connection);
-
-      logger.info(`Signatures created for agreement: ${id}`);
-
-      res.json({
-        success: true,
-        message: 'Подписи успешно созданы',
-        data: { signatureLinks }
-      });
-    } catch (error) {
+    if (!agreement) {
       await db.rollback(connection);
-      logger.error('Create signatures error:', error);
-      res.status(500).json({
+      res.status(404).json({
         success: false,
-        message: 'Ошибка создания подписей'
+        message: 'Договор не найден'
+      });
+      return;
+    }
+
+    // Удаляем существующие подписи
+    await connection.query('DELETE FROM agreement_signatures WHERE agreement_id = ?', [id]);
+
+    // Создаем новые подписи
+    const { v4: uuidv4 } = require('uuid');
+    const signatureLinks: any[] = [];
+
+    for (const signature of signatures) {
+      const uniqueLink = uuidv4();
+      const publicLink = `https://agreement.novaestate.company/sign/${uniqueLink}`;
+
+      await connection.query(`
+        INSERT INTO agreement_signatures (
+          agreement_id, signer_name, signer_role,
+          position_x, position_y, position_page,
+          signature_link
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [
+        id,
+        signature.signer_name,
+        signature.signer_role,
+        signature.position_x,
+        signature.position_y,
+        signature.position_page,
+        uniqueLink
+      ]);
+
+      signatureLinks.push({
+        signer_name: signature.signer_name,
+        link: publicLink
       });
     }
+
+    // Обновляем статус договора
+    await connection.query(
+      'UPDATE agreements SET status = ? WHERE id = ?',
+      ['pending_signatures', id]
+    );
+
+    // Генерируем QR код
+    const qrCodePath = await this.generateQRCode((agreement as any).public_link, (agreement as any).agreement_number);
+    await connection.query('UPDATE agreements SET qr_code_path = ? WHERE id = ?', [qrCodePath, id]);
+
+    await db.commit(connection);
+
+    logger.info(`Signatures created for agreement: ${id}`);
+
+    res.json({
+      success: true,
+      message: 'Подписи успешно созданы',
+      data: { signatureLinks }
+    });
+  } catch (error) {
+    await db.rollback(connection);
+    logger.error('Create signatures error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка создания подписей'
+    });
   }
+}
 
   /**
    * Вспомогательный метод: замена переменных в тексте

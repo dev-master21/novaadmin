@@ -89,8 +89,15 @@ router.delete('/parties/:partyId/document', (req, res) => {
 });
 
 // === ПОДПИСИ ===
+router.put('/signatures/:id', requirePermission('agreements.manage_signatures'), (req, res) => {
+  agreementSignaturesController.update(req as AuthRequest, res);
+});
+
+router.post('/signatures/:id/regenerate', requirePermission('agreements.manage_signatures'), (req, res) => {
+  agreementSignaturesController.regenerateLink(req as AuthRequest, res);
+});
+
 router.delete('/signatures/:id', requirePermission('agreements.manage_signatures'), (req, res) => {
   agreementSignaturesController.delete(req as AuthRequest, res);
 });
-
 export default router;
