@@ -13,7 +13,6 @@ import {
   Table,
   Drawer,
   Switch,
-  Tooltip,
   Dropdown,
   Row,
   Col,
@@ -38,7 +37,7 @@ import {
   MoreOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { agreementsApi, Agreement } from '@/api/agreements.api';
+import { agreementsApi, Agreement, AgreementSignature } from '@/api/agreements.api';
 import { useReactToPrint } from 'react-to-print';
 import DocumentEditor from '@/components/DocumentEditor';
 import ReactQuill from 'react-quill';
@@ -62,6 +61,10 @@ const AgreementDetail = () => {
   const [saving, setSaving] = useState(false);
   const [detailsDrawerVisible, setDetailsDrawerVisible] = useState(false);
   const [signaturesModalVisible, setSignaturesModalVisible] = useState(false);
+
+  // Новый state для модального окна с детальной информацией подписи на мобильных
+  const [signatureDetailsModal, setSignatureDetailsModal] = useState(false);
+  const [selectedSignature, setSelectedSignature] = useState<AgreementSignature | null>(null);
 
   // Режимы просмотра
   const [viewMode, setViewMode] = useState<'formatted' | 'simple'>('formatted');
@@ -193,6 +196,14 @@ const AgreementDetail = () => {
     message.info(viewMode === 'formatted' ? 'Упрощенный режим' : 'Режим с оформлением');
   };
 
+  // Функция для открытия модального окна с детальной информацией на мобильных
+  const handleSignatureDetailsClick = (record: AgreementSignature) => {
+    if (isMobile) {
+      setSelectedSignature(record);
+      setSignatureDetailsModal(true);
+    }
+  };
+
   const modules = {
     toolbar: [
       [{ header: [1, 2, 3, false] }],
@@ -242,6 +253,157 @@ const AgreementDetail = () => {
     return types[type] || type;
   };
 
+  // Компонент детальной информации о подписи (переиспользуемый)
+  const SignatureDetailsContent = ({ record }: { record: AgreementSignature }) => (
+    <div style={{ 
+      padding: '16px', 
+      background: '#141414',  // ✅ Изменил на темный фон
+      borderRadius: '8px',
+      color: 'rgba(255, 255, 255, 0.85)' // ✅ Добавил цвет текста для темной темы
+    }}>
+      <h4 style={{ marginBottom: 16, color: 'rgba(255, 255, 255, 0.95)' }}>Детальная аналитика подписи</h4>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={12}>
+          <Card 
+            size="small" 
+            title="Информация о сессии"
+            style={{ background: '#1f1f1f', borderColor: '#303030' }}
+            headStyle={{ background: '#1f1f1f', color: 'rgba(255, 255, 255, 0.85)' }}
+          >
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <div>
+                <Text type="secondary">IP адрес:</Text>
+                <br />
+                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                  {record.ip_address || 'Не определён'}
+                </Text>
+              </div>
+              <div>
+                <Text type="secondary">Устройство:</Text>
+                <br />
+                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                  {record.device_type || 'Не определено'}
+                </Text>
+              </div>
+              <div>
+                <Text type="secondary">Браузер:</Text>
+                <br />
+                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                  {record.browser || 'Не определён'}
+                </Text>
+              </div>
+              <div>
+                <Text type="secondary">Операционная система:</Text>
+                <br />
+                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                  {record.os || 'Не определена'}
+                </Text>
+              </div>
+            </Space>
+          </Card>
+        </Col>
+        <Col xs={24} md={12}>
+          <Card 
+            size="small" 
+            title="Временные метрики"
+            style={{ background: '#1f1f1f', borderColor: '#303030' }}
+            headStyle={{ background: '#1f1f1f', color: 'rgba(255, 255, 255, 0.85)' }}
+          >
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <div>
+                <Text type="secondary">Первый визит:</Text>
+                <br />
+                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                  {record.first_visit_at 
+                    ? new Date(record.first_visit_at).toLocaleString('ru-RU')
+                    : 'Не посещал'}
+                </Text>
+              </div>
+              <div>
+                <Text type="secondary">Время просмотра договора:</Text>
+                <br />
+                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                  {record.agreement_view_duration 
+                    ? `${Math.floor(record.agreement_view_duration / 60)} мин ${record.agreement_view_duration % 60} сек`
+                    : '0 сек'}
+                </Text>
+              </div>
+              <div>
+                <Text type="secondary">Общее время на странице:</Text>
+                <br />
+                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                  {record.total_session_duration 
+                    ? `${Math.floor(record.total_session_duration / 60)} мин ${record.total_session_duration % 60} сек`
+                    : '0 сек'}
+                </Text>
+              </div>
+              <div>
+                <Text type="secondary">Количество очисток подписи:</Text>
+                <br />
+                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                  {record.signature_clear_count || 0}
+                </Text>
+              </div>
+            </Space>
+          </Card>
+        </Col>
+        {record.is_signed && record.signature_data && (
+          <Col xs={24}>
+            <Card 
+              size="small" 
+              title="Подпись"
+              style={{ background: '#1f1f1f', borderColor: '#303030' }}
+              headStyle={{ background: '#1f1f1f', color: 'rgba(255, 255, 255, 0.85)' }}
+            >
+              <div style={{ textAlign: 'center' }}>
+                <img 
+                  src={record.signature_data} 
+                  alt="Signature" 
+                  style={{ 
+                    maxWidth: '300px', 
+                    border: '1px solid #303030',
+                    borderRadius: '4px',
+                    padding: '8px',
+                    background: 'white'
+                  }} 
+                />
+              </div>
+            </Card>
+          </Col>
+        )}
+        {record.signature_link && (
+          <Col xs={24}>
+            <Card 
+              size="small" 
+              title="Ссылка для подписания"
+              style={{ background: '#1f1f1f', borderColor: '#303030' }}
+              headStyle={{ background: '#1f1f1f', color: 'rgba(255, 255, 255, 0.85)' }}
+            >
+              <Input.Group compact>
+                <Input
+                  style={{ width: 'calc(100% - 100px)' }}
+                  value={`https://agreement.novaestate.company/sign/${record.signature_link}`}
+                  readOnly
+                />
+                <Button 
+                  icon={<CopyOutlined />}
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `https://agreement.novaestate.company/sign/${record.signature_link}`
+                    );
+                    message.success('Ссылка скопирована');
+                  }}
+                >
+                  Копировать
+                </Button>
+              </Input.Group>
+            </Card>
+          </Col>
+        )}
+      </Row>
+    </div>
+  );
+
   const tabItems = [
     {
       key: 'document',
@@ -270,73 +432,68 @@ const AgreementDetail = () => {
 
             <Space>
               <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)' }}>
-                {viewMode === 'formatted' ? 'С оформлением' : 'Упрощенный'}
+                {viewMode === 'formatted' ? 'Режим с оформлением' : 'Упрощенный режим'}
               </span>
-              <Tooltip title={`Переключить на ${viewMode === 'formatted' ? 'упрощенный' : 'с оформлением'} режим`}>
-                <Switch
-                  checked={viewMode === 'formatted'}
-                  onChange={toggleViewMode}
-                  checkedChildren={<FileTextOutlined />}
-                  unCheckedChildren={<CodeOutlined />}
-                />
-              </Tooltip>
+              <Switch
+                checked={viewMode === 'formatted'}
+                onChange={toggleViewMode}
+                checkedChildren={<FileTextOutlined />}
+                unCheckedChildren={<CodeOutlined />}
+              />
             </Space>
           </div>
 
-          {isEditing && (
-            <div style={{ marginBottom: '16px', padding: '12px', background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '4px' }}>
-              <div style={{ fontSize: '14px', color: '#595959' }}>
-                {viewMode === 'formatted' 
-                  ? 'Кликните на любой текст для редактирования. Используйте зелёные кнопки для добавления секций, параграфов и списков.'
-                  : 'Редактируйте текст договора. HTML-разметка поддерживается.'}
-              </div>
-            </div>
-          )}
-          
-          {/* РЕЖИМ С ОФОРМЛЕНИЕМ (DocumentEditor) */}
-          {viewMode === 'formatted' && (
-            <div className={`document-editor-wrapper ${isMobile ? 'mobile-zoom' : ''}`}>
+          {/* Документ для печати (скрыт) */}
+          <div style={{ display: 'none' }}>
+            <div ref={printRef}>
               <DocumentEditor
-                ref={printRef}
                 agreement={agreement}
-                isEditing={isEditing}
+                isEditing={false}
+                logoUrl="/nova-logo.svg"
+              />
+            </div>
+          </div>
+
+          {/* Основной контент */}
+          {isEditing ? (
+            viewMode === 'formatted' ? (
+              <DocumentEditor
+                agreement={agreement}
+                isEditing={true}
                 onContentChange={handleContentChange}
                 logoUrl="/nova-logo.svg"
               />
-            </div>
-          )}
-
-          {/* Скрытый DocumentEditor для печати (когда показан упрощенный режим) */}
-          {viewMode === 'simple' && (
-            <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '793px' }}>
-              <DocumentEditor
-                ref={printRef}
-                agreement={{ ...agreement, content: editedContent }}
-                isEditing={false}
-                onContentChange={() => {}}
-                logoUrl="/nova-logo.svg"
-              />
-            </div>
-          )}
-
-          {/* УПРОЩЕННЫЙ РЕЖИМ */}
-          {viewMode === 'simple' && (
-            <div className={`agreement-simple-view ${isMobile ? 'mobile-view' : ''}`}>
-              <ReactQuill
-                key={`quill-${isEditing ? 'edit' : 'view'}`}
-                value={editedContent}
-                onChange={isEditing ? handleSimpleContentChange : undefined}
-                readOnly={!isEditing}
-                theme="snow"
-                modules={isEditing ? modules : { toolbar: false }}
-                style={{ 
-                  border: '1px solid #303030',
-                  borderRadius: '4px',
-                  background: '#1f1f1f',
-                  minHeight: isEditing ? '500px' : 'auto'
-                }}
-              />
-            </div>
+            ) : (
+              <div className="agreement-simple-view">
+                <ReactQuill
+                  value={editedContent}
+                  onChange={handleSimpleContentChange}
+                  modules={modules}
+                  theme="snow"
+                  style={{ height: '600px', marginBottom: '50px' }}
+                />
+              </div>
+            )
+          ) : (
+            viewMode === 'formatted' ? (
+              <div className={isMobile ? 'document-editor-wrapper mobile-zoom' : 'document-editor-wrapper'}>
+                <DocumentEditor
+                  agreement={agreement}
+                  isEditing={false}
+                  logoUrl="/nova-logo.svg"
+                />
+              </div>
+            ) : (
+              <div className="agreement-simple-view">
+                <ReactQuill
+                  value={agreement.content}
+                  readOnly={true}
+                  theme="snow"
+                  modules={{ toolbar: false }}
+                  style={{ height: 'auto' }}
+                />
+              </div>
+            )
           )}
         </div>
       )
@@ -345,27 +502,20 @@ const AgreementDetail = () => {
       key: 'details',
       label: 'Детали',
       children: (
-        <Card className="agreement-details-card">
-          <Descriptions bordered column={{ xs: 1, sm: 1, md: 2 }} size="small">
-            <Descriptions.Item label="Номер договора" span={2}>
-              <strong>{agreement.agreement_number}</strong>
-            </Descriptions.Item>
-            <Descriptions.Item label="Тип">
-              {getTypeLabel(agreement.type)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Статус">
-              {getStatusTag(agreement.status)}
-            </Descriptions.Item>
+        <Card>
+          <Descriptions column={{ xs: 1, sm: 1, md: 2 }} bordered size="small">
+            <Descriptions.Item label="Номер договора">{agreement.agreement_number}</Descriptions.Item>
+            <Descriptions.Item label="Тип">{getTypeLabel(agreement.type)}</Descriptions.Item>
+            <Descriptions.Item label="Статус">{getStatusTag(agreement.status)}</Descriptions.Item>
             {agreement.property_name && (
-              <Descriptions.Item label="Объект" span={2}>
+              <Descriptions.Item label="Объект">
                 {agreement.property_name} ({agreement.property_number})
               </Descriptions.Item>
             )}
             {agreement.description && (
-              <Descriptions.Item label="Описание" span={2}>
-                {agreement.description}
-              </Descriptions.Item>
+              <Descriptions.Item label="Описание" span={2}>{agreement.description}</Descriptions.Item>
             )}
+            <Descriptions.Item label="Город">{agreement.city}</Descriptions.Item>
             {agreement.date_from && (
               <Descriptions.Item label="Дата начала">
                 {new Date(agreement.date_from).toLocaleDateString('ru-RU')}
@@ -376,16 +526,21 @@ const AgreementDetail = () => {
                 {new Date(agreement.date_to).toLocaleDateString('ru-RU')}
               </Descriptions.Item>
             )}
-            <Descriptions.Item label="Город">
-              {agreement.city}
-            </Descriptions.Item>
+            {agreement.rent_amount_monthly && (
+              <Descriptions.Item label="Аренда в месяц">
+                {agreement.rent_amount_monthly.toLocaleString('ru-RU')} ₿
+              </Descriptions.Item>
+            )}
+            {agreement.deposit_amount && (
+              <Descriptions.Item label="Депозит">
+                {agreement.deposit_amount.toLocaleString('ru-RU')} ₿
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Создан">
               {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
             </Descriptions.Item>
             {agreement.created_by_name && (
-              <Descriptions.Item label="Создал" span={2}>
-                {agreement.created_by_name}
-              </Descriptions.Item>
+              <Descriptions.Item label="Автор">{agreement.created_by_name}</Descriptions.Item>
             )}
           </Descriptions>
         </Card>
@@ -395,7 +550,7 @@ const AgreementDetail = () => {
       key: 'parties',
       label: 'Стороны',
       children: (
-        <Card className="agreement-parties-card">
+        <Card>
           {agreement.parties && agreement.parties.length > 0 ? (
             <div className="parties-list">
               {agreement.parties.map((party, index) => (
@@ -460,122 +615,20 @@ const AgreementDetail = () => {
               pagination={false}
               size="small"
               scroll={{ x: 1200 }}
-              expandable={{
-                expandedRowRender: (record) => (
-                  <div style={{ padding: '16px', background: '#fafafa', borderRadius: '8px' }}>
-                    <h4 style={{ marginBottom: 16 }}>Детальная аналитика подписи</h4>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} md={12}>
-                        <Card size="small" title="Информация о сессии">
-                          <Space direction="vertical" style={{ width: '100%' }} size="small">
-                            <div>
-                              <Text type="secondary">IP адрес:</Text>
-                              <br />
-                              <Text strong>{record.ip_address || 'Не определён'}</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary">Устройство:</Text>
-                              <br />
-                              <Text strong>{record.device_type || 'Не определено'}</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary">Браузер:</Text>
-                              <br />
-                              <Text strong>{record.browser || 'Не определён'}</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary">Операционная система:</Text>
-                              <br />
-                              <Text strong>{record.os || 'Не определена'}</Text>
-                            </div>
-                          </Space>
-                        </Card>
-                      </Col>
-                      <Col xs={24} md={12}>
-                        <Card size="small" title="Временные метрики">
-                          <Space direction="vertical" style={{ width: '100%' }} size="small">
-                            <div>
-                              <Text type="secondary">Первый визит:</Text>
-                              <br />
-                              <Text strong>
-                                {record.first_visit_at 
-                                  ? new Date(record.first_visit_at).toLocaleString('ru-RU')
-                                  : 'Не посещал'}
-                              </Text>
-                            </div>
-                            <div>
-                              <Text type="secondary">Время просмотра договора:</Text>
-                              <br />
-                              <Text strong>
-                                {record.agreement_view_duration 
-                                  ? `${Math.floor(record.agreement_view_duration / 60)} мин ${record.agreement_view_duration % 60} сек`
-                                  : '0 сек'}
-                              </Text>
-                            </div>
-                            <div>
-                              <Text type="secondary">Общее время на странице:</Text>
-                              <br />
-                              <Text strong>
-                                {record.total_session_duration 
-                                  ? `${Math.floor(record.total_session_duration / 60)} мин ${record.total_session_duration % 60} сек`
-                                  : '0 сек'}
-                              </Text>
-                            </div>
-                            <div>
-                              <Text type="secondary">Количество очисток подписи:</Text>
-                              <br />
-                              <Text strong>{record.signature_clear_count || 0}</Text>
-                            </div>
-                          </Space>
-                        </Card>
-                      </Col>
-                      {record.is_signed && record.signature_data && (
-                        <Col xs={24}>
-                          <Card size="small" title="Подпись">
-                            <div style={{ textAlign: 'center' }}>
-                              <img 
-                                src={record.signature_data} 
-                                alt="Signature" 
-                                style={{ 
-                                  maxWidth: '300px', 
-                                  border: '1px solid #d9d9d9',
-                                  borderRadius: '4px',
-                                  padding: '8px',
-                                  background: 'white'
-                                }} 
-                              />
-                            </div>
-                          </Card>
-                        </Col>
-                      )}
-                      {record.signature_link && (
-                        <Col xs={24}>
-                          <Card size="small" title="Ссылка для подписания">
-                            <Input.Group compact>
-                              <Input
-                                style={{ width: 'calc(100% - 100px)' }}
-                                value={`https://agreement.novaestate.company/sign/${record.signature_link}`}
-                                readOnly
-                              />
-                              <Button 
-                                icon={<CopyOutlined />}
-                                onClick={() => {
-                                  navigator.clipboard.writeText(
-                                    `https://agreement.novaestate.company/sign/${record.signature_link}`
-                                  );
-                                  message.success('Ссылка скопирована');
-                                }}
-                              >
-                                Копировать
-                              </Button>
-                            </Input.Group>
-                          </Card>
-                        </Col>
-                      )}
-                    </Row>
-                  </div>
-                ),
-                rowExpandable: () => true,
+              expandable={
+                // ✅ На мобильных отключаем expandable, используем onClick для модального окна
+                isMobile ? undefined : {
+                  expandedRowRender: (record) => (
+                    <SignatureDetailsContent record={record} />
+                  ),
+                  rowExpandable: () => true,
+                }
+              }
+              onRow={(record) => {
+                // ✅ На мобильных добавляем обработчик клика на плюсик
+                return isMobile ? {
+                  onClick: () => handleSignatureDetailsClick(record),
+                } : {};
               }}
               columns={[
                 {
@@ -600,54 +653,50 @@ const AgreementDetail = () => {
                       <Tag color={is_signed ? 'success' : 'default'} icon={is_signed ? <CheckOutlined /> : null}>
                         {is_signed ? 'Подписано' : 'Ожидает'}
                       </Tag>
-                      {record.first_visit_at && !is_signed && (
-                        <Text type="secondary" style={{ fontSize: 11 }}>
-                          Посещал
+                      {is_signed && record.signed_at && (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {new Date(record.signed_at).toLocaleDateString('ru-RU')}
                         </Text>
                       )}
                     </Space>
                   )
                 },
                 {
-                  title: 'Дата подписания',
-                  dataIndex: 'signed_at',
-                  key: 'signed_at',
-                  width: 180,
-                  render: (date) => date ? new Date(date).toLocaleString('ru-RU') : '-'
-                },
-                {
                   title: 'Устройство',
                   dataIndex: 'device_type',
                   key: 'device_type',
                   width: 120,
-                  render: (device) => device ? (
-                    <Tag>{device}</Tag>
-                  ) : '-'
-                },
-                {
-                  title: 'Браузер',
-                  dataIndex: 'browser',
-                  key: 'browser',
-                  width: 150,
-                  render: (browser) => browser || '-'
+                  responsive: ['lg'],
+                  render: (device) => device || '-'
                 },
                 {
                   title: 'IP адрес',
                   dataIndex: 'ip_address',
                   key: 'ip_address',
                   width: 140,
+                  responsive: ['lg'],
                   render: (ip) => ip || '-'
+                },
+                {
+                  title: 'Время просмотра',
+                  dataIndex: 'agreement_view_duration',
+                  key: 'agreement_view_duration',
+                  width: 140,
+                  responsive: ['xl'],
+                  render: (duration) => duration 
+                    ? `${Math.floor(duration / 60)} мин ${duration % 60} сек`
+                    : '-'
                 },
                 {
                   title: 'Действия',
                   key: 'actions',
-                  width: 100,
+                  width: 80,
                   fixed: 'right',
                   render: (_, record) => (
                     <Dropdown
                       menu={{
                         items: [
-                          {
+                          ...(record.signature_link && !record.is_signed ? [{
                             key: 'copy',
                             icon: <CopyOutlined />,
                             label: 'Копировать ссылку',
@@ -664,21 +713,22 @@ const AgreementDetail = () => {
                             label: 'Перегенерировать ссылку',
                             onClick: async () => {
                               try {
-                                await agreementsApi.regenerateSignatureLink(record.id);
+                                const response = await agreementsApi.regenerateSignatureLink(record.id);
                                 message.success('Ссылка перегенерирована');
+                                navigator.clipboard.writeText(response.data.data.public_url);
                                 fetchAgreement();
                               } catch (error: any) {
                                 message.error('Ошибка перегенерации');
                               }
                             }
-                          },
+                          }] : []),
                           {
                             type: 'divider'
                           },
                           {
                             key: 'delete',
                             icon: <DeleteOutlined />,
-                            label: 'Удалить подпись',
+                            label: 'Удалить',
                             danger: true,
                             onClick: () => {
                               Modal.confirm({
@@ -828,6 +878,28 @@ const AgreementDetail = () => {
           </Descriptions.Item>
         </Descriptions>
       </Drawer>
+
+      {/* ✅ Модальное окно с детальной информацией для мобильных устройств */}
+      <Modal
+        title="Детальная аналитика подписи"
+        open={signatureDetailsModal}
+        onCancel={() => {
+          setSignatureDetailsModal(false);
+          setSelectedSignature(null);
+        }}
+        footer={null}
+        width="95%"
+        style={{ top: 20 }}
+        bodyStyle={{ 
+          maxHeight: 'calc(100vh - 200px)', 
+          overflowY: 'auto',
+          padding: '16px'
+        }}
+      >
+        {selectedSignature && (
+          <SignatureDetailsContent record={selectedSignature} />
+        )}
+      </Modal>
 
       <SignaturesModal
         visible={signaturesModalVisible}

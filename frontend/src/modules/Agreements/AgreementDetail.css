@@ -611,3 +611,55 @@
     padding: 12px;
   }
 }
+
+/* Темная тема для модального окна детальной информации */
+.signature-detail-modal-dark .ant-modal-content {
+  background: #141414;
+}
+
+.signature-detail-modal-dark .ant-modal-header {
+  background: #141414;
+  border-bottom-color: #303030;
+}
+
+.signature-detail-modal-dark .ant-modal-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signature-detail-modal-dark .ant-modal-close {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.signature-detail-modal-dark .ant-card {
+  background: #1f1f1f;
+  border-color: #303030;
+}
+
+.signature-detail-modal-dark .ant-card-head {
+  background: #1f1f1f;
+  border-bottom-color: #303030;
+}
+
+.signature-detail-modal-dark .ant-card-head-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signature-detail-modal-dark .ant-card-body {
+  background: #1f1f1f;
+}
+
+/* Стиль для кликабельных строк на мобильных */
+@media (max-width: 768px) {
+  .ant-table-tbody > tr {
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .ant-table-tbody > tr:hover {
+    background-color: #262626 !important;
+  }
+  
+  .ant-table-tbody > tr:active {
+    background-color: #303030 !important;
+  }
+}

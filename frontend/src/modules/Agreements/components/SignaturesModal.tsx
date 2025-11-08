@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import {
   Modal,
-  Form,
   Input,
   Button,
   Space,
@@ -46,6 +45,11 @@ interface SignerData {
   signer_role: string;
 }
 
+interface EditingData {
+  signer_name: string;
+  signer_role: string;
+}
+
 const SignaturesModal = ({ 
   visible, 
   onCancel, 
@@ -60,10 +64,21 @@ const SignaturesModal = ({
   const [generatedLinks, setGeneratedLinks] = useState<any[]>([]);
   const [step, setStep] = useState<'create' | 'links'>('create');
   const [editingSignature, setEditingSignature] = useState<number | null>(null);
-  const [editForm] = Form.useForm();
+  const [editingData, setEditingData] = useState<EditingData | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // Извлекаем уникальные роли из parties
   const partyRoles = [...new Set(parties.map(p => p.role))];
+
+  // Отслеживаем размер экрана
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -77,6 +92,7 @@ const SignaturesModal = ({
       }
       setGeneratedLinks([]);
       setEditingSignature(null);
+      setEditingData(null);
     }
   }, [visible, existingSignatures]);
 
@@ -98,14 +114,42 @@ const SignaturesModal = ({
     ));
   };
 
+  const validateUniqueRoles = (signersToValidate: SignerData[]): boolean => {
+    const roles = signersToValidate
+      .map(s => s.signer_role.trim())
+      .filter(role => role !== '');
+
+    const roleSet = new Set(roles);
+    
+    if (roles.length !== roleSet.size) {
+      const duplicates = roles.filter((role, index) => roles.indexOf(role) !== index);
+      const uniqueDuplicates = [...new Set(duplicates)];
+      message.error(`Роль "${uniqueDuplicates[0]}" указана для нескольких подписантов. Каждая роль должна быть уникальной.`);
+      return false;
+    }
+
+    const existingRoles = existingSignatures.map(s => s.signer_role);
+    const conflictingRoles = roles.filter(role => existingRoles.includes(role));
+    
+    if (conflictingRoles.length > 0) {
+      message.error(`Роль "${conflictingRoles[0]}" уже используется в существующих подписях. Выберите другую роль.`);
+      return false;
+    }
+
+    return true;
+  };
+
   const handleCreate = async () => {
-    // Валидация
     const invalidSigners = signers.filter(s => 
       !s.signer_name.trim() || !s.signer_role.trim()
     );
 
     if (invalidSigners.length > 0) {
       message.error('Заполните имя и роль для всех подписантов');
+      return;
+    }
+
+    if (!validateUniqueRoles(signers)) {
       return;
     }
 
@@ -139,17 +183,40 @@ const SignaturesModal = ({
   };
 
   const handleUpdateSignature = async (id: number) => {
+    if (!editingData) {
+      message.error('Нет данных для сохранения');
+      return;
+    }
+
+    if (!editingData.signer_name.trim()) {
+      message.error('Введите имя подписанта');
+      return;
+    }
+
+    if (!editingData.signer_role.trim()) {
+      message.error('Выберите роль');
+      return;
+    }
+
+    const otherSignatures = existingSignatures.filter(s => s.id !== id);
+    const roleExists = otherSignatures.some(s => s.signer_role === editingData.signer_role);
+    
+    if (roleExists) {
+      message.error(`Роль "${editingData.signer_role}" уже используется другим подписантом. Выберите другую роль.`);
+      return;
+    }
+
     try {
-      const values = await editForm.validateFields();
       await agreementsApi.updateSignature(id, {
-        signer_name: values.signer_name,
-        signer_role: values.signer_role
+        signer_name: editingData.signer_name.trim(),
+        signer_role: editingData.signer_role.trim()
       });
-      message.success('Подпись обновлена');
+      
+      message.success('Подпись успешно обновлена');
       setEditingSignature(null);
+      setEditingData(null);
       onSuccess();
     } catch (error: any) {
-      if (error.errorFields) return; // Validation error
       message.error(error.response?.data?.message || 'Ошибка обновления');
     }
   };
@@ -175,6 +242,175 @@ const SignaturesModal = ({
     }
   };
 
+  const getAvailableRoles = (currentSignerId: string) => {
+    const usedRolesInNewSigners = signers
+      .filter(s => s.id !== currentSignerId)
+      .map(s => s.signer_role)
+      .filter(role => role !== '');
+
+    const usedRolesInExisting = existingSignatures.map(s => s.signer_role);
+    const allUsedRoles = [...usedRolesInNewSigners, ...usedRolesInExisting];
+
+    return partyRoles.filter(role => !allUsedRoles.includes(role));
+  };
+
+  // Рендер мобильной карточки
+  const renderMobileSignatureCard = (record: AgreementSignature) => {
+    const isEditing = editingSignature === record.id;
+
+    return (
+      <Card key={record.id} size="small" className="signature-mobile-card">
+        <div className="signature-mobile-header">
+          <div className="signature-mobile-info">
+            {isEditing ? (
+              <Input 
+                size="small" 
+                placeholder="Имя"
+                defaultValue={record.signer_name}
+                onChange={(e) => {
+                  setEditingData(prev => ({
+                    signer_name: e.target.value,
+                    signer_role: prev?.signer_role || record.signer_role
+                  }));
+                }}
+                style={{ marginBottom: 8 }}
+              />
+            ) : (
+              <>
+                <div className="signature-mobile-name">{record.signer_name}</div>
+                {record.first_visit_at && (
+                  <div className="signature-mobile-visit">
+                    <ClockCircleOutlined /> Посещал {new Date(record.first_visit_at).toLocaleString('ru-RU')}
+                  </div>
+                )}
+              </>
+            )}
+            
+            {isEditing ? (
+              <Select 
+                size="small" 
+                placeholder="Выберите роль"
+                defaultValue={record.signer_role}
+                onChange={(value) => {
+                  setEditingData(prev => ({
+                    signer_name: prev?.signer_name || record.signer_name,
+                    signer_role: value
+                  }));
+                }}
+                style={{ width: '100%', marginTop: 8 }}
+              >
+                {partyRoles
+                  .filter(role => {
+                    return role === record.signer_role || !existingSignatures.some(s => s.id !== record.id && s.signer_role === role);
+                  })
+                  .map(role => (
+                    <Option key={role} value={role}>{role}</Option>
+                  ))
+                }
+              </Select>
+            ) : (
+              <Tag color="blue" className="signature-mobile-role">{record.signer_role}</Tag>
+            )}
+          </div>
+          
+          <div className="signature-mobile-status">
+            <Space direction="vertical" size={2}>
+              <Tag 
+                color={record.is_signed ? 'success' : 'default'} 
+                icon={record.is_signed ? <CheckOutlined /> : null}
+              >
+                {record.is_signed ? 'Подписано' : 'Ожидает'}
+              </Tag>
+              {record.is_signed && record.signed_at && (
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  {new Date(record.signed_at).toLocaleDateString('ru-RU')}
+                </Text>
+              )}
+            </Space>
+          </div>
+        </div>
+
+        <div className="signature-mobile-actions">
+          {isEditing ? (
+            <>
+              <Button 
+                type="primary"
+                size="small"
+                icon={<CheckOutlined />}
+                onClick={() => handleUpdateSignature(record.id)}
+              >
+                Сохранить
+              </Button>
+              <Button 
+                size="small"
+                onClick={() => {
+                  setEditingSignature(null);
+                  setEditingData(null);
+                }}
+              >
+                Отмена
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button 
+                size="small" 
+                icon={<CopyOutlined />}
+                onClick={() => copyLink(`https://agreement.novaestate.company/sign/${record.signature_link}`)}
+              >
+                Копировать
+              </Button>
+              <Button 
+                size="small" 
+                icon={<EditOutlined />}
+                onClick={() => {
+                  setEditingData({
+                    signer_name: record.signer_name,
+                    signer_role: record.signer_role
+                  });
+                  setEditingSignature(record.id);
+                }}
+              >
+                Редактировать
+              </Button>
+              <Popconfirm
+                title="Перегенерировать ссылку?"
+                description="Старая ссылка станет недействительной"
+                onConfirm={() => handleRegenerateLink(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <Button 
+                  size="small" 
+                  icon={<ReloadOutlined />}
+                >
+                  Обновить
+                </Button>
+              </Popconfirm>
+              <Popconfirm
+                title="Удалить подпись?"
+                description="Это действие нельзя отменить"
+                onConfirm={() => handleDeleteSignature(record.id)}
+                okText="Удалить"
+                okType="danger"
+                cancelText="Отмена"
+              >
+                <Button 
+                  size="small" 
+                  danger
+                  icon={<DeleteOutlined />}
+                >
+                  Удалить
+                </Button>
+              </Popconfirm>
+            </>
+          )}
+        </div>
+      </Card>
+    );
+  };
+
+  // Колонки для десктопной таблицы
   const existingColumns: ColumnsType<AgreementSignature> = [
     {
       title: 'Подписант',
@@ -184,13 +420,17 @@ const SignaturesModal = ({
       render: (text, record) => {
         if (editingSignature === record.id) {
           return (
-            <Form.Item
-              name="signer_name"
-              style={{ margin: 0 }}
-              rules={[{ required: true, message: 'Введите имя' }]}
-            >
-              <Input size="small" placeholder="Имя" />
-            </Form.Item>
+            <Input 
+              size="small" 
+              placeholder="Имя"
+              defaultValue={text}
+              onChange={(e) => {
+                setEditingData(prev => ({
+                  signer_name: e.target.value,
+                  signer_role: prev?.signer_role || record.signer_role
+                }));
+              }}
+            />
           );
         }
         return (
@@ -213,13 +453,27 @@ const SignaturesModal = ({
       render: (text, record) => {
         if (editingSignature === record.id) {
           return (
-            <Form.Item
-              name="signer_role"
-              style={{ margin: 0 }}
-              rules={[{ required: true, message: 'Введите роль' }]}
+            <Select 
+              size="small" 
+              placeholder="Выберите роль"
+              defaultValue={text}
+              onChange={(value) => {
+                setEditingData(prev => ({
+                  signer_name: prev?.signer_name || record.signer_name,
+                  signer_role: value
+                }));
+              }}
+              style={{ width: '100%' }}
             >
-              <Input size="small" placeholder="Роль" />
-            </Form.Item>
+              {partyRoles
+                .filter(role => {
+                  return role === text || !existingSignatures.some(s => s.id !== record.id && s.signer_role === role);
+                })
+                .map(role => (
+                  <Option key={role} value={role}>{role}</Option>
+                ))
+              }
+            </Select>
           );
         }
         return <Tag color="blue">{text}</Tag>;
@@ -264,7 +518,10 @@ const SignaturesModal = ({
               </Button>
               <Button 
                 size="small"
-                onClick={() => setEditingSignature(null)}
+                onClick={() => {
+                  setEditingSignature(null);
+                  setEditingData(null);
+                }}
               >
                 Отмена
               </Button>
@@ -286,11 +543,11 @@ const SignaturesModal = ({
                 size="small" 
                 icon={<EditOutlined />}
                 onClick={() => {
-                  setEditingSignature(record.id);
-                  editForm.setFieldsValue({
+                  setEditingData({
                     signer_name: record.signer_name,
                     signer_role: record.signer_role
                   });
+                  setEditingSignature(record.id);
                 }}
               />
             </Tooltip>
@@ -335,13 +592,12 @@ const SignaturesModal = ({
       title="Управление подписями"
       open={visible}
       onCancel={onCancel}
-      width={900}
+      width={isMobile ? '100%' : 900}
       footer={null}
       destroyOnClose
       className="signatures-modal-dark"
+      style={isMobile ? { top: 0, maxWidth: '100vw', margin: 0, paddingBottom: 0 } : {}}
     >
-      <Form form={editForm} component={false} />
-
       {showExisting && existingSignatures.length > 0 && step === 'create' && (
         <Card 
           size="small" 
@@ -355,13 +611,21 @@ const SignaturesModal = ({
           }
           style={{ marginBottom: 16 }}
         >
-          <Table
-            dataSource={existingSignatures}
-            columns={existingColumns}
-            rowKey="id"
-            pagination={false}
-            size="small"
-          />
+          {/* Desktop Table */}
+          <div className="signatures-desktop-table">
+            <Table
+              dataSource={existingSignatures}
+              columns={existingColumns}
+              rowKey="id"
+              pagination={false}
+              size="small"
+            />
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="signatures-mobile-cards">
+            {existingSignatures.map(record => renderMobileSignatureCard(record))}
+          </div>
         </Card>
       )}
 
@@ -373,7 +637,7 @@ const SignaturesModal = ({
                 <Card 
                   key={signer.id} 
                   size="small"
-                  style={{ background: '#fafafa' }}
+                  style={{ background: '#141414' }}
                   title={`Подписант ${index + 1}`}
                   extra={
                     signers.length > 1 && (
@@ -408,7 +672,7 @@ const SignaturesModal = ({
                         showSearch
                         allowClear
                       >
-                        {partyRoles.map(role => (
+                        {getAvailableRoles(signer.id!).map(role => (
                           <Option key={role} value={role}>{role}</Option>
                         ))}
                       </Select>
