@@ -260,10 +260,20 @@ async create(req: AuthRequest, res: Response): Promise<void> {
           variables[`${prefix}_tax_id`] = party.company_tax_id || '';
           variables[`${prefix}_address`] = party.company_address || '';
           variables[`${prefix}_director`] = party.director_name || '';
+          variables[`${prefix}_director_name`] = party.director_name || '';
+          variables[`${prefix}_director_passport`] = party.director_passport || '';
+          variables[`${prefix}_director_country`] = party.director_country || '';
         } else {
+          // Добавляем ВСЕ возможные варианты переменных для каждой стороны
           variables[`${prefix}_name`] = party.name || '';
+          
+          // Варианты для страны паспорта
           variables[`${prefix}_passport_country`] = party.passport_country || '';
+          variables[`${prefix}_country`] = party.passport_country || '';
+          
+          // Варианты для номера паспорта  
           variables[`${prefix}_passport_number`] = party.passport_number || '';
+          variables[`${prefix}_passport`] = party.passport_number || '';
         }
       });
     }
