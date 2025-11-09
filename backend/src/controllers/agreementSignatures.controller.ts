@@ -3,6 +3,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../types';
 import db from '../config/database';
 import logger from '../utils/logger';
+import path from 'path';
+import fs from 'fs';
 
 class AgreementSignaturesController {
 /**
@@ -96,7 +98,7 @@ async sign(req: AuthRequest, res: Response): Promise<void> {
   const connection = await db.beginTransaction();
 
   try {
-    const { link } = req.params;
+    const { id } = req.params;
     const { 
       signature_data, 
       agreement_view_duration, 
@@ -118,7 +120,7 @@ async sign(req: AuthRequest, res: Response): Promise<void> {
     // Проверяем подпись
     const signature = await db.queryOne<any>(
       'SELECT * FROM agreement_signatures WHERE signature_link = ?',
-      [link]
+      [id]
     );
 
     if (!signature) {
@@ -204,6 +206,157 @@ async sign(req: AuthRequest, res: Response): Promise<void> {
   }
 }
 
+
+/**
+ * Подписать договор по ID подписи (публичный)
+ * POST /api/agreements/signatures/:id/sign
+ */
+async signById(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { signature_data, agreement_view_duration, signature_clear_count, total_session_duration } = req.body;
+
+    if (!signature_data) {
+      res.status(400).json({
+        success: false,
+        message: 'Данные подписи обязательны'
+      });
+      return;
+    }
+
+    // Получаем подпись
+    const signature = await db.queryOne(
+      'SELECT * FROM agreement_signatures WHERE id = ?',
+      [id]
+    );
+
+    if (!signature) {
+      res.status(404).json({
+        success: false,
+        message: 'Подпись не найдена'
+      });
+      return;
+    }
+
+    if (signature.is_signed) {
+      res.status(400).json({
+        success: false,
+        message: 'Договор уже подписан'
+      });
+      return;
+    }
+
+    // Сохраняем подпись как PNG файл
+    const base64Data = signature_data.replace(/^data:image\/png;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+    const fileName = `signature_${id}_${Date.now()}.png`;
+    const signaturePath = path.join(__dirname, '../../public/signatures', fileName);
+    
+    // Создаем директорию если её нет
+    const signaturesDir = path.join(__dirname, '../../public/signatures');
+    if (!fs.existsSync(signaturesDir)) {
+      fs.mkdirSync(signaturesDir, { recursive: true });
+    }
+    
+    fs.writeFileSync(signaturePath, buffer);
+
+    // Получаем данные пользователя
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
+    
+    // Парсим user agent
+    let deviceType = null;
+    let browser = null;
+    let os = null;
+    
+    if (userAgent) {
+      // Простой парсинг user agent
+      deviceType = /mobile/i.test(userAgent) ? 'mobile' : 'desktop';
+      
+      if (userAgent.includes('Chrome')) browser = 'Chrome';
+      else if (userAgent.includes('Firefox')) browser = 'Firefox';
+      else if (userAgent.includes('Safari')) browser = 'Safari';
+      else if (userAgent.includes('Edge')) browser = 'Edge';
+      
+      if (userAgent.includes('Windows')) os = 'Windows';
+      else if (userAgent.includes('Mac')) os = 'MacOS';
+      else if (userAgent.includes('Linux')) os = 'Linux';
+      else if (userAgent.includes('Android')) os = 'Android';
+      else if (userAgent.includes('iOS')) os = 'iOS';
+    }
+
+    // Обновляем подпись
+    await db.query(
+      `UPDATE agreement_signatures 
+       SET is_signed = 1, 
+           signature_data = ?,
+           signed_at = NOW(),
+           ip_address = ?,
+           user_agent = ?,
+           device_type = ?,
+           browser = ?,
+           os = ?,
+           agreement_view_duration = ?,
+           signature_clear_count = ?,
+           total_session_duration = ?
+       WHERE id = ?`,
+      [
+        signature_data,
+        ipAddress,
+        userAgent,
+        deviceType,
+        browser,
+        os,
+        agreement_view_duration || 0,
+        signature_clear_count || 0,
+        total_session_duration || 0,
+        id
+      ]
+    );
+
+    // Проверяем все ли подписали
+    const allSignatures = await db.query(
+      'SELECT COUNT(*) as total, SUM(is_signed) as signed FROM agreement_signatures WHERE agreement_id = ?',
+      [signature.agreement_id]
+    );
+
+    const allSigned = allSignatures[0].total === allSignatures[0].signed;
+
+    // Если все подписали - обновляем статус договора и генерируем PDF
+    if (allSigned) {
+      await db.query(
+        'UPDATE agreements SET status = ? WHERE id = ?',
+        ['signed', signature.agreement_id]
+      );
+
+      // Генерируем PDF
+      try {
+        const agreementsController = require('./agreements.controller').default;
+        await agreementsController.generatePDF(signature.agreement_id);
+      } catch (error) {
+        logger.error('PDF generation error after signing:', error);
+      }
+    }
+
+    logger.info(`Signature ${id} signed for agreement ${signature.agreement_id}`);
+
+    res.json({
+      success: true,
+      message: 'Договор успешно подписан',
+      data: {
+        all_signed: allSigned
+      }
+    });
+
+  } catch (error) {
+    logger.error('Sign by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка подписания договора'
+    });
+  }
+}
+
 /**
  * Удалить подпись
  */
@@ -256,6 +409,15 @@ async delete(req: AuthRequest, res: Response): Promise<void> {
     await db.commit(connection);
 
     logger.info(`Agreement signature deleted: ${id} by user ${req.admin?.username}`);
+
+    // Регенерируем PDF после удаления подписанта
+    try {
+      const agreementsCtrl = require('./agreements.controller').default;
+      await agreementsCtrl.generatePDF(signature.agreement_id);
+      logger.info(`PDF regenerated after deleting signature ${id}`);
+    } catch (pdfError) {
+      logger.error('PDF regeneration error after deleting signature:', pdfError);
+    }
 
     res.json({
       success: true,
@@ -340,6 +502,15 @@ async update(req: AuthRequest, res: Response): Promise<void> {
     );
     
     logger.info(`VERIFICATION AFTER COMMIT - signer_name: ${verifySignature?.signer_name}, signer_role: ${verifySignature?.signer_role}`);
+
+    // Регенерируем PDF с обновленными данными подписанта
+    try {
+      const agreementsCtrl = require('./agreements.controller').default;
+      await agreementsCtrl.generatePDF(signature.agreement_id);
+      logger.info(`PDF regenerated after updating signature ${id}`);
+    } catch (pdfError) {
+      logger.error('PDF regeneration error after updating signature:', pdfError);
+    }
 
     res.json({
       success: true,
