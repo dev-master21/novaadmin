@@ -21,6 +21,9 @@ import TemplateDetail from '@/modules/Agreements/Templates/TemplateDetail';
 import PublicAgreement from '@/modules/Agreements/Public/PublicAgreement';
 import SignAgreement from '@/modules/Agreements/Public/SignAgreement';
 
+import AgreementPrint from '@/modules/Agreements/AgreementPrint';
+
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
   permission?: string;
@@ -52,7 +55,8 @@ const AppRoutes = () => {
       />
       <Route path="/agreement/:link" element={<PublicAgreement />} />
       <Route path="/sign/:link" element={<SignAgreement />} />
-
+      <Route path="/agreement-print/:id" element={<AgreementPrint />} />
+        
       {/* Защищенные роуты */}
       <Route
         path="/"

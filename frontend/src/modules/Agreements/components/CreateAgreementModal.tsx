@@ -186,25 +186,20 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
     if (!newParties[index].documents) {
       newParties[index].documents = [];
     }
-
-    // Добавляем новый документ с флагом загрузки
-    const newDoc = { file, preview: '', uploading: true };
-    newParties[index].documents!.push(newDoc);
-    setParties(newParties);
-
-    // Читаем файл для превью
+  
+    // Создаем превью для отображения
     const reader = new FileReader();
     reader.onload = (e) => {
-      const docIndex = newParties[index].documents!.length - 1;
-      newParties[index].documents![docIndex] = {
-        file,
+      const newDoc = { 
+        file: file, 
         preview: e.target?.result as string,
-        uploading: false
+        uploading: false 
       };
+      newParties[index].documents!.push(newDoc);
       setParties([...newParties]);
     };
     reader.readAsDataURL(file as any);
-
+  
     return false; // Предотвращаем автоматическую загрузку
   };
 
@@ -277,45 +272,124 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
     setCurrentStep(currentStep - 1);
   };
 
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-      const values = await form.validateFields();
+const handleSubmit = async () => {
+  try {
+    setLoading(true);
+    const values = await form.validateFields();
 
-      const data = {
-        template_id: selectedTemplate!.id,
-        property_id: manualPropertyInput ? undefined : values.property_id,
-        description: values.description || '',
-        date_from: values.date_from ? dayjs(values.date_from).format('YYYY-MM-DD') : undefined,
-        date_to: values.date_to ? dayjs(values.date_to).format('YYYY-MM-DD') : undefined,
-        city: values.city || 'Phuket',
-        parties: parties.filter(p => {
-          if (p.is_company) return p.company_name && p.role;
-          return p.name && p.role;
-        }),
-        rent_amount_monthly: values.rent_amount_monthly,
-        rent_amount_total: values.rent_amount_total,
-        deposit_amount: values.deposit_amount,
-        utilities_included: values.utilities_included,
-        bank_name: values.bank_name,
-        bank_account_name: values.bank_account_name,
-        bank_account_number: values.bank_account_number,
-        property_address_override: manualPropertyInput ? values.property_address_manual : values.property_address_override,
-        property_name_manual: manualPropertyInput ? values.property_name_manual : undefined,
-        property_number_manual: manualPropertyInput ? values.property_number_manual : undefined
-      };
+    // Получаем property_id
+    const propertyId = manualPropertyInput 
+      ? undefined 
+      : (values.property_id || form.getFieldValue('property_id'));
 
-      await agreementsApi.create(data);
+    console.log('📝 Form values:', values);
+    console.log('🏠 Property ID:', propertyId);
+
+    // Подготавливаем стороны БЕЗ документов
+    const partiesData = parties
+      .filter(p => {
+        if (p.is_company) return p.company_name && p.role;
+        return p.name && p.role;
+      })
+      .map(party => ({
+        role: party.role,
+        name: party.name,
+        passport_country: party.passport_country,
+        passport_number: party.passport_number,
+        is_company: party.is_company,
+        company_name: party.company_name,
+        company_address: party.company_address,
+        company_tax_id: party.company_tax_id,
+        director_name: party.director_name,
+        director_passport: party.director_passport,
+        director_country: party.director_country
+      }));
+
+    // Шаг 1: Создаем договор БЕЗ файлов через обычный API
+    const agreementData = {
+      template_id: selectedTemplate!.id,
+      property_id: propertyId,
+      description: values.description || '',
+      date_from: values.date_from ? dayjs(values.date_from).format('YYYY-MM-DD') : undefined,
+      date_to: values.date_to ? dayjs(values.date_to).format('YYYY-MM-DD') : undefined,
+      city: values.city || 'Phuket',
+      parties: partiesData,
+      rent_amount_monthly: values.rent_amount_monthly,
+      rent_amount_total: values.rent_amount_total,
+      deposit_amount: values.deposit_amount,
+      utilities_included: values.utilities_included,
+      bank_name: values.bank_name,
+      bank_account_name: values.bank_account_name,
+      bank_account_number: values.bank_account_number,
+      property_address_override: manualPropertyInput ? values.property_address_manual : values.property_address_override,
+      property_name_manual: manualPropertyInput ? values.property_name_manual : undefined,
+      property_number_manual: manualPropertyInput ? values.property_number_manual : undefined
+    };
+
+    console.log('📤 Creating agreement...');
+    const createResponse = await agreementsApi.create(agreementData);
+    const agreementId = createResponse.data.data.id;
+    const createdParties = createResponse.data.data.parties || [];
+
+    console.log('✅ Agreement created:', agreementId);
+    console.log('👥 Created parties:', createdParties);
+
+    // Шаг 2: Загружаем файлы, если есть
+    const hasFiles = parties.some(p => p.documents && p.documents.length > 0);
+    
+    if (hasFiles && createdParties.length > 0) {
+      console.log('📎 Uploading documents...');
+
+      const formDataToSend = new FormData();
+      
+      // Создаем маппинг: индекс стороны -> ID стороны
+      const partyMapping: Record<string, number> = {};
+      
+      parties.forEach((party, partyIndex) => {
+        // Находим созданную сторону по роли
+        const createdParty = createdParties.find((cp: any) => cp.role === party.role);
+        if (createdParty) {
+          partyMapping[partyIndex.toString()] = createdParty.id;
+          
+          // Добавляем файлы этой стороны
+          if (party.documents && party.documents.length > 0) {
+            party.documents.forEach((doc, docIndex) => {
+              if (doc.file) {
+                formDataToSend.append(
+                  `party_${partyIndex}_doc_${docIndex}`,
+                  doc.file as any
+                );
+              }
+            });
+          }
+        }
+      });
+
+      formDataToSend.append('partyMapping', JSON.stringify(partyMapping));
+
+      console.log('🗺️ Party mapping:', partyMapping);
+
+      try {
+        await agreementsApi.uploadAgreementDocuments(agreementId, formDataToSend);
+        console.log('✅ Documents uploaded successfully');
+        message.success('Договор создан, документы загружены');
+      } catch (uploadError) {
+        console.error('⚠️ Documents upload failed:', uploadError);
+        message.warning('Договор создан, но не удалось загрузить некоторые документы');
+      }
+    } else {
       message.success('Договор успешно создан');
-      onSuccess();
-      resetForm();
-    } catch (error: any) {
-      console.error('Error creating agreement:', error);
-      message.error(error.response?.data?.message || 'Ошибка создания договора');
-    } finally {
-      setLoading(false);
     }
-  };
+
+    onSuccess();
+    resetForm();
+  } catch (error: any) {
+    console.error('Error creating agreement:', error);
+    message.error(error.response?.data?.message || error.message || 'Ошибка создания договора');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const steps = [
     { title: 'Шаблон', icon: <FileTextOutlined /> },
@@ -398,148 +472,158 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                 <Radio value={true}>Ввести вручную</Radio>
               </Radio.Group>
 
-              {!manualPropertyInput ? (
-                <>
-                  {/* Сначала выбираем комплекс ИЛИ отдельный объект */}
-                  <Form.Item label="Выберите объект или комплекс">
-                    <Select
-                      placeholder="Начните вводить название..."
-                      allowClear
-                      showSearch
-                      value={selectedMainValue}
-                      onChange={(value) => {
-                        console.log('🔍 Selected value:', value, 'Type:', typeof value);
-                        setSelectedMainValue(value);
-                        
-                        // Если значение - строка, это комплекс
-                        if (typeof value === 'string') {
-                          console.log('✅ This is a COMPLEX:', value);
-                          setSelectedComplex(value);
-                          const props = properties.complexes[value] || [];
-                          console.log('📦 Complex properties:', props);
-                          setComplexProperties(props);
-                          form.setFieldValue('property_id', undefined);
-                        } 
-                        // Если значение - число, это отдельный объект
-                        else if (typeof value === 'number') {
-                          console.log('✅ This is a STANDALONE property ID:', value);
-                          setSelectedComplex(null);
-                          setComplexProperties([]);
-                          form.setFieldValue('property_id', value);
-                        }
-                        // Если value undefined/null - очистка
-                        else {
-                          console.log('🧹 Clearing selection');
-                          setSelectedComplex(null);
-                          setComplexProperties([]);
-                          form.setFieldValue('property_id', undefined);
-                        }
-                      }}
-                      onClear={() => {
-                        console.log('🧹 Clear button clicked');
-                        setSelectedMainValue(null);
-                        setSelectedComplex(null);
-                        setComplexProperties([]);
-                        form.setFieldValue('property_id', undefined);
-                      }}
-                      optionFilterProp="children"
-                      filterOption={(input, option: any) => {
-                        const label = option.children?.props?.children 
-                          ? option.children.props.children.join('') 
-                          : option.children?.toString() || '';
-                        return label.toLowerCase().includes(input.toLowerCase());
-                      }}
-                    >
-                      {/* Комплексы - value будет STRING (название комплекса) */}
-                      {Object.keys(properties.complexes).length > 0 && (
-                        <OptGroup label="🏢 Комплексы">
-                          {Object.keys(properties.complexes).map(complexName => (
-                            <Option key={`complex-${complexName}`} value={complexName}>
-                              {complexName}
-                            </Option>
-                          ))}
-                        </OptGroup>
-                      )}
-                      
-                      {/* Отдельные объекты - value будет NUMBER (ID объекта) */}
-                      {properties.standalone.length > 0 && (
-                        <OptGroup label="🏠 Отдельные объекты">
-                          {properties.standalone.map((prop: Property) => (
-                            <Option key={`standalone-${prop.id}`} value={prop.id}>
-                              {prop.property_name || 'Объект'} ({prop.property_number})
-                            </Option>
-                          ))}
-                        </OptGroup>
-                      )}
-                    </Select>
-                  </Form.Item>
-
-                  {/* Если выбран комплекс - показываем выбор номера объекта */}
-                  {selectedComplex && complexProperties.length > 0 && (
-                    <Form.Item 
-                      name="property_id" 
-                      label={`Номер объекта в комплексе "${selectedComplex}"`}
-                      rules={[{ required: true, message: 'Выберите номер объекта' }]}
-                    >
+                {!manualPropertyInput ? (
+                  <>
+                    {/* Сначала выбираем комплекс ИЛИ отдельный объект */}
+                    <Form.Item label="Выберите объект или комплекс">
                       <Select
-                        placeholder="Выберите номер объекта"
+                        placeholder="Начните вводить название..."
+                        allowClear
                         showSearch
+                        value={selectedMainValue}
+                        onChange={(value) => {
+                          console.log('🔍 Selected value:', value, 'Type:', typeof value);
+                          setSelectedMainValue(value);
+                          
+                          // Если значение - строка, это комплекс
+                          if (typeof value === 'string') {
+                            console.log('✅ This is a COMPLEX:', value);
+                            setSelectedComplex(value);
+                            const props = properties.complexes[value] || [];
+                            console.log('📦 Complex properties:', props);
+                            setComplexProperties(props);
+                            form.setFieldValue('property_id', undefined);
+                          } 
+                          // Если значение - число, это отдельный объект
+                          else if (typeof value === 'number') {
+                            console.log('✅ This is a STANDALONE property ID:', value);
+                            setSelectedComplex(null);
+                            setComplexProperties([]);
+                            form.setFieldValue('property_id', value);
+                          }
+                          // Если value undefined/null - очистка
+                          else {
+                            console.log('🧹 Clearing selection');
+                            setSelectedComplex(null);
+                            setComplexProperties([]);
+                            form.setFieldValue('property_id', undefined);
+                          }
+                        }}
+                        onClear={() => {
+                          console.log('🧹 Clear button clicked');
+                          setSelectedMainValue(null);
+                          setSelectedComplex(null);
+                          setComplexProperties([]);
+                          form.setFieldValue('property_id', undefined);
+                        }}
                         optionFilterProp="children"
+                        filterOption={(input, option: any) => {
+                          const label = option.children?.props?.children 
+                            ? option.children.props.children.join('') 
+                            : option.children?.toString() || '';
+                          return label.toLowerCase().includes(input.toLowerCase());
+                        }}
                       >
-                        {complexProperties.map((prop: Property) => (
-                          <Option key={prop.id} value={prop.id}>
-                            {prop.property_number} {prop.property_name ? `- ${prop.property_name}` : ''}
-                          </Option>
-                        ))}
+                        {/* Комплексы - value будет STRING (название комплекса) */}
+                        {Object.keys(properties.complexes).length > 0 && (
+                          <OptGroup label="🏢 Комплексы">
+                            {Object.keys(properties.complexes).map(complexName => (
+                              <Option key={`complex-${complexName}`} value={complexName}>
+                                {complexName}
+                              </Option>
+                            ))}
+                          </OptGroup>
+                        )}
+                        
+                        {/* Отдельные объекты - value будет NUMBER (ID объекта) */}
+                        {properties.standalone.length > 0 && (
+                          <OptGroup label="🏠 Отдельные объекты">
+                            {properties.standalone.map((prop: Property) => (
+                              <Option key={`standalone-${prop.id}`} value={prop.id}>
+                                {prop.property_name || 'Объект'} ({prop.property_number})
+                              </Option>
+                            ))}
+                          </OptGroup>
+                        )}
                       </Select>
                     </Form.Item>
-                  )}
-
-                  {/* Показываем выбранный отдельный объект */}
-                  {!selectedComplex && form.getFieldValue('property_id') && (
-                    <div style={{ 
-                      padding: '8px 12px', 
-                      background: '#141414', 
-                      border: '1px solid #303030',
-                      borderRadius: '4px',
-                      marginTop: '8px'
-                    }}>
-                      <span style={{ color: '#52c41a', marginRight: '8px' }}>✓</span>
-                      <span style={{ color: 'rgba(255,255,255,0.85)' }}>
-                        Выбран объект ID: {form.getFieldValue('property_id')}
-                      </span>
-                    </div>
-                  )}
-
-                  <Form.Item name="property_address_override" label="Адрес объекта (переопределить)">
-                    <TextArea rows={2} placeholder="Оставьте пустым для использования адреса из базы" />
-                  </Form.Item>
-                </>
-              ) : (
-                <>
-                  <Form.Item 
-                    name="property_name_manual" 
-                    label="Название объекта"
-                    rules={[{ required: manualPropertyInput, message: 'Введите название' }]}
-                  >
-                    <Input placeholder="Villa Sunset" />
-                  </Form.Item>
-                  <Form.Item 
-                    name="property_number_manual" 
-                    label="Номер объекта"
-                    rules={[{ required: manualPropertyInput, message: 'Введите номер' }]}
-                  >
-                    <Input placeholder="PROP-001" />
-                  </Form.Item>
-                  <Form.Item 
-                    name="property_address_manual" 
-                    label="Адрес объекта"
-                    rules={[{ required: manualPropertyInput, message: 'Введите адрес' }]}
-                  >
-                    <TextArea rows={2} placeholder="123 Beach Road, Phuket" />
-                  </Form.Item>
-                </>
-              )}
+                      
+                    {/* Если выбран комплекс - показываем выбор номера объекта */}
+                    {selectedComplex && complexProperties.length > 0 && (
+                      <Form.Item 
+                        name="property_id" 
+                        label={`Номер объекта в комплексе "${selectedComplex}"`}
+                        rules={[{ required: true, message: 'Выберите номер объекта' }]}
+                      >
+                        <Select
+                          placeholder="Выберите номер объекта"
+                          showSearch
+                          optionFilterProp="children"
+                        >
+                          {complexProperties.map((prop: Property) => (
+                            <Option key={prop.id} value={prop.id}>
+                              {prop.property_number} {prop.property_name ? `- ${prop.property_name}` : ''}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    )}
+                
+                    {/* ✅ ДОБАВЛЯЕМ: Скрытый Form.Item для отдельных объектов */}
+                    {!selectedComplex && form.getFieldValue('property_id') && (
+                      <>
+                        <Form.Item 
+                          name="property_id" 
+                          hidden
+                          rules={[{ required: true }]}
+                        >
+                          <Input />
+                        </Form.Item>
+                        
+                        <div style={{ 
+                          padding: '8px 12px', 
+                          background: '#141414', 
+                          border: '1px solid #303030',
+                          borderRadius: '4px',
+                          marginTop: '8px'
+                        }}>
+                          <span style={{ color: '#52c41a', marginRight: '8px' }}>✓</span>
+                          <span style={{ color: 'rgba(255,255,255,0.85)' }}>
+                            Выбран объект ID: {form.getFieldValue('property_id')}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                
+                    <Form.Item name="property_address_override" label="Адрес объекта (переопределить)">
+                      <TextArea rows={2} placeholder="Оставьте пустым для использования адреса из базы" />
+                    </Form.Item>
+                  </>
+                ) : (
+                  <>
+                    <Form.Item 
+                      name="property_name_manual" 
+                      label="Название объекта"
+                      rules={[{ required: manualPropertyInput, message: 'Введите название' }]}
+                    >
+                      <Input placeholder="Villa Sunset" />
+                    </Form.Item>
+                    <Form.Item 
+                      name="property_number_manual" 
+                      label="Номер объекта"
+                      rules={[{ required: manualPropertyInput, message: 'Введите номер' }]}
+                    >
+                      <Input placeholder="PROP-001" />
+                    </Form.Item>
+                    <Form.Item 
+                      name="property_address_manual" 
+                      label="Адрес объекта"
+                      rules={[{ required: manualPropertyInput, message: 'Введите адрес' }]}
+                    >
+                      <TextArea rows={2} placeholder="123 Beach Road, Phuket" />
+                    </Form.Item>
+                  </>
+                )}
             </Space>
           </Card>
 

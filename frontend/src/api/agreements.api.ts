@@ -148,7 +148,15 @@ export const agreementsApi = {
     api.get<{ success: boolean; data: Agreement }>(`/agreements/${id}`),
 
   create: (data: CreateAgreementDTO) =>
-    api.post<{ success: boolean; message: string; data: { id: number; agreement_number: string } }>('/agreements', data),
+    api.post<{ 
+      success: boolean; 
+      message: string; 
+      data: { 
+        id: number; 
+        agreement_number: string;
+        parties?: Array<{ id: number; role: string }>;
+      } 
+    }>('/agreements', data),
 
   update: (id: number, data: UpdateAgreementDTO) =>
     api.put<{ success: boolean; message: string }>(`/agreements/${id}`, data),
@@ -164,6 +172,13 @@ export const agreementsApi = {
       `/agreements/${id}/signatures`,
       data
     ),
+
+  // Скачать PDF договора
+  downloadPDF: (id: number) => {
+    return api.get(`/agreements/${id}/pdf`, {
+      responseType: 'blob'
+    });
+  },
 
   // === ОБЪЕКТЫ ===
   getProperties: (search?: string) =>
@@ -186,28 +201,51 @@ export const agreementsApi = {
     api.delete<{ success: boolean; message: string }>(`/agreements/templates/${id}`),
 
   // === ПОДПИСИ ===
+  
+  // Получить подпись по ссылке (публичный endpoint)
   getSignatureByLink: (link: string) =>
-    api.get<{ success: boolean; data: any }>(`/agreements/signatures/link/${link}`),
+    api.get<{ success: boolean; data: AgreementSignature }>(`/agreements/signatures/link/${link}`),
 
-signAgreement: (link: string, data: { 
-  signature_data: string;
-  agreement_view_duration?: number;
-  signature_clear_count?: number;
-  total_session_duration?: number;
-}) =>
-  api.post<{ success: boolean; message: string; data: { all_signed: boolean } }>(
-    `/agreements/signatures/sign/${link}`,
-    data
-  ),
+  // Получить договор по ссылке подписи (публичный endpoint)
+  getPublicAgreementByLink: (link: string) =>
+    api.get<{ success: boolean; data: Agreement }>(`/agreements/by-signature-link/${link}`),
 
+  // Подписать договор (публичный endpoint)
+  // Принимает ID подписи и данные с трекингом
+  signAgreement: (signatureId: number, data: { 
+    signature_data: string;
+    agreement_view_duration?: number;
+    signature_clear_count?: number;
+    total_session_duration?: number;
+  }) =>
+    api.post<{ success: boolean; message: string; data: { all_signed: boolean } }>(
+      `/agreements/signatures/${signatureId}/sign`,
+      data
+    ),
+
+  // Обновить подпись (защищенный endpoint)
   updateSignature: (id: number, data: { signer_name?: string; signer_role?: string }) =>
     api.put<{ success: boolean; message: string }>(`/agreements/signatures/${id}`, data),
 
+  // Перегенерировать ссылку подписи (защищенный endpoint)
   regenerateSignatureLink: (id: number) =>
     api.post<{ success: boolean; message: string; data: { signature_link: string; public_url: string } }>(
       `/agreements/signatures/${id}/regenerate`
     ),
 
+  // Удалить подпись (защищенный endpoint)
   deleteSignature: (id: number) =>
-    api.delete<{ success: boolean; message: string }>(`/agreements/signatures/${id}`)
+    api.delete<{ success: boolean; message: string }>(`/agreements/signatures/${id}`),
+
+  // === ЗАГРУЗКА ДОКУМЕНТОВ ===
+  uploadAgreementDocuments: (agreementId: number, formData: FormData) =>
+    api.post<{ success: boolean; message: string; uploadedCount: number }>(
+      `/agreements/${agreementId}/upload-documents`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
 };

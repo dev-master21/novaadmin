@@ -23,7 +23,6 @@ import {
   ArrowLeftOutlined,
   EditOutlined,
   DeleteOutlined,
-  DownloadOutlined,
   LinkOutlined,
   SaveOutlined,
   CloseOutlined,
@@ -34,7 +33,9 @@ import {
   CheckOutlined,
   ReloadOutlined,
   CopyOutlined,
-  MoreOutlined
+  MoreOutlined,
+  FilePdfOutlined,
+  PrinterOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { agreementsApi, Agreement, AgreementSignature } from '@/api/agreements.api';
@@ -144,6 +145,26 @@ const AgreementDetail = () => {
     if (agreement) {
       navigator.clipboard.writeText(agreement.public_link);
       message.success('Ссылка скопирована в буфер обмена');
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!agreement) return;
+
+    try {
+      const response = await agreementsApi.downloadPDF(agreement.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${agreement.agreement_number}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      message.success('PDF скачан успешно');
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Ошибка скачивания PDF');
     }
   };
 
@@ -801,11 +822,18 @@ const AgreementDetail = () => {
                   <span className="action-button-text">Редактировать</span>
                 </Button>
                 <Button 
-                  icon={<DownloadOutlined />}
+                  icon={<FilePdfOutlined />}
+                  onClick={handleDownloadPDF}
+                  className="action-button"
+                >
+                  <span className="action-button-text">Скачать PDF</span>
+                </Button>
+                <Button 
+                  icon={<PrinterOutlined />}
                   onClick={handlePrint}
                   className="action-button"
                 >
-                  <span className="action-button-text">PDF</span>
+                  <span className="action-button-text">Печать</span>
                 </Button>
                 <Button 
                   icon={<LinkOutlined />}
