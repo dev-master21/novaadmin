@@ -30,6 +30,11 @@ const router = Router();
 
 // ========== ПУБЛИЧНЫЕ РОУТЫ (БЕЗ АВТОРИЗАЦИИ) ==========
 
+// Публичный endpoint для страницы верификации договора
+router.get('/verify/:verifyLink', (req, res) => {
+  agreementsController.getAgreementByVerifyLink(req as AuthRequest, res);
+});
+
 // ВНУТРЕННИЙ endpoint для Puppeteer (генерация PDF)
 router.get('/:id/internal', (req, res) => {
   agreementsController.getAgreementInternal(req as AuthRequest, res);

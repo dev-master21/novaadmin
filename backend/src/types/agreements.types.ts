@@ -13,11 +13,15 @@ export interface Agreement {
   city: string;
   status: 'draft' | 'pending_signatures' | 'signed' | 'active' | 'expired' | 'cancelled';
   public_link: string;
+  verify_link?: string;
   qr_code_path?: string;
+  qr_code_base64?: string;
   created_by: number;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date;
+  pdf_path?: string;
+  pdf_generated_at?: Date;
 }
 
 export interface AgreementTemplate {

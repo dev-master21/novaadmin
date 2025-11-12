@@ -104,6 +104,101 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
   }
 }
 
+/**
+ * Генерация QR-кода в base64
+ */
+private async generateQRCodeBase64(url: string): Promise<string> {
+  try {
+    const qrCodeDataUrl = await QRCode.toDataURL(url, {
+      width: 300,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    });
+    return qrCodeDataUrl;
+  } catch (error) {
+    logger.error('Error generating QR code base64:', error);
+    throw error;
+  }
+}
+
+/**
+ * Получить договор для страницы верификации
+ * GET /api/agreements/verify/:verifyLink
+ */
+async getAgreementByVerifyLink(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { verifyLink } = req.params;
+
+    // Увеличиваем лимит для group_concat
+    await db.query('SET SESSION group_concat_max_len = 1000000');
+
+    // Получаем договор с подписями
+    const agreement = await db.queryOne(`
+      SELECT 
+        a.*,
+        at.name as template_name,
+        GROUP_CONCAT(
+          DISTINCT CONCAT(
+            s.id, '~|~',
+            s.signer_name, '~|~',
+            s.signer_role, '~|~',
+            s.is_signed, '~|~',
+            COALESCE(s.signature_data, ''), '~|~',
+            COALESCE(s.signed_at, '')
+          ) SEPARATOR '|||'
+        ) as signatures_data
+      FROM agreements a
+      LEFT JOIN agreement_templates at ON a.template_id = at.id
+      LEFT JOIN agreement_signatures s ON a.id = s.agreement_id
+      WHERE a.verify_link = ? AND a.deleted_at IS NULL
+      GROUP BY a.id
+    `, [verifyLink]);
+
+    if (!agreement) {
+      res.status(404).json({
+        success: false,
+        message: 'Agreement not found'
+      });
+      return;
+    }
+
+    // Парсим подписи
+    const signatures: any[] = [];
+    if (agreement.signatures_data) {
+      const sigData = agreement.signatures_data.split('|||');
+      for (const sig of sigData) {
+        const [id, signer_name, signer_role, is_signed, signature_data, signed_at] = sig.split('~|~');
+        signatures.push({
+          id: parseInt(id),
+          signer_name,
+          signer_role,
+          is_signed: is_signed === '1',
+          signature_data: signature_data || null,
+          signed_at: signed_at || null
+        });
+      }
+    }
+
+    agreement.signatures = signatures;
+    delete agreement.signatures_data;
+
+    res.json({
+      success: true,
+      data: agreement
+    });
+
+  } catch (error) {
+    logger.error('Get agreement by verify link error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error loading agreement'
+    });
+  }
+}
+
   /**
    * Получить договор по ID
    * GET /api/agreements/:id
@@ -250,12 +345,12 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       console.log('✅ Property found:', (property as any).property_name);
     }
 
-    // Генерируем уникальный номер договора
+    // Генерируем уникальный номер, публичную ссылку и ссылку верификации
+    const agreement_number = `AGR-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     const { v4: uuidv4 } = require('uuid');
-    const agreement_number = `AGR-${Date.now()}-${uuidv4().substring(0, 8).toUpperCase()}`;
-
-    // Генерируем публичную ссылку
-    const public_link = `https://agreement.novaestate.company/agreement/${uuidv4()}`;
+    const public_link_uuid = uuidv4();
+    const public_link = `https://agreement.novaestate.company/agreement/${public_link_uuid}`;
+    const verify_link = uuidv4(); // Уникальная ссылка для верификации
 
     // Подготавливаем переменные для замены в шаблоне
     const variables: any = {
@@ -315,10 +410,11 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     const result = await connection.query(`
       INSERT INTO agreements (
         agreement_number, template_id, property_id, type, content, structure,
-        description, date_from, date_to, status, public_link, created_by, city,
-        rent_amount_monthly, rent_amount_total, deposit_amount, utilities_included,
-        bank_name, bank_account_name, bank_account_number, property_address_override
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        description, date_from, date_to, status, public_link, verify_link, created_by,
+        city, rent_amount_monthly, rent_amount_total, deposit_amount,
+        utilities_included, bank_name, bank_account_name, bank_account_number,
+        property_address_override
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       agreement_number,
       template_id,
@@ -331,6 +427,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       date_to,
       'draft',
       public_link,
+      verify_link,
       userId,
       city || 'Phuket',
       rent_amount_monthly || null,
@@ -379,6 +476,21 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       INSERT INTO agreement_logs (agreement_id, action, description, user_id)
       VALUES (?, ?, ?, ?)
     `, [agreementId, 'created', 'Договор создан', userId]);
+
+    await db.commit(connection);
+
+    // Генерируем QR-код в base64 для ссылки верификации
+    try {
+      const verifyUrl = `https://agreement.novaestate.company/agreement-verify/${verify_link}`;
+      const qrCodeBase64 = await this.generateQRCodeBase64(verifyUrl);
+      await connection.query(
+        'UPDATE agreements SET qr_code_base64 = ? WHERE id = ?',
+        [qrCodeBase64, agreementId]
+      );
+      logger.info(`QR code generated for agreement ${agreementId}`);
+    } catch (qrError) {
+      logger.error('QR code generation failed:', qrError);
+    }
 
     await db.commit(connection);
 
