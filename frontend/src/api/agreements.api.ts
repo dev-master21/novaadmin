@@ -23,7 +23,10 @@ export interface Agreement {
   property_address_override?: string;
   status: string;
   public_link: string;
+  verify_link?: string;
   qr_code_path?: string;
+  qr_code_base64?: string;
+  pdf_path?: string;
   created_by: number;
   created_at: string;
   updated_at: string;
@@ -247,5 +250,10 @@ export const agreementsApi = {
           'Content-Type': 'multipart/form-data'
         }
       }
-    )
+    ),
+    
+  // Получить договор для страницы верификации
+  getAgreementByVerifyLink: (verifyLink: string) => {
+    return api.get(`/agreements/verify/${verifyLink}`);
+  },
 };

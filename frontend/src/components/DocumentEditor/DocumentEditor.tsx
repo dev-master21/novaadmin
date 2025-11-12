@@ -228,14 +228,60 @@ const PageContentWithLimit = styled(PageContent)`
   }
 `;
 
-const PageNumber = styled.div`
+const PageFooter = styled.div`
   position: absolute;
   bottom: 10mm;
+  left: 15mm;
   right: 15mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  z-index: 10;
+`;
+
+const PageFooterLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+`;
+
+const AgreementNumber = styled.div`
+  font-size: 3mm;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+`;
+
+const AgreementUUID = styled.div`
+  font-size: 2.5mm;
+  font-weight: 300;
+  color: #999;
+  font-family: 'Courier New', monospace;
+`;
+
+const PageNumber = styled.div`
   font-size: 3.5mm;
   font-weight: 300;
   color: #666;
-  z-index: 10;
+`;
+
+const PageQRCode = styled.div`
+  position: absolute;
+  bottom: 16mm;
+  right: 15mm;
+  opacity: 0.4;
+  z-index: 5;
+  
+  img {
+    width: 18mm;
+    height: 18mm;
+  }
+  
+  @media print {
+    opacity: 0.4 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 `;
 
 const NodeContainer = styled.div<{ level: number; isEditing: boolean }>`
@@ -430,19 +476,6 @@ const DocumentImage = styled.img`
   border: 1px solid #1b273b;
   object-fit: contain;
   background: white;
-`;
-
-const QRCodeSection = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 10mm;
-  page-break-inside: avoid;
-  
-  img {
-    width: 30mm;
-    height: 30mm;
-  }
 `;
 
 const Watermark = styled.div`
@@ -1484,11 +1517,29 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                   <span>{formatDate(structure.date)}</span>
                 </DateLocation>
                 
-                {pages[0]?.nodes.map(node => renderNodeForPrint(node))}
-              </PageContent>
+            {pages[0]?.nodes.map(node => renderNodeForPrint(node))}
+            </PageContent>
+              {agreement?.qr_code_base64 && (
+              <PageQRCode>
+                <img 
+                  src={agreement.qr_code_base64} 
+                  alt="Verification QR Code"
+                />
+              </PageQRCode>
+            )}
+            <PageFooter>
+              <PageFooterLeft>
+                <AgreementNumber>
+                  {agreement?.agreement_number || ''}
+                </AgreementNumber>
+                <AgreementUUID>
+                  {agreement?.verify_link || ''}
+                </AgreementUUID>
+              </PageFooterLeft>
               <PageNumber>Page 1 of {totalPages}</PageNumber>
-            </PageInner>
-          </Page>
+            </PageFooter>
+          </PageInner>
+        </Page>
 
           {pages.slice(1).map((page, index) => (
             <Page key={`page-${index + 2}`}>
@@ -1501,7 +1552,25 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                 <PageContent>
                   {page.nodes.map(node => renderNodeForPrint(node))}
                 </PageContent>
-                <PageNumber>Page {page.pageNumber} of {totalPages}</PageNumber>
+                {agreement?.qr_code_base64 && (
+                  <PageQRCode>
+                    <img 
+                      src={agreement.qr_code_base64} 
+                      alt="Verification QR Code"
+                    />
+                  </PageQRCode>
+                )}
+                <PageFooter>
+                  <PageFooterLeft>
+                    <AgreementNumber>
+                      {agreement?.agreement_number || ''}
+                    </AgreementNumber>
+                    <AgreementUUID>
+                      {agreement?.verify_link || ''}
+                    </AgreementUUID>
+                  </PageFooterLeft>
+                  <PageNumber>Page {page.pageNumber} of {totalPages}</PageNumber>
+                </PageFooter>
               </PageInner>
             </Page>
           ))}
@@ -1605,18 +1674,27 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                         </DocumentsSection>
                       );
                   })()}
-                                        
-                  {agreement?.qr_code_path && (
-                    <QRCodeSection>
-                      <img 
-                        src={agreement.qr_code_path?.startsWith('http') ? agreement.qr_code_path : `http://localhost:5000${agreement.qr_code_path}`}
-                        alt="QR Code"
-                      />
-                    </QRCodeSection>
-                  )}
               </PageContentWithLimit>
 
-              <PageNumber>Page {totalPages} of {totalPages}</PageNumber>
+              {agreement?.qr_code_base64 && (
+                <PageQRCode>
+                  <img 
+                    src={agreement.qr_code_base64} 
+                    alt="Verification QR Code"
+                  />
+                </PageQRCode>
+              )}
+              <PageFooter>
+                <PageFooterLeft>
+                  <AgreementNumber>
+                    {agreement?.agreement_number || ''}
+                  </AgreementNumber>
+                  <AgreementUUID>
+                    {agreement?.verify_link || ''}
+                  </AgreementUUID>
+                </PageFooterLeft>
+                <PageNumber>Page {totalPages} of {totalPages}</PageNumber>
+              </PageFooter>
             </PageInner>
           </Page>
         )}

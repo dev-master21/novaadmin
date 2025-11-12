@@ -20,7 +20,7 @@ import CreateTemplate from '@/modules/Agreements/Templates/CreateTemplate';
 import TemplateDetail from '@/modules/Agreements/Templates/TemplateDetail';
 import PublicAgreement from '@/modules/Agreements/Public/PublicAgreement';
 import SignAgreement from '@/modules/Agreements/Public/SignAgreement';
-
+import AgreementVerify from '@/modules/Agreements/Public/AgreementVerify';
 import AgreementPrint from '@/modules/Agreements/AgreementPrint';
 
 
@@ -56,7 +56,8 @@ const AppRoutes = () => {
       <Route path="/agreement/:link" element={<PublicAgreement />} />
       <Route path="/sign/:link" element={<SignAgreement />} />
       <Route path="/agreement-print/:id" element={<AgreementPrint />} />
-        
+      <Route path="/agreement-verify/:verifyLink" element={<AgreementVerify />} />
+
       {/* Защищенные роуты */}
       <Route
         path="/"
