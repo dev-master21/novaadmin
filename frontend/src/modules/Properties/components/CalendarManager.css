@@ -1,0 +1,515 @@
+/* frontend/src/modules/Properties/components/CalendarManager.css */
+
+/* Контейнер современного календаря */
+.modern-calendar-container {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.modern-calendar {
+  user-select: none;
+  width: 100%;
+  background: #141414;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Заголовок с днями недели */
+.modern-calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #303030;
+}
+
+.modern-calendar-weekday {
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #999;
+  padding: 8px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Тело календаря */
+.modern-calendar-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.modern-calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+/* Ячейка дня */
+.modern-calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #1f1f1f;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  cursor: default;
+  transition: all 0.2s ease;
+  min-height: 50px;
+  overflow: hidden;
+}
+
+.modern-calendar-day:hover {
+  border-color: #434343;
+  transform: scale(1.02);
+  z-index: 1;
+}
+
+/* Номер дня */
+.modern-day-number {
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 2;
+  position: relative;
+  color: #fff;
+}
+
+/* Дни не из текущего месяца */
+.modern-calendar-day.other-month {
+  opacity: 0.3;
+}
+
+.modern-calendar-day.other-month .modern-day-number {
+  color: #666;
+}
+
+/* Сегодняшний день */
+.modern-calendar-day.today {
+  border: 2px solid #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.modern-calendar-day.today .modern-day-number {
+  color: #1890ff;
+  font-weight: 700;
+}
+
+/* Полностью занятый день (без check-in/check-out) */
+.modern-calendar-day.blocked:not(.check-in):not(.check-out):not(.both-checks) {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  border-color: #dc2626;
+}
+
+.modern-calendar-day.blocked:not(.check-in):not(.check-out):not(.both-checks) .modern-day-number {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Check-in (ЗАЕЗД с 16:00) - градиентный треугольник в ПРАВОМ НИЖНЕМ углу */
+.modern-calendar-day.check-in:not(.both-checks)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 50%, #7f1d1d 50%, #991b1b 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  z-index: 1;
+}
+
+.modern-calendar-day.check-in:not(.both-checks)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #dc2626;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Check-out (ВЫЕЗД до 12:00) - градиентный треугольник в ЛЕВОМ ВЕРХНЕМ углу */
+.modern-calendar-day.check-out:not(.both-checks)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, transparent 50%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  z-index: 1;
+}
+
+.modern-calendar-day.check-out:not(.both-checks)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #dc2626;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Check-in И Check-out в один день - диагональное разделение с градиентами */
+.modern-calendar-day.both-checks {
+  border: 2px solid #dc2626;
+}
+
+.modern-calendar-day.both-checks::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, transparent 50%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  z-index: 1;
+}
+
+.modern-calendar-day.both-checks::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 50%, #8b2020 50%, #a52a2a 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  z-index: 1;
+}
+
+/* Убираем рамку для одиночных треугольников, так как она теперь на ::after */
+.modern-calendar-day.check-in:not(.both-checks),
+.modern-calendar-day.check-out:not(.both-checks) {
+  border-color: #2a2a2a;
+}
+
+/* Легенда */
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  padding: 16px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #d9d9d9;
+}
+
+.legend-square {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid #303030;
+  position: relative;
+  flex-shrink: 0;
+  background: #1f1f1f;
+  overflow: hidden;
+}
+
+.today-square {
+  border: 2px solid #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.blocked-square {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  border-color: #dc2626;
+}
+
+/* Заезд - градиентный треугольник справа снизу */
+.checkin-square {
+  border: none;
+  overflow: visible;
+}
+
+.checkin-square::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 50%, #7f1d1d 50%, #991b1b 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.checkin-square::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #dc2626;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+/* Выезд - градиентный треугольник слева сверху */
+.checkout-square {
+  border: none;
+  overflow: visible;
+}
+
+.checkout-square::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, transparent 50%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.checkout-square::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #dc2626;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  pointer-events: none;
+}
+
+/* Заезд + Выезд - диагональное разделение с градиентами */
+.both-square {
+  border: 2px solid #dc2626;
+}
+
+.both-square::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, transparent 50%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.both-square::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 50%, #8b2020 50%, #a52a2a 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+/* Стили для модального окна анализа */
+.analysis-modal-content {
+  background: #141414;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.analysis-calendar-item {
+  padding: 8px;
+  background: #1f1f1f;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  border: 1px solid #303030;
+}
+
+.analysis-calendar-name {
+  color: #fff;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.analysis-event-summary {
+  color: #d9d9d9;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.analysis-event-period {
+  color: #888;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.analysis-event-description {
+  color: #888;
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .modern-calendar {
+    padding: 8px;
+  }
+
+  .modern-calendar-weekday {
+    font-size: 11px;
+    padding: 6px 2px;
+  }
+
+  .modern-calendar-day {
+    min-height: 42px;
+    border-radius: 3px;
+  }
+
+  .modern-day-number {
+    font-size: 13px;
+  }
+
+  .calendar-legend {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .legend-item {
+    font-size: 12px;
+  }
+
+  .legend-square {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modern-calendar-day {
+    min-height: 38px;
+  }
+
+  .modern-day-number {
+    font-size: 12px;
+  }
+
+  .modern-calendar-weekday {
+    font-size: 10px;
+  }
+
+  .calendar-legend {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .legend-square {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Планшеты */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .modern-calendar-container {
+    max-width: 650px;
+  }
+
+  .modern-calendar-day {
+    min-height: 48px;
+  }
+}
+
+/* Десктопная версия */
+@media (min-width: 1025px) {
+  .modern-calendar-container {
+    max-width: 800px;
+  }
+
+  .modern-calendar-day {
+    min-height: 55px;
+  }
+
+  .modern-day-number {
+    font-size: 16px;
+  }
+
+  .modern-calendar-weekday {
+    font-size: 14px;
+  }
+}
+
+/* Мобильная адаптация для DatePicker в модальных окнах */
+@media (max-width: 768px) {
+  .ant-picker-dropdown {
+    max-width: calc(100vw - 32px) !important;
+  }
+
+  .ant-picker-panel-container {
+    max-width: 100% !important;
+  }
+
+  .ant-picker-panels {
+    flex-direction: column !important;
+  }
+
+  .ant-picker-panel {
+    width: 100% !important;
+  }
+
+  .ant-picker-date-panel,
+  .ant-picker-body {
+    width: 100% !important;
+  }
+
+  .ant-picker-cell {
+    padding: 2px 0 !important;
+  }
+
+  .ant-picker-cell-inner {
+    min-width: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    font-size: 12px !important;
+  }
+
+  .ant-picker-header-view button {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ant-picker-cell-inner {
+    min-width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    font-size: 11px !important;
+  }
+
+  .ant-picker-content th {
+    font-size: 11px !important;
+  }
+}
+
+/* Фиксируем позиционирование попапа для DatePicker в модальном окне */
+.ant-modal-wrap .ant-picker-dropdown {
+  position: fixed !important;
+}
+
+/* Стили для заблокированных дат в DatePicker */
+.ant-picker-cell-disabled .ant-picker-cell-inner {
+  background: #2a1515 !important;
+  color: #ff4d4f !important;
+}

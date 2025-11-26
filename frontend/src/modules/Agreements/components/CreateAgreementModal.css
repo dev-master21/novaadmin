@@ -1,0 +1,357 @@
+/* frontend/src/modules/Agreements/components/CreateAgreementModal.css */
+
+/* Основная темная тема для модального окна */
+.create-agreement-modal.dark-theme .ant-modal-content {
+  background: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-agreement-modal.dark-theme .ant-modal-header {
+  background: #1f1f1f;
+  border-bottom: 1px solid #303030;
+}
+
+.create-agreement-modal.dark-theme .ant-modal-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-agreement-modal.dark-theme .ant-modal-close {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.create-agreement-modal.dark-theme .ant-modal-close:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Steps */
+.create-agreement-modal.dark-theme .ant-steps-item-process .ant-steps-item-icon {
+  background: #1890ff;
+  border-color: #1890ff;
+}
+
+.create-agreement-modal.dark-theme .ant-steps-item-finish .ant-steps-item-icon {
+  border-color: #1890ff;
+}
+
+.create-agreement-modal.dark-theme .ant-steps-item-finish .ant-steps-item-icon > .ant-steps-icon {
+  color: #1890ff;
+}
+
+.create-agreement-modal.dark-theme .ant-steps-item-title {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.create-agreement-modal.dark-theme .ant-steps-item-process .ant-steps-item-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-agreement-modal.dark-theme .ant-steps-item-finish .ant-steps-item-title {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Form */
+.create-agreement-modal.dark-theme .ant-form-item-label > label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-agreement-modal.dark-theme .ant-input,
+.create-agreement-modal.dark-theme .ant-input-number,
+.create-agreement-modal.dark-theme .ant-picker,
+.create-agreement-modal.dark-theme .ant-select-selector {
+  background: #141414;
+  border-color: #434343;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-agreement-modal.dark-theme .ant-input:hover,
+.create-agreement-modal.dark-theme .ant-input-number:hover,
+.create-agreement-modal.dark-theme .ant-picker:hover,
+.create-agreement-modal.dark-theme .ant-select-selector:hover {
+  border-color: #177ddc;
+}
+
+.create-agreement-modal.dark-theme .ant-input:focus,
+.create-agreement-modal.dark-theme .ant-input-focused,
+.create-agreement-modal.dark-theme .ant-input-number-focused,
+.create-agreement-modal.dark-theme .ant-picker-focused,
+.create-agreement-modal.dark-theme .ant-select-focused .ant-select-selector {
+  border-color: #177ddc;
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+}
+
+.create-agreement-modal.dark-theme .ant-input::placeholder,
+.create-agreement-modal.dark-theme .ant-input-number-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Select dropdown */
+.create-agreement-modal.dark-theme .ant-select-dropdown {
+  background: #1f1f1f;
+}
+
+.create-agreement-modal.dark-theme .ant-select-item {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-agreement-modal.dark-theme .ant-select-item:hover {
+  background: #303030;
+}
+
+.create-agreement-modal.dark-theme .ant-select-item-option-selected {
+  background: #111b26;
+  color: #1890ff;
+}
+
+.create-agreement-modal.dark-theme .ant-select-item-group {
+  color: rgba(255, 255, 255, 0.45);
+  background: #141414;
+}
+
+/* DatePicker dropdown */
+.ant-picker-dropdown .ant-picker-panel-container {
+  background: #1f1f1f;
+}
+
+.ant-picker-dropdown .ant-picker-header,
+.ant-picker-dropdown .ant-picker-content {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.ant-picker-dropdown .ant-picker-cell {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.ant-picker-dropdown .ant-picker-cell:hover .ant-picker-cell-inner {
+  background: #303030;
+}
+
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner {
+  background: #1890ff;
+}
+
+/* Cards */
+.create-agreement-modal.dark-theme .ant-card {
+  background: #141414;
+  border-color: #303030;
+}
+
+.create-agreement-modal.dark-theme .ant-card-head {
+  background: #1f1f1f;
+  border-bottom: 1px solid #303030;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-agreement-modal.dark-theme .ant-card-head-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.party-card-dark {
+  background: #141414 !important;
+  border: 1px solid #303030 !important;
+}
+
+.party-card-dark .ant-card-head {
+  background: #1f1f1f !important;
+  border-bottom: 1px solid #303030;
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.party-card-dark .ant-card-body {
+  padding: 12px;
+}
+
+/* Radio */
+.create-agreement-modal.dark-theme .ant-radio-wrapper {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-agreement-modal.dark-theme .ant-radio-inner {
+  background: #141414;
+  border-color: #434343;
+}
+
+.create-agreement-modal.dark-theme .ant-radio-checked .ant-radio-inner {
+  border-color: #1890ff;
+  background: #1890ff;
+}
+
+/* Switch */
+.create-agreement-modal.dark-theme .ant-switch {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.create-agreement-modal.dark-theme .ant-switch-checked {
+  background: #1890ff;
+}
+
+/* Divider */
+.create-agreement-modal.dark-theme .ant-divider {
+  border-color: #303030;
+}
+
+.create-agreement-modal.dark-theme .ant-divider-inner-text {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* InputNumber addon */
+.create-agreement-modal.dark-theme .ant-input-number-group-addon {
+  background: #1f1f1f;
+  border-color: #434343;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Buttons */
+.create-agreement-modal.dark-theme .ant-btn-dashed {
+  border-color: #434343;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-agreement-modal.dark-theme .ant-btn-dashed:hover {
+  border-color: #177ddc;
+  color: #177ddc;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .create-agreement-modal {
+    max-width: 100vw !important;
+    margin: 0 !important;
+    top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .create-agreement-modal .ant-modal {
+    max-width: 100vw;
+    margin: 0;
+  }
+
+  .create-agreement-modal .ant-modal-content {
+    border-radius: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .create-agreement-modal .ant-modal-body {
+    padding: 12px;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .create-agreement-modal .ant-steps {
+    margin-bottom: 16px;
+  }
+
+  .create-agreement-modal .ant-steps-item-title {
+    font-size: 12px !important;
+  }
+
+  .create-agreement-modal .ant-steps-item-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .party-card-dark {
+    margin-bottom: 12px;
+  }
+
+  .party-card-dark .ant-card-head {
+    padding: 0 8px;
+  }
+
+  .party-card-dark .ant-card-head-title {
+    font-size: 13px;
+  }
+
+  .party-card-dark .ant-card-body {
+    padding: 8px;
+  }
+
+  .create-agreement-modal label {
+    font-size: 12px !important;
+  }
+
+  .create-agreement-modal .ant-input,
+  .create-agreement-modal .ant-select,
+  .create-agreement-modal .ant-picker,
+  .create-agreement-modal .ant-input-number {
+    font-size: 14px;
+  }
+
+  .create-agreement-modal .ant-card {
+    margin-bottom: 12px;
+  }
+
+  .create-agreement-modal .ant-card-head-title {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .create-agreement-modal .ant-modal-body {
+    padding: 8px;
+  }
+
+  .create-agreement-modal .ant-steps-item-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .party-card-dark .ant-card-body {
+    padding: 6px;
+  }
+}
+/* Анимация загрузки */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Превью документов */
+.document-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.document-preview-item {
+  position: relative;
+  border: 1px solid #303030;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #141414;
+}
+
+.document-preview-item.uploading {
+  background: #1f1f1f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+}
+
+.document-preview-item img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.document-delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 10;
+}
+
+/* Мобильная версия */
+@media (max-width: 768px) {
+  .document-preview-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}

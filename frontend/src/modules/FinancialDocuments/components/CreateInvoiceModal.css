@@ -1,0 +1,89 @@
+/* frontend/src/modules/FinancialDocuments/components/CreateInvoiceModal.css */
+.create-invoice-modal .ant-steps {
+  margin-bottom: 24px;
+}
+
+.create-invoice-modal .ant-steps-item-title {
+  font-size: 13px !important;
+}
+
+.invoice-item-card {
+  border: 1px solid #303030;
+  background: #141414;
+}
+
+.invoice-item-card .ant-card-head {
+  border-bottom: 1px solid #303030;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.invoice-item-card .ant-card-head-title {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0;
+}
+
+.invoice-item-card .ant-card-body {
+  padding: 12px;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .create-invoice-modal .ant-modal {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    top: 0 !important;
+  }
+
+  .create-invoice-modal .ant-modal-content {
+    border-radius: 0 !important;
+    min-height: 100vh;
+  }
+
+  .create-invoice-modal .ant-steps {
+    margin-bottom: 16px;
+  }
+
+  .create-invoice-modal .ant-steps-item-title {
+    display: none !important;
+  }
+
+  .create-invoice-modal .ant-steps-item-icon {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+  }
+
+  .invoice-item-card .ant-card-head {
+    padding: 8px;
+  }
+
+  .invoice-item-card .ant-card-body {
+    padding: 8px;
+  }
+
+  /* Адаптация InputNumber на мобильных */
+  .ant-input-number {
+    font-size: 14px;
+  }
+
+  .ant-input-number-input {
+    padding: 4px 8px;
+  }
+}
+
+/* Адаптация для маленьких экранов */
+@media (max-width: 480px) {
+  .create-invoice-modal .ant-form-item-label > label {
+    font-size: 13px;
+  }
+
+  .create-invoice-modal .ant-input,
+  .create-invoice-modal .ant-input-number,
+  .create-invoice-modal .ant-select-selector,
+  .create-invoice-modal .ant-picker {
+    font-size: 14px !important;
+  }
+}

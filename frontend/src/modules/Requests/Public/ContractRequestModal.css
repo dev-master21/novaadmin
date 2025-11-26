@@ -1,0 +1,423 @@
+/* Основные стили модального окна */
+.contract-request-modal .ant-modal-content {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.contract-request-modal .ant-modal-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
+  padding: 20px 24px;
+}
+
+.contract-request-modal .ant-modal-body {
+  background: #ffffff;
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.contract-request-modal .ant-modal-footer {
+  background: #ffffff;
+  border-top: 1px solid #e8e8e8;
+  padding: 16px 24px;
+}
+
+/* Заголовок модального окна */
+.contract-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.contract-modal-title .anticon {
+  color: #1890ff;
+  font-size: 24px;
+}
+
+/* Alert - исправленные цвета */
+.contract-alert {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+}
+
+.contract-alert .ant-alert-message {
+  color: #0050b3 !important;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.contract-alert .ant-alert-description {
+  color: #003a8c !important;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.contract-alert .ant-alert-icon {
+  color: #1890ff !important;
+}
+
+.success-alert {
+  margin-top: 20px;
+  border-radius: 12px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+}
+
+.success-alert .ant-alert-message {
+  color: #389e0d !important;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.success-alert .ant-alert-icon {
+  color: #52c41a !important;
+}
+
+/* Форма */
+.contract-form {
+  color: #1a1a1a;
+}
+
+/* Секции формы */
+.form-section {
+  margin-bottom: 32px;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section-title .anticon {
+  color: #1890ff;
+  font-size: 20px;
+}
+
+/* Лейблы */
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.form-label .anticon {
+  color: #1890ff;
+  font-size: 16px;
+}
+
+.form-label .required {
+  color: #ff4d4f;
+  margin-left: 4px;
+}
+
+/* Поля ввода */
+.contract-form .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.contract-form .ant-form-item-label {
+  padding-bottom: 6px;
+}
+
+.contract-form .ant-form-item-label > label {
+  color: #1a1a1a !important;
+  font-weight: 600;
+}
+
+.contract-form .ant-form-item-explain-error {
+  color: #ff4d4f !important;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.form-input,
+.contract-form .ant-input,
+.contract-form .ant-input-textarea textarea {
+  background: #ffffff !important;
+  border: 1px solid #d9d9d9 !important;
+  border-radius: 8px !important;
+  color: #1a1a1a !important;
+  font-size: 14px !important;
+  padding: 10px 12px !important;
+  transition: all 0.2s !important;
+}
+
+.form-input::placeholder,
+.contract-form .ant-input::placeholder,
+.contract-form .ant-input-textarea textarea::placeholder {
+  color: #bfbfbf !important;
+}
+
+.form-input:hover,
+.contract-form .ant-input:hover,
+.contract-form .ant-input-textarea textarea:hover {
+  border-color: #40a9ff !important;
+}
+
+.form-input:focus,
+.contract-form .ant-input:focus,
+.contract-form .ant-input-textarea textarea:focus {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1) !important;
+  outline: none !important;
+}
+
+/* Upload компонент */
+.upload-item {
+  margin-bottom: 24px;
+}
+
+.contract-form .ant-upload-list-picture-card-container {
+  width: 120px;
+  height: 120px;
+}
+
+.contract-form .ant-upload.ant-upload-select-picture-card {
+  width: 120px;
+  height: 120px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 12px;
+  background: #fafafa;
+  transition: all 0.2s;
+}
+
+.contract-form .ant-upload.ant-upload-select-picture-card:hover {
+  border-color: #1890ff;
+  background: #f0f7ff;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #666;
+}
+
+.upload-placeholder .anticon {
+  font-size: 32px;
+  color: #1890ff;
+}
+
+.upload-text {
+  font-size: 14px;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.upload-hint.error {
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+/* Кнопки */
+.modal-cancel-btn,
+.modal-submit-btn {
+  height: 40px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 15px;
+  padding: 0 24px;
+}
+
+.modal-cancel-btn {
+  background: white;
+  color: #1a1a1a;
+  border: 1px solid #d9d9d9;
+}
+
+.modal-cancel-btn:hover {
+  border-color: #40a9ff;
+  color: #40a9ff;
+  background: white;
+}
+
+.modal-submit-btn {
+  background: #1890ff;
+  color: white;
+  border: 1px solid #1890ff;
+}
+
+.modal-submit-btn:hover:not(:disabled) {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.modal-submit-btn:disabled {
+  background: #f5f5f5;
+  border-color: #d9d9d9;
+  color: #bfbfbf;
+  cursor: not-allowed;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  .contract-request-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    top: 0 !important;
+    padding: 0 !important;
+  }
+
+  .contract-request-modal .ant-modal-content {
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+  }
+
+  .contract-request-modal .ant-modal-header {
+    flex-shrink: 0;
+    padding: 16px;
+  }
+
+  .contract-request-modal .ant-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: none;
+    padding: 16px;
+    padding-bottom: 100px; /* Добавляем отступ чтобы контент не скрывался под футером */
+  }
+
+  .contract-request-modal .ant-modal-footer {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    flex-shrink: 0;
+    background: #ffffff;
+    border-top: 1px solid #e8e8e8;
+    padding: 12px 16px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+  }
+
+  .contract-modal-title {
+    font-size: 18px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+
+  .form-label {
+    font-size: 13px;
+  }
+
+  .form-input,
+  .contract-form .ant-input,
+  .contract-form .ant-input-textarea textarea {
+    font-size: 16px !important; /* Предотвращает зум на iOS */
+  }
+
+  .contract-form .ant-upload-list-picture-card-container,
+  .contract-form .ant-upload.ant-upload-select-picture-card {
+    width: 100px;
+    height: 100px;
+  }
+
+  .upload-placeholder .anticon {
+    font-size: 28px;
+  }
+
+  .modal-cancel-btn,
+  .modal-submit-btn {
+    height: 48px; /* Увеличиваем для удобства на мобильном */
+    font-size: 15px;
+    padding: 0 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .contract-request-modal .ant-modal-footer {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .modal-cancel-btn,
+  .modal-submit-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Скроллбар */
+.contract-request-modal .ant-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.contract-request-modal .ant-modal-body::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.contract-request-modal .ant-modal-body::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 3px;
+}
+
+.contract-request-modal .ant-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Анимация */
+.contract-request-modal .ant-modal-content {
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Дополнительная адаптация для iPhone */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 768px) {
+    .contract-request-modal .ant-modal-content {
+      height: 100vh;
+      height: -webkit-fill-available;
+    }
+    
+    .contract-request-modal .ant-modal-body {
+      padding-bottom: 120px; /* Больше отступ для iOS */
+    }
+  }
+}

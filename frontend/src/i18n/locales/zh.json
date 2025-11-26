@@ -1,0 +1,3673 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "view": "查看",
+    "add": "添加",
+    "back": "返回",
+    "yes": "是",
+    "no": "否",
+    "total": "总计：{{total}}",
+    "reset": "重置",
+    "logout": "退出",
+    "search": "搜索",
+    "actions": "操作",
+    "characters": "个字符",
+    "confirmDelete": "确定要删除吗？",
+    "loading": "加载中...",
+    "previous": "上一步",
+    "next": "下一步",
+    "select": "选择",
+    "upload": "上传",
+    "download": "下载",
+    "close": "关闭",
+    "apply": "应用",
+    "clear": "清除",
+    "filter": "筛选",
+    "all": "全部",
+    "none": "无",
+    "optional": "可选",
+    "required": "必填",
+    "create": "创建"
+  },
+  
+  "validation": {
+    "required": "此字段为必填项",
+    "email": "邮箱格式不正确",
+    "minLength": "最少 {{min}} 个字符",
+    "maxLength": "最多 {{max}} 个字符",
+    "min": "最小值 {{min}}",
+    "max": "最大值 {{max}}",
+    "pattern": "格式不正确",
+    "url": "URL格式不正确",
+    "phone": "电话号码格式不正确",
+    "number": "必须是数字",
+    "integer": "必须是整数",
+    "positive": "必须是正数"
+  },
+
+  "errors": {
+    "generic": "发生错误",
+    "network": "网络错误",
+    "serverError": "服务器错误",
+    "notFound": "未找到",
+    "unauthorized": "无权限",
+    "forbidden": "操作被禁止",
+    "timeout": "超时",
+    "invalidData": "数据无效"
+  },
+
+  "auth": {
+    "login": "登录",
+    "loginSubtitle": "登录管理员面板",
+    "username": "用户名",
+    "password": "密码",
+    "loginButton": "登录",
+    "loggingIn": "登录中...",
+    "loginSuccess": "登录成功",
+    "loginError": "登录错误",
+    "logout": "退出",
+    "logoutConfirm": "确定要退出吗？",
+    "sessionExpired": "会话已过期",
+    "invalidCredentials": "用户名或密码错误"
+  },
+
+  "nav": {
+    "dashboard": "控制面板",
+    "properties": "房产",
+    "users": "用户",
+    "roles": "角色",
+    "agreements": "合同",
+    "addProperty": "添加房产",
+    "propertiesList": "房产列表",
+    "addUser": "添加用户",
+    "settings": "设置",
+    "reports": "报告"
+  },
+  
+  "menu": {
+    "fileManager": "文件管理器"
+  },
+    "agreements": {
+    "title": "合同",
+    "loading": "加载中...",
+    "noAgreements": "未找到合同",
+    "notSpecified": "未指定",
+    "stats": {
+      "total": "总计",
+      "drafts": "草稿",
+      "pending": "待签署",
+      "signed": "已签署",
+      "active": "活跃"
+    },
+    "statuses": {
+      "draft": "草稿",
+      "pendingSignatures": "待签署",
+      "signed": "已签署",
+      "active": "活跃",
+      "expired": "已过期",
+      "cancelled": "已取消"
+    },
+    "types": {
+      "rent": "租赁",
+      "sale": "销售",
+      "bilateral": "双边",
+      "trilateral": "三边",
+      "agency": "代理",
+      "transferAct": "移交证书"
+    },
+    "table": {
+      "number": "编号",
+      "type": "类型",
+      "status": "状态",
+      "property": "房产",
+      "description": "描述",
+      "signatures": "签名",
+      "created": "创建时间",
+      "actions": "操作"
+    },
+    "actions": {
+      "view": "查看",
+      "edit": "编辑",
+      "publicLink": "公开链接"
+    },
+    "buttons": {
+      "templates": "模板",
+      "invoicesAndReceipts": "发票和收据",
+      "createAgreement": "创建合同"
+    },
+    "filters": {
+      "type": "类型",
+      "status": "状态"
+    },
+    "placeholders": {
+      "search": "按编号或描述搜索"
+    },
+    "mobile": {
+      "property": "房产",
+      "view": "查看"
+    },
+    "pagination": {
+      "total": "总计：{{total}}",
+      "back": "返回",
+      "forward": "前进",
+      "pageInfo": "第 {{current}} 页，共 {{total}} 页"
+    },
+    "confirm": {
+      "deleteTitle": "删除合同？",
+      "deleteDescription": "此操作无法撤销"
+    },
+    "messages": {
+      "loadError": "加载合同时出错",
+      "deleted": "合同已成功删除",
+      "deleteError": "删除合同时出错",
+      "linkCopied": "链接已复制到剪贴板"
+    }
+  },
+
+  "fileManager": {
+    "title": "文件管理器",
+    "rootFolder": "根文件夹",
+    "createFolder": "创建文件夹",
+    "uploadFiles": "上传文件",
+    "folderName": "文件夹名称",
+    "fileName": "文件名",
+    "fileSize": "大小",
+    "uploadedAt": "上传时间",
+    "createdBy": "创建者",
+    "actions": "操作",
+    "download": "下载",
+    "downloadFolder": "下载文件夹",
+    "downloadSelected": "下载选中项",
+    "rename": "重命名",
+    "delete": "删除",
+    "deleteFile": "删除文件？",
+    "deleteFolder": "删除文件夹？",
+    "deleteFolderWarning": "所有文件和子文件夹将被删除",
+    "renameFile": "重命名文件",
+    "renameFolder": "重命名文件夹",
+    "newName": "新名称",
+    "emptyFolder": "文件夹为空",
+    "selected": "已选择",
+    "clearSelection": "取消选择",
+    "permissions": "访问权限",
+    "managePermissions": "管理访问权限",
+    "addUser": "添加用户",
+    "selectUser": "选择用户",
+    "canView": "查看",
+    "canUpload": "上传",
+    "canDownload": "下载",
+    "canEdit": "编辑",
+    "canDelete": "删除",
+    "folderCreated": "文件夹已创建",
+    "filesUploaded": "已上传文件",
+    "fileDownloaded": "文件已下载",
+    "folderDownloaded": "文件夹已下载",
+    "fileDeleted": "文件已删除",
+    "folderDeleted": "文件夹已删除",
+    "renamed": "重命名成功",
+    "permissionsUpdated": "访问权限已更新",
+    "preparingArchive": "准备压缩包...",
+    "enterFolderName": "输入文件夹名称",
+    "enterNewName": "输入新名称",
+    "userAlreadyAdded": "用户已添加",
+    "selectUserWarning": "请选择用户"
+  },
+  
+  "dashboard": {
+    "welcome": "欢迎",
+    "stats": {
+      "totalProperties": "房产总数",
+      "publishedProperties": "已发布",
+      "draftProperties": "草稿",
+      "hiddenProperties": "已隐藏"
+    },
+    "recentProperties": "最近的房产",
+    "quickActions": "快捷操作"
+  },
+
+  "propertySearch": {
+    "title": "房产搜索",
+    "noAccess": "您无权访问此部分",
+    "backToList": "返回列表",
+    "search": "搜索",
+    "dialogs": "对话",
+    "searchHistory": "搜索历史",
+    
+    "errorLoadingConversations": "加载对话时出错",
+    "conversationLoaded": "对话已加载",
+    "errorLoadingConversation": "加载对话时出错",
+    "conversationDeleted": "对话已删除",
+    "errorDeletingConversation": "删除对话时出错",
+    
+    "enterQueryText": "输入查询文本",
+    "enterMessageText": "输入消息文本",
+    "foundProperties": "在 {{time}} 秒内找到 {{count}} 个房产",
+    "foundPropertiesCount": "找到房产数：{{count}}",
+    "loadedFromHistory": "从历史记录加载了 {{count}} 个房产",
+    
+    "lowConfidence": "AI 置信度低",
+    "lowConfidenceDescription": "AI 对您的查询解释不完全确定。",
+    "reason": "原因",
+    "lowConfidenceRecommendation": "建议澄清搜索参数或查看详细解释。",
+    "understood": "明白了",
+    
+    "errorAISearch": "AI 搜索错误",
+    "responseReceived": "已收到响应",
+    "errorAIChat": "AI 对话错误",
+    "errorSearch": "搜索错误",
+    "mapZoneSet": "地图上已设置搜索区域",
+    
+    "startDialogWithAI": "开始与 AI 对话以搜索房产",
+    "startCommunicationWithClient": "开始与客户沟通",
+    
+    "propertySearch": "房产搜索",
+    "clientAgent": "客户-代理",
+    "aiPropertySearch": "AI 房产搜索",
+    "clientAgentMode": "客户-代理模式",
+    "aiSearchDescription": "用您自己的话描述您要找的内容。AI 将帮助找到理想的选择。",
+    "clientAgentDescription": "通过 AI 代理与客户沟通。它将回答问题并选择选项。",
+    
+    "conversationNumber": "对话 #{{id}}",
+    "conversationId": "对话 #{{id}}",
+    "newConversation": "新对话",
+    
+    "searchPlaceholder": "例如：卡马拉地区有 2 间卧室的公寓，预算最多 10 万泰铢，12 月 15 日入住一个月",
+    "clientMessagePlaceholder": "输入客户消息...",
+    "send": "发送",
+    
+    "aiInterpretation": "AI 解释",
+    "details": "详情",
+    "queryUnderstanding": "查询理解",
+    
+    "searchDialogs": "搜索对话",
+    "clientDialogs": "客户对话",
+    "refresh": "刷新",
+    "noConversations": "没有对话",
+    
+    "continueDialog": "继续对话",
+    "open": "打开",
+    "deleteDialog": "删除对话",
+    "deleteDialogConfirm": "删除对话？",
+    "cannotUndo": "此操作无法撤销",
+    "delete": "删除",
+    "cancel": "取消",
+    
+    "messages": "条消息",
+    "firstMessage": "第一条消息",
+    "updated": "更新时间",
+    
+    "aiSearch": "AI 搜索",
+    "advanced": "高级",
+    "startSearchToSeeResults": "开始搜索以查看结果",
+  "advancedSearch": {
+    "mainParameters": "主要参数",
+    "dealType": "交易类型",
+    "selectType": "选择类型",
+    "any": "任何",
+    "complexPlaceholder": "例如：拉古娜",
+    "furniture": "家具",
+    "fullyFurnished": "全装修",
+    "partiallyFurnished": "部分装修",
+    "unfurnished": "无家具",
+    "regionsMultiple": "地区（可选择多个）",
+    "selectRegions": "选择地区",
+    "withParking": "🚗 带停车位",
+    "withPets": "🐕 允许宠物",
+    "radiusKm": "📍 半径：{{radius}} 公里",
+    "searchOnMap": "🗺️ 在地图上按半径搜索",
+    "clearSearchZone": "清除搜索区域",
+    
+    "bedroomsAndBathrooms": "🛏️ 卧室和浴室",
+    "bedrooms": "卧室",
+    "bathrooms": "浴室",
+    "exactNumber": "确切数量",
+    "range": "范围",
+    "bedroomsCount": "卧室数量",
+    "bathroomsCount": "浴室数量",
+    "from": "从",
+    "to": "到",
+    
+    "budget": "💰 预算",
+    "currency": "货币",
+    "currencyTHB": "฿ THB（泰铢）",
+    "currencyUSD": "$ USD（美元）",
+    "currencyRUB": "₽ RUB（卢布）",
+    "currencyEUR": "€ EUR（欧元）",
+    "minBudget": "最低预算",
+    "maxBudget": "最高预算",
+    "minimum": "最低",
+    "maximum": "最高",
+    "tolerance": "容差（%）",
+    "searchBelowMax": "搜索低于或等于预算的房产",
+    
+    "datesAndAvailability": "📅 日期和可用性",
+    "specificDates": "📍 具体日期",
+    "flexibleDates": "🔄 灵活日期",
+    "rentalPeriod": "租赁期",
+    "checkInDate": "入住日期",
+    "checkOutDate": "退房日期",
+    "toleranceDays": "容差（天）ℹ️",
+    "toleranceTooltip": "容差允许在 ±N 天内搜索房产",
+    "searchWithinDays": "ℹ️ 在指定日期的 ±{{days}} 天内搜索",
+    "nightsCount": "夜晚数 🌙",
+    "nightsTooltip": "您想住几晚",
+    "nightsPlaceholder": "例如：7",
+    "searchWindow": "搜索窗口（期间）📆",
+    "searchWindowTooltip": "在哪个期间搜索可用日期",
+    "periodStart": "期间开始",
+    "periodEnd": "期间结束",
+    "searchingNights": "✅ 在指定期间内搜索 {{duration}} 个空闲夜晚",
+    
+    "features": "✨ 特点",
+    "searchFeatures": "🔍 搜索特点...",
+    "mustHave": "🚨 必备",
+    "desired": "✨ 期望",
+    "clickInstruction": "点击一次表示期望，点击两次表示必备",
+    "indoorFeatures": "🏠 室内特点",
+    "outdoorFeatures": "🌳 室外特点",
+    "views": "🌅 景观",
+    "locationFeatures": "📍 位置和基础设施",
+    "rentalServices": "🛎️ 服务",
+    "selectedFeatures": "已选择特点：",
+    "clearAll": "清除全部",
+    
+    "areas": "📐 面积",
+    "indoorArea": "室内面积（平方米）",
+    "outdoorArea": "室外面积（平方米）",
+    "plotSize": "地块大小（平方米）",
+    "distanceToBeach": "距海滩距离（最大）",
+    "anyDistance": "任何距离",
+    "beach100": "🏖️ 海滩边（最多 100 米）",
+    "beach200": "🏖️ 海滩边（最多 200 米）",
+    "beach500": "🚶 海滩旁（最多 500 米）",
+    "beach1000": "🚶 靠近（最多 1 公里）",
+    "beach2000": "🚗 2 公里内",
+    "beach5000": "🚗 5 公里内",
+    
+    "floors": "🏢 楼层",
+    "floorNumber": "楼层（公寓）",
+    "buildingFloors": "建筑楼层数",
+    
+    "constructionYear": "📅 建造年份",
+    "fromYear": "从年份",
+    "toYear": "到年份",
+    "yearPlaceholder": "例如：{{year}}",
+    
+    "ownershipTypes": "🏛️ 产权类型（用于销售）",
+    "ownershipInfo": "ℹ️ Freehold - 永久产权。Leasehold - 长期租赁（通常 30-90 年）。Company - 通过泰国公司拥有。",
+    
+    "searchButton": "🔍 搜索房产",
+    "resetButton": "🔄 重置所有过滤器"
+  }
+},
+  "aiDescriptionGenerator": {
+    "title": "使用 AI 生成描述",
+    "generationSettings": "生成设置",
+    "readinessCheck": "准备检查：",
+    "checkingReadiness": "检查准备情况...",
+    
+    "errorCheckingReadiness": "检查准备情况时出错",
+    "conditionsNotMet": "未满足所有生成条件",
+    "pleaseWait": "请在再次生成前等待 {{minutes}} 分钟",
+    "waitMinutes": "等待 {{minutes}} 分钟",
+    
+    "preparing": "准备中...",
+    "analyzingPhotos": "分析照片...",
+    "detectingFeatures": "检测特点...",
+    "generatingDescriptions": "生成 5 种语言的描述...",
+    "done": "完成！",
+    
+    "descriptionsGenerated": "描述已成功生成！",
+    "featuresFoundTitle": "从照片中找到的特点",
+    "aiDetected": "AI 在照片中检测到 {{count}} 个特点：",
+    "featuresAdded": "这些特点已自动添加到房产中。",
+    "errorGenerating": "生成描述时出错",
+    
+    "specifyFeatures": "至少指定 15 个房产特点",
+    "uploadPhotos": "上传至少 12 张照片（最好来自不同类别）",
+    "specifyAddress": "指定地址和地区",
+    "specifyBedrooms": "指定卧室数量",
+    
+    "tipTitle": "提示",
+    "tipDescription": "您输入的房产数据越多，房产描述就会越好。",
+    
+    "rateLimitTitle": "生成频率限制",
+    
+    "generating": "生成中...",
+    "generateButton": "使用 AI 生成描述",
+    
+    "cancel": "取消",
+    "apply": "应用",
+    
+    "additionalRequirementsTitle": "附加要求（可选）",
+    "additionalRequirementsDescription": "您可以指定生成描述的附加要求。这不是必需的 - 即使没有它们也会生成描述。",
+    "additionalPrompt": "附加提示：",
+    "additionalPromptPlaceholder": "例如：提到靠近学校，强调社区的家庭友好性，添加有关长期租赁可能性的信息...",
+    "requirementsNote": "这些要求将添加到主提示中，并在生成描述时考虑。"
+  },
+    "aiInterpretationModal": {
+    "title": "AI 详细解释",
+    "aiConfidence": "AI 置信度：",
+    "highConfidence": "高",
+    "mediumConfidence": "中",
+    "lowConfidence": "低",
+    "accuracyPercent": "{{level}} 准确度 - {{percent}}%",
+    
+    "mediumAccuracyWarning": "中等准确度 - 建议检查参数",
+    "mediumAccuracyDescription": "AI 对您的查询解释不完全确定。请检查提取的参数，必要时澄清查询。",
+    
+    "queryUnderstanding": "查询理解：",
+    "noDescription": "无描述",
+    "extractedParameters": "提取的参数：",
+    
+    "dealType": "交易类型",
+    "dates": "日期",
+    "dateFrom": "从",
+    "dateTo": "到",
+    "days": "天",
+    "regions": "地区",
+    "features": "特点",
+    
+    "parking": "停车",
+    "required": "必需",
+    "notRequired": "不必需",
+    
+    "pets": "宠物",
+    "allowed": "允许",
+    "notAllowed": "不允许",
+    
+    "upTo": "最多",
+    "meters": "米",
+    "complex": "综合体",
+    "floor": "楼层",
+    "owner": "业主",
+    
+    "noParametersExtracted": "未提取参数",
+    "noParametersDescription": "AI 无法从您的查询中提取具体参数。尝试澄清查询或使用高级搜索。"
+  },
+    "aiPropertyCreation": {
+    "title": "使用 AI 创建房产",
+    "cancel": "取消",
+    "createButton": "使用 AI 创建",
+    "processing": "处理中...",
+    
+    "enterDescription": "输入房产描述",
+    "sendingRequest": "向 AI 发送请求...",
+    "analyzingText": "分析文本...",
+    "extractingData": "提取数据...",
+    "structuringInfo": "结构化信息...",
+    "done": "完成！",
+    
+    "dataExtracted": "已成功从文本中提取数据！",
+    "warnings": "警告",
+    "photosDownloaded": "照片已下载",
+    "downloadedCount": "从 Google Drive 下载了 {{count}} 张照片",
+    "category": "类别",
+    
+    "errorCreating": "通过 AI 创建房产时出错",
+    "driveAccessError": "访问 Google Drive 时出错",
+    "howToFix": "如何修复：",
+    "fixStep1": "在 Google Drive 中打开文件夹",
+    "fixStep2": "右键单击 → \"访问设置\"",
+    "fixStep3": "选择 \"有链接的任何人都可以访问\"",
+    "fixStep4": "重试",
+    "alternativeOption": "如果问题仍然存在，创建不带照片的房产，稍后手动上传。",
+    
+    "howItWorks": "它是如何工作的？",
+    "howItWorksDescription": "只需粘贴房产的文本描述，AI 将自动提取所有数据：",
+    
+    "basicInfo": "基本信息",
+    "pricesCommissions": "价格和佣金",
+    "calendarOccupancy": "日历占用",
+    "ownerData": "业主数据",
+    "propertyFeatures": "房产特点",
+    "photosFromDrive": "来自 Google Drive 的照片",
+    
+    "pasteDescription": "粘贴房产描述：",
+    "placeholder": "例如：\n\nAnchan Flora 房产，编号 55。售价 5500 万，1 月至 3 月租金 20 万，其他时间 30 万，年租合同 15 万。2 层，500 平方米室内，1000 非居住，1200 地块。永久产权。允许宠物，邦涛地区，3 间卧室 2 间浴室，2 个停车位。\n\n特点：厨房、电视、互联网、游泳池、花园。海景。\n\n占用：12 月 15 日至 2 月 5 日已占用。\n\nGoogle 地图链接：https://maps.app.goo.gl/example\n照片：https://drive.google.com/drive/folders/example\n业主：安娜，电话 +66123456789",
+    
+    "importantWarning": "⚠️ 重要！",
+    "importantDescription": "AI 生成后将填充所有表单字段。在保存房产之前，务必检查所有数据的正确性！"
+  },
+    "aiResponseViewer": {
+    "title": "AI 助手响应",
+    "close": "关闭",
+    "errorLoading": "加载 AI 响应时出错",
+    "copiedToClipboard": "已复制到剪贴板",
+    "jsonDownloaded": "JSON 文件已下载",
+    "loadingData": "加载 AI 数据...",
+    "noData": "无可显示的数据",
+    
+    "unknownQueryType": "未知查询类型",
+    "flexibleSearch": "灵活搜索",
+    "flexibleSearchDesc": "在 {{start}} 至 {{end}} 期间搜索 {{duration}} 晚",
+    "fixedDates": "固定日期",
+    "fixedDatesDesc": "从 {{checkIn}} 到 {{checkOut}} 的整个期间",
+    "parameterSearch": "按参数搜索",
+    "searchWithoutDates": "无指定日期的搜索",
+    
+    "bedroomsCount": "{{count}} 间卧室",
+    "bedroomsCount_plural": "{{count}} 间卧室",
+    "perNight": "/晚",
+    "perMonth": "/月",
+    "perYear": "/年",
+    
+    "parametersNotSpecified": "未指定参数",
+    "furnitureLabel": "家具：{{type}}",
+    "withPets": "允许宠物",
+    "requiredFeatures": "必需特点",
+    
+    "yourQuery": "💬 您的查询：",
+    "copy": "复制",
+    "explanation": "解释",
+    "propertiesFound": "找到的房产",
+    
+    "lowConfidenceWarning": "AI 置信度低",
+    "lowConfidenceDescription": "建议澄清搜索参数以获得更准确的结果",
+    
+    "copyJSON": "复制 JSON",
+    "downloadJSON": "下载 JSON",
+    "copyFilters": "复制过滤器",
+    
+    "interpretationTab": "解释",
+    "rawJSONTab": "原始 JSON",
+    "filtersTab": "过滤器"
+  },
+  "calendarManager": {
+    "title": "管理占用",
+    "downloadIcs": "下载 .ics",
+    "addPeriod": "添加期间",
+    "syncCalendars": "同步日历",
+    "analysis": "分析",
+    "synchronize": "同步",
+    "addCalendar": "添加日历",
+    
+    "noExternalCalendars": "无外部日历",
+    "noExternalCalendarsDesc": "添加来自 Booking、Airbnb、Agoda 和其他服务的 .ics 链接以自动同步",
+    
+    "on": "开",
+    "off": "关",
+    "deleteCalendar": "删除日历？",
+    "deleteCalendarDesc": "要删除此日历的占用日期吗？",
+    "yesDeleteDates": "是，删除日期",
+    "noKeepDates": "否，保留日期",
+    
+    "events": "个事件",
+    "syncError": "同步错误",
+    "lastSync": "最后同步",
+    "error": "错误",
+    
+    "occupancyCalendar": "占用日历",
+    "icsCreatedAfter": "创建房产后将自动创建带有被阻止日期的 .ics 文件。",
+    "addedTemporarily": "临时添加",
+    "dates": "个日期",
+    
+    "combinedIcsFile": "合并的日历文件 (.ics)",
+    "blockedDays": "已阻止天数",
+    "updated": "已更新",
+    
+    "months": ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
+    "weekDays": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+    
+    "today": "今天",
+    "occupied": "已占用",
+    "checkIn": "入住",
+    "checkOut": "退房",
+    "checkInOut": "入住 + 退房",
+    
+    "blockedPeriods": "已阻止期间",
+    "deletePeriod": "删除此期间？",
+    "daysWillBeDeleted": "将删除 {{count}} 天",
+    "yes": "是",
+    "no": "否",
+    "delete": "删除",
+    "daysCount": "天",
+    "daysCount_plural": "天",
+    "noDescription": "无描述",
+    
+    "addOccupancyPeriod": "添加占用期间",
+    "selectPeriod": "选择期间",
+    "selectPeriodRequired": "选择期间",
+    "start": "开始",
+    "end": "结束",
+    
+    "occupiedDatesDetected": "检测到已占用日期！",
+    "periodHasOccupied": "所选期间已有 {{count}} 个已占用日期",
+    "periodHasOccupied_plural": "所选期间已有 {{count}} 个已占用日期",
+    "andMoreDates": "... 以及其他 {{count}} 个日期",
+    "selectOtherPeriod": "选择其他期间或强制添加，替换旧日期",
+    
+    "descriptionOptional": "描述（可选）",
+    "reasonPlaceholder": "阻止原因（例如：已预订、维修、个人使用）",
+    
+    "info": "信息",
+    "infoDescription": "所选期间中的每个日期将单独阻止。添加后将自动更新 .ics 文件。",
+    
+    "cancel": "取消",
+    "forceAddButton": "强制添加",
+    "add": "添加",
+    
+    "forceAdd": "强制添加",
+    "forceAddDescription": "如果继续，旧日期将被删除并替换为新期间。此操作无法撤销！",
+    
+    "finalConfirmation": "最终确认",
+    "areYouSure": "您确定此操作吗？",
+    "actionWarning": "这可能会影响系统，最好不要这样做。无法回滚操作！",
+    "yesImSure": "是，我确定",
+    
+    "addExternalCalendar": "添加外部日历",
+    "serviceName": "服务名称",
+    "specifyName": "指定名称",
+    "serviceNamePlaceholder": "例如：Booking.com、Airbnb、Agoda",
+    "icsLink": ".ics 文件链接",
+    "specifyLink": "指定链接",
+    "invalidURL": "URL 格式无效",
+    "externalCalendarInfo": "添加日历后，它将每 15 分钟自动同步一次。您可以随时启用或禁用同步。",
+    
+    "conflictAnalysis": "日历冲突分析",
+    "continueSync": "继续同步",
+    "date": "日期",
+    "calendars": "日历",
+    "period": "期间",
+    
+    "noConflicts": "未检测到冲突",
+    "conflictsDetected": "检测到 {{count}} 个冲突",
+    "noConflictsDesc": "所有日历都有唯一的日期。可以安全地继续同步。",
+    "conflictsDetectedDesc": "以下日期同时出现在多个日历中。在同步前请检查信息。",
+    
+    "whatHappensOnSync": "同步时会发生什么？",
+    "syncStep1": "所有启用的日历中的日期将合并",
+    "syncStep2": "如果有冲突，将使用第一个日历的描述",
+    "syncStep3": "将创建统一的 .ics 文件用于导出",
+    "syncStep4": "同步将每 15 分钟自动进行一次",
+    
+    "errorLoadingCalendar": "加载日历时出错",
+    "datesAddedTemporarily": "已添加 {{count}} 个日期。它们将在创建房产后保存。",
+    "periodBlocked": "期间已成功阻止",
+    "errorBlocking": "阻止期间时出错",
+    "datesRemovedTemporarily": "日期已成功从临时列表中删除",
+    "datesUnblocked": "日期已成功解除阻止",
+    "errorRemovingDates": "删除日期时出错",
+    
+    "calendarAdded": "日历已成功添加",
+    "errorAddingCalendar": "添加日历时出错",
+    "calendarRemoved": "日历已成功删除",
+    "errorRemovingCalendar": "删除日历时出错",
+    
+    "syncToggled": "同步{{state}}",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "errorTogglingSync": "切换同步时出错",
+    
+    "minTwoCalendars": "分析需要至少添加 2 个日历",
+    "errorAnalyzing": "分析日历时出错",
+    
+    "syncSuccess": "已同步 {{calendars}} 个日历，{{events}} 个事件",
+    "syncWithErrors": "同步完成但有错误",
+    "errorSyncing": "同步错误",
+    
+    "periodAddedForced": "期间已成功添加（强制）",
+    
+    "calendarModalTitle": "占用日历",
+    "noCalendarData": "无占用数据",
+    "noCalendarDataDesc": "日历未同步或没有阻止的日期"
+  },
+    "depositForm": {
+    "title": "押金",
+    "depositType": "押金类型",
+    "oneMonth": "押金等于一个月租金",
+    "twoMonths": "押金等于两个月租金",
+    "custom": "指定押金",
+    "depositAmount": "押金金额",
+    "depositAmountPlaceholder": "输入押金金额"
+  },
+    "floorPlanUploader": {
+    "fileSizeExceeds": "文件超过 50MB",
+    "fileMustBeImage": "文件必须是图像",
+    "floorPlanUploaded": "平面图已上传",
+    "errorUploading": "上传平面图时出错",
+    "floorPlanDeleted": "平面图已删除",
+    "errorDeleting": "删除平面图时出错",
+    "floorPlanDownloaded": "平面图已下载",
+    "changeFloorPlan": "更改平面图",
+    "uploadFloorPlan": "上传平面图",
+    "uploadingProgress": "上传平面图... {{percent}}%",
+    "floorPlanAlt": "平面图",
+    "viewFullSize": "全尺寸查看",
+    "downloadFloorPlan": "下载平面图",
+    "noFloorPlan": "未上传平面图",
+    "clickButtonAbove": "点击上面的按钮上传",
+    "supportedFormats": "支持的格式：JPG、PNG",
+    "maxSize": "最大大小：50MB"
+  },
+    "mapSearchModal": {
+    "title": "地图搜索",
+    "selectPointOnMap": "在地图上选择点",
+    "description": "在地图上选择搜索区域的中心并指定半径：",
+    "apply": "应用",
+    "km": "公里",
+    "kmMark": "{{value}} 公里",
+    "loadingMap": "加载地图..."
+  },
+    "monthlyPricing": {
+    "title": "月租价格",
+    "clearAll": "清除全部",
+    "infoTitle": "月租价格信息",
+    "infoDescription": "指定每个月的租金成本。这些价格将用于长期租赁。如果不需要某月的价格，请留空。",
+    "pricePerMonth": "每月价格",
+    "priceMustBePositive": "价格必须为正数",
+    "minimumDays": "最少天数",
+    "minimumOneDayError": "至少 1 天",
+    "notSpecified": "未指定",
+    "importantInfoTitle": "重要信息",
+    "importantInfoDescription": "月租价格在计算长期租赁时优先于季节性价格。如果未指定某月的价格，将使用季节性价格（如果有）。",
+    "pricesUpdated": "月租价格已成功更新",
+    "errorUpdating": "更新价格时出错",
+    "allPricesCleared": "所有月租价格已清除",
+    "months": {
+      "january": "一月",
+      "february": "二月",
+      "march": "三月",
+      "april": "四月",
+      "may": "五月",
+      "june": "六月",
+      "july": "七月",
+      "august": "八月",
+      "september": "九月",
+      "october": "十月",
+      "november": "十一月",
+      "december": "十二月"
+    }
+  },
+    "photosUploader": {
+    "selectAll": "全选 ({{count}})",
+    "deselectAll": "取消选择",
+    "selected": "已选择 {{count}}",
+    "downloadSelected": "下载选中的 ({{count}})",
+    "downloadAll": "全部下载 ({{count}})",
+    "uploadingPhotos": "上传照片",
+    "selectCategory": "选择类别：",
+    "addBedroom": "添加卧室",
+    "bedroomNumber": "卧室 {{number}}",
+    "removeBedroom": "删除卧室",
+    "selectFiles": "选择文件",
+    "uploadingProgress": "上传 {{percent}}%",
+    "uploadInfoCreating": "照片将在保存房产后上传。最大文件大小：50MB",
+    "uploadInfo": "最大文件大小：50MB",
+    "photosForUpload": "待上传照片",
+    "photoCount": "{{count}} 张照片",
+    "willBeUploadedAfterSave": "保存后将上传",
+    "tempPhotoAlt": "临时 {{index}}",
+    "deletePhoto": "删除照片？",
+    "noPhotos": "无已上传照片",
+    "uploadPhotosInstruction": "选择上面的类别上传照片",
+    "primary": "主要",
+    "makePrimary": "设为主要",
+    "moveMultiplePhotos": "移动 {{count}} 张照片",
+    "moveToCategory": "移动到类别",
+    "changePosition": "更改位置",
+    "moveSelectedPhotosTitle": "将 {{count}} 张选中的照片移动到类别",
+    "movePhotoTitle": "将照片移动到类别",
+    "willBeMoved": "将移动 {{count}} 张选中的照片",
+    "changePositionTitle": "更改位置",
+    "change": "更改",
+    "enterNewPosition": "输入新位置：",
+    "position": "位置",
+    "photoAlt": "照片 {{id}}",
+    
+    "bedroomAdded": "卧室 {{number}} 已添加",
+    "removeBedroomConfirm": "卧室 {{number}} 中有 {{count}} 张照片。所有照片将被删除。",
+    "bedroomRemoved": "卧室 {{number}} 已删除",
+    "filesExceedSize": "某些文件超过 50MB：{{files}}",
+    "filesNotImages": "某些文件不是图像：{{files}}",
+    "photosAddedTemp": "已添加 {{count}} 张照片。它们将在保存房产后上传。",
+    "photosUploaded": "已上传 {{count}} 张照片",
+    "errorUploading": "上传照片时出错",
+    "photoDeleted": "照片已删除",
+    "errorDeleting": "删除时出错",
+    "primaryPhotoSet": "主照片已设置",
+    "error": "错误",
+    "photosMoved": "已移动 {{count}} 张照片",
+    "photoMoved": "照片已移动",
+    "errorMoving": "移动时出错",
+    "positionRange": "位置必须在 1 到 {{max}} 之间",
+    "positionChanged": "位置已更改",
+    "errorChangingPosition": "更改位置时出错",
+    "errorReordering": "更改顺序时出错",
+    "selectPhotosToDownload": "选择要下载的照片",
+    "photosDownloaded": "已下载 {{count}} 张照片",
+    "errorDownloading": "下载照片时出错",
+    "noPhotosToDownload": "无可下载的照片",
+    
+    "categories": {
+      "general": "一般照片",
+      "bedroom": "卧室",
+      "bathroom": "浴室",
+      "kitchen": "厨房",
+      "living": "客厅",
+      "exterior": "外观",
+      "pool": "游泳池",
+      "view": "景观"
+    }
+  },
+    "pricingModal": {
+    "monthsShort": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
+  },
+    "searchHistory": {
+    "title": "搜索历史",
+    "errorLoading": "加载历史时出错",
+    "recordDeleted": "记录已删除",
+    "errorDeleting": "删除记录时出错",
+    "propertiesLoaded": "已加载 {{count}} 个房产",
+    "errorLoadingResults": "加载结果时出错",
+    
+    "dealType": "交易类型",
+    "upTo": "最多 {{amount}} {{currency}}",
+    "flexibleSearch": "灵活搜索",
+    "nightsCount": "{{duration}} 晚",
+    
+    "aiSearch": "通过 AI 搜索",
+    "aiConfidence": "AI 置信度",
+    "deleteRecord": "删除此记录？",
+    "found": "找到",
+    "parameters": "参数",
+    "time": "时间",
+    "seconds": "秒",
+    "extractedParameters": "提取的参数：",
+    "viewResults": "查看结果 ({{count}})",
+    "hide": "隐藏",
+    "details": "详情",
+    
+    "formSearch": "通过表单搜索",
+    "searchParameters": "搜索参数：",
+    
+    "loadingHistory": "加载搜索历史...",
+    "historyEmpty": "搜索历史为空",
+    "performFirstSearch": "执行第一次搜索，它将出现在这里",
+    "totalRecords": "记录总数：{{total}}",
+    "refresh": "刷新",
+    "paginationInfo": "{{start}}-{{end}} 共 {{total}} 条记录"
+  },
+    "searchResults": {
+    "errorLoadingPeriods": "加载可用期间时出错",
+    "salePrice": "售价",
+    "priceOnRequest": "价格需询问",
+    "priceOnRequestDescription": "此房产的价格需要向经理询问",
+    "period": "期间",
+    "nightsCount_one": "晚",
+    "nightsCount_few": "晚",
+    "nightsCount_many": "晚",
+    "nightsCount_other": "晚",
+    "thbPerNight": "泰铢/晚",
+    "thbPerMonth": "泰铢/月",
+    "for": "为",
+    "pricingMethods": {
+      "seasonal": "季节性价格",
+      "monthly": "月租价格",
+      "yearly": "年度合同",
+      "combined": "组合价格"
+    },
+    "estimatedPriceYearly": "估计价格（年度合同）",
+    "noPrices": "未指定价格",
+    "noPricesDescription": "数据库中未填写此房产的价格数据",
+    "noCalendar": "房产缺少日历",
+    "noCalendarDescription": "房产显示为可用，但需要向经理确认占用情况",
+    "checkAvailability": "确认占用情况",
+    "photosCount": "{{count}} 张照片",
+    "metersToBeach": "米到海滩",
+    "bedrooms": "间卧室",
+    "bathrooms": "间浴室",
+    "sqm": "平方米",
+    "featuresMatch": "特点匹配：{{matched}}/{{total}}",
+    "missingFeatures": "缺少特点",
+    "andMore": "还有 {{count}} 个...",
+    "availablePeriods": "空闲期间（{{nights}} 晚）",
+    "viewDetails": "详情",
+    "foundProperties": "找到房产：{{count}}",
+    "viewAIResponse": "查看 AI 响应",
+    "executedIn": "执行时间 {{time}} 秒",
+    "availablePeriodsTitle": "可用期间",
+    "searchingPeriods": "搜索可用期间...",
+    "noPeriodsAvailable": "抱歉，指定夜数没有可用期间",
+    "foundPeriods": "找到 <strong>{{count}}</strong> 个可用期间。期间按价格排序（从便宜到贵）。",
+    "periodSelected": "期间：{{checkIn}} - {{checkOut}}",
+    "select": "选择",
+    "nightsTag": "{{nights}} 晚",
+    "total": "总计",
+    "showingFirst20": "显示前 20 个期间，共 {{total}} 个"
+  },
+    "seasonalPricing": {
+    "seasonTypes": {
+      "prime": "高峰季节",
+      "holiday": "假期季节"
+    },
+    "addAnotherSeason": "添加另一个季节",
+    "selectSeasonType": "选择季节类型",
+    "start": "开始",
+    "end": "结束",
+    "periodColumn": "期间",
+    "actionsColumn": "操作",
+    "seasonDetails": "季节详情",
+    "seasonType": "季节类型",
+    "period": "期间",
+    "pricingType": "定价类型",
+    "price": "价格",
+    "sourcePrice": "原价",
+    "minimumNights": "最少夜数"
+  },
+    "translationsEditor": {
+    "propertyNameInfo": "房产名称信息",
+    "propertyNameInfoDescription": "房产名称在 基本信息 选项卡中指定一次，并自动应用于所有语言。这里只编辑描述。",
+    "languages": {
+      "russian": "🇷🇺 俄语",
+      "english": "🇬🇧 英语",
+      "thai": "🇹🇭 泰语",
+      "chinese": "🇨🇳 中文",
+      "hebrew": "🇮🇱 希伯来语"
+    },
+    "placeholders": {
+      "ru": "俄语房产详细描述...",
+      "en": "英语房产详细描述...",
+      "th": "泰语房产详细描述...",
+      "zh": "中文房产详细描述...",
+      "he": "希伯来语房产详细描述..."
+    }
+  },
+    "utilitiesForm": {
+    "title": "公用事业",
+    "electricity": "电",
+    "water": "水",
+    "thbPerUnit": "（泰铢 / 每单位）",
+    "perUnit": "฿ 每单位",
+    "electricityPlaceholder": "例如：8.50",
+    "waterPlaceholder": "例如：18.00"
+  },
+    "videoUploader": {
+    "title": "视频",
+    "uploadVideo": "上传视频",
+    "invalidFiles": "某些文件不是视频：{{files}}",
+    "videosUploaded": "已上传 {{count}} 个视频",
+    "errorUploading": "上传视频时出错",
+    "uploadingProgress": "上传视频... {{percent}}%",
+    "noVideos": "未上传视频",
+    "supportedFormats": "支持的格式：MP4、MOV、AVI、WebM",
+    "maxSize": "最大大小：5 GB",
+    "downloadVideo": "下载视频",
+    "edit": "编辑",
+    "thumbnailAlt": "视频预览",
+    "noTitle": "无标题",
+    "noDescription": "无描述",
+    "editVideoTitle": "编辑视频",
+    "titleLabel": "标题",
+    "titlePlaceholder": "输入视频标题",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "输入视频描述",
+    "playingVideo": "播放视频",
+    "browserNotSupported": "您的浏览器不支持播放视频。",
+    "videoDownloading": "视频正在下载"
+  },
+    "vr": {
+    "editor": {
+      "title": "VR 全景",
+      "newPanorama": "新全景",
+      "locationType": "位置类型",
+      "locationNumber": "编号",
+      "uploadImages": "上传所有方向的图像",
+      "uploadHint": "需要上传 6 张图像（所有侧面）。最大文件大小：50MB",
+      "create": "创建全景",
+      "panoramasCount": "已上传全景 ({{count}})",
+      "imagesCount": "{{count}} 张图像",
+      "downloadDirection": "下载 {{direction}}"
+    },
+    "locations": {
+      "bedroom": "卧室",
+      "bathroom": "浴室",
+      "living_room": "客厅",
+      "kitchen": "厨房",
+      "pool": "游泳池",
+      "terrace": "露台",
+      "wardrobe": "衣帽间",
+      "gym": "健身房",
+      "sauna": "桑拿",
+      "balcony": "阳台",
+      "dining_room": "餐厅",
+      "office": "办公室",
+      "laundry": "洗衣房",
+      "garage": "车库",
+      "entrance": "入口"
+    },
+    "directions": {
+      "front": "前",
+      "back": "后",
+      "left": "左",
+      "right": "右",
+      "top": "上",
+      "bottom": "下"
+    },
+    "errors": {
+      "loadFailed": "加载全景时出错",
+      "fileTooLarge": "文件超过 50MB",
+      "invalidFileType": "文件必须是图像",
+      "fillAllFields": "需要上传所有 6 张图像",
+      "createFailed": "创建全景时出错",
+      "deleteFailed": "删除全景时出错"
+    },
+    "success": {
+      "created": "全景已成功创建",
+      "deleted": "全景已成功删除",
+      "imageDownloaded": "图像已下载"
+    },
+    "confirm": {
+      "delete": "删除此全景？"
+    }
+  },
+    "agreementPrint": {
+    "loading": "加载合同...",
+    "backToList": "返回合同列表",
+    "errors": {
+      "noToken": "访问令牌缺失",
+      "invalidToken": "访问令牌无效或已过期",
+      "notFound": "合同未找到",
+      "loadFailed": "加载合同时出错"
+    }
+  },
+    "agreementDetail": {
+    "title": "合同 {{number}}",
+    "tabs": {
+      "document": "文档",
+      "details": "详情",
+      "parties": "双方",
+      "signatures": "签名"
+    },
+    "statuses": {
+      "draft": "草稿",
+      "pendingSignatures": "等待签名",
+      "signed": "已签署",
+      "active": "活跃",
+      "expired": "已过期",
+      "cancelled": "已取消",
+      "waiting": "等待"
+    },
+    "types": {
+      "rent": "租赁",
+      "sale": "销售",
+      "bilateral": "双边",
+      "trilateral": "三边",
+      "agency": "代理",
+      "transferAct": "移交证书"
+    },
+    "deviceTypes": {
+      "mobile": "移动版本",
+      "desktop": "桌面版本"
+    },
+    "viewModes": {
+      "formatted": "格式化模式",
+      "simple": "简单模式"
+    },
+    "fields": {
+      "agreementNumber": "合同编号",
+      "type": "类型",
+      "status": "状态",
+      "property": "房产",
+      "description": "描述",
+      "city": "城市",
+      "dateFrom": "开始日期",
+      "dateTo": "结束日期",
+      "rentMonthly": "月租金",
+      "deposit": "押金",
+      "created": "创建时间",
+      "author": "作者",
+      "country": "国家",
+      "passport": "护照",
+      "signedCount": "已签署：{{signed}} / {{total}}"
+    },
+    "table": {
+      "signer": "签署人",
+      "status": "状态",
+      "device": "设备",
+      "ipAddress": "IP 地址",
+      "viewTime": "查看时间",
+      "actions": "操作"
+    },
+    "actions": {
+      "back": "返回",
+      "edit": "编辑",
+      "downloadPDF": "下载 PDF",
+      "print": "打印",
+      "link": "链接",
+      "notifyAgent": "通知代理",
+      "copy": "复制",
+      "copyLink": "复制链接",
+      "regenerateLink": "重新生成链接",
+      "manageSignatures": "管理签名",
+      "sendForSignature": "发送签署"
+    },
+    "signatureDetails": {
+      "title": "签名详细分析",
+      "sessionInfo": "会话信息",
+      "ipAddress": "IP 地址",
+      "device": "设备",
+      "browser": "浏览器",
+      "os": "操作系统",
+      "notDetermined": "未确定",
+      "timeMetrics": "时间指标",
+      "firstVisit": "第一次访问",
+      "notVisited": "未访问",
+      "viewDuration": "查看合同时间",
+      "totalDuration": "页面总时间",
+      "clearCount": "清除签名次数",
+      "timeFormat": "{{minutes}} 分 {{seconds}} 秒",
+      "seconds": "秒",
+      "signature": "签名",
+      "signatureLink": "签署链接"
+    },
+    "drawer": {
+      "title": "详细信息"
+    },
+    "messages": {
+      "noParties": "未指定双方",
+      "noSignatures": "未配置签名",
+      "noSignaturesHint": "点击 发送签署 创建签名"
+    },
+    "confirm": {
+      "deleteTitle": "删除合同？",
+      "deleteContent": "此操作无法撤销",
+      "cancelEditTitle": "取消编辑？",
+      "cancelEditContent": "未保存的更改将丢失",
+      "cancelEditOk": "是，取消",
+      "cancelEditCancel": "继续编辑",
+      "deleteSignatureTitle": "删除签名？"
+    },
+    "success": {
+      "agentNotified": "通知已发送给 Telegram 中的代理",
+      "deleted": "合同已成功删除",
+      "linkCopied": "链接已复制到剪贴板",
+      "pdfDownloaded": "PDF 下载成功",
+      "saved": "合同已成功保存",
+      "linkRegenerated": "链接已重新生成",
+      "signatureDeleted": "签名已删除"
+    },
+    "errors": {
+      "cannotNotify": "无法发送通知：合同未关联到申请",
+      "notificationFailed": "发送通知时出错",
+      "loadFailed": "加载合同时出错",
+      "deleteFailed": "删除合同时出错",
+      "pdfDownloadFailed": "下载 PDF 时出错",
+      "saveFailed": "保存合同时出错",
+      "regenerateFailed": "重新生成时出错"
+    }
+  },
+  "createTemplate": {
+    "actions": {
+      "backToList": "返回列表",
+      "saveChanges": "保存更改",
+      "createTemplate": "创建模板"
+    },
+    "fields": {
+      "templateName": "模板名称",
+      "agreementType": "合同类型",
+      "status": "状态",
+      "templateContent": "模板内容"
+    },
+    "placeholders": {
+      "templateName": "住宅租赁合同",
+      "selectType": "选择类型",
+      "templateContent": "输入合同文本。使用 {{variable_name}} 格式的变量来获取动态数据..."
+    },
+    "validation": {
+      "enterTemplateName": "输入模板名称",
+      "selectType": "选择类型"
+    },
+    "agreementTypes": {
+      "rent": "租赁",
+      "sale": "买卖",
+      "bilateral": "双边",
+      "trilateral": "三边",
+      "agency": "代理",
+      "transferAct": "接收-移交证书"
+    },
+    "status": {
+      "active": "活跃",
+      "inactive": "不活跃"
+    },
+    "variablesPanel": {
+      "title": "可用变量（点击插入）"
+    },
+    "hints": {
+      "useVariables": "使用上面的变量插入动态数据"
+    },
+    "messages": {
+      "dataLoaded": "模板数据已加载",
+      "loadError": "加载模板时出错",
+      "emptyContent": "模板内容不能为空",
+      "updated": "模板已成功更新",
+      "created": "模板已成功创建",
+      "saveError": "保存模板时出错",
+      "variableInserted": "变量 {{{{variable}}}} 已插入"
+    },
+    "variables": {
+      "contractNumber": "合同编号",
+      "agreementNumber": "合同编号（备选）",
+      "currentDate": "当前日期",
+      "city": "城市",
+      "dateFrom": "开始日期",
+      "dateTo": "结束日期",
+      "propertyName": "房产名称",
+      "propertyAddress": "房产地址",
+      "propertyNumber": "房产编号",
+      "rentAmount": "租金金额（月）",
+      "rentAmountMonthly": "租金金额（月）",
+      "rentAmountTotal": "总租金金额",
+      "depositAmount": "押金金额",
+      "utilitiesIncluded": "包含的服务",
+      "bankName": "银行名称",
+      "bankAccountName": "账户持有人",
+      "bankAccountNumber": "账号",
+      "landlordName": "房东姓名",
+      "landlordCountry": "国家（房东）",
+      "landlordPassport": "护照（房东）",
+      "landlordPassportNumber": "护照（房东，备选）",
+      "representativeName": "代表姓名",
+      "representativeCountry": "国家（代表）",
+      "representativePassport": "护照（代表）",
+      "representativePassportNumber": "护照（代表，备选）",
+      "tenantName": "租户姓名",
+      "tenantCountry": "国家（租户）",
+      "tenantPassport": "护照（租户）",
+      "tenantPassportNumber": "护照（租户，备选）",
+      "lessorName": "出租人姓名",
+      "lessorCountry": "国家（出租人）",
+      "lessorPassport": "护照（出租人）",
+      "lessorPassportNumber": "护照（出租人，备选）",
+      "agentName": "代理姓名",
+      "agentCountry": "国家（代理）",
+      "agentPassport": "护照（代理）",
+      "agentPassportNumber": "护照（代理，备选）",
+      "sellerName": "卖方姓名",
+      "sellerCountry": "国家（卖方）",
+      "sellerPassport": "护照（卖方）",
+      "sellerPassportNumber": "护照（卖方，备选）",
+      "buyerName": "买方姓名",
+      "buyerCountry": "国家（买方）",
+      "buyerPassport": "护照（买方）",
+      "buyerPassportNumber": "护照（买方，备选）",
+      "principalName": "委托人姓名",
+      "principalCountry": "国家（委托人）",
+      "principalPassport": "护照（委托人）",
+      "principalPassportNumber": "护照（委托人，备选）",
+      "witness1Name": "证人 1 姓名",
+      "witness1Country": "国家（证人 1）",
+      "witness1Passport": "护照（证人 1）",
+      "witness2Name": "证人 2 姓名",
+      "witness2Country": "国家（证人 2）",
+      "witness2Passport": "护照（证人 2）",
+      "witness3Name": "证人 3 姓名",
+      "witness3Country": "国家（证人 3）",
+      "witness3Passport": "护照（证人 3）",
+      "witness4Name": "证人 4 姓名",
+      "witness4Country": "国家（证人 4）",
+      "witness4Passport": "护照（证人 4）",
+      "witness5Name": "证人 5 姓名",
+      "witness5Country": "国家（证人 5）",
+      "witness5Passport": "护照（证人 5）",
+      "company1Name": "公司 1 名称",
+      "company1Address": "公司 1 地址",
+      "company1TaxId": "公司 1 税号",
+      "company1DirectorName": "公司 1 董事",
+      "company1DirectorPassport": "董事 1 护照",
+      "company1DirectorCountry": "董事 1 国家",
+      "company2Name": "公司 2 名称",
+      "company2Address": "公司 2 地址",
+      "company2TaxId": "公司 2 税号",
+      "company2DirectorName": "公司 2 董事",
+      "company2DirectorPassport": "董事 2 护照",
+      "company2DirectorCountry": "董事 2 国家",
+      "company3Name": "公司 3 名称",
+      "company3Address": "公司 3 地址",
+      "company3TaxId": "公司 3 税号",
+      "company3DirectorName": "公司 3 董事",
+      "company3DirectorPassport": "董事 3 护照",
+      "company3DirectorCountry": "董事 3 国家"
+    }
+  },
+    "templateDetail": {
+    "actions": {
+      "back": "返回",
+      "edit": "编辑",
+      "pdf": "PDF"
+    },
+    "types": {
+      "rent": "租赁",
+      "sale": "买卖",
+      "bilateral": "双边",
+      "trilateral": "三边",
+      "agency": "代理",
+      "transferAct": "移交证书"
+    },
+    "status": {
+      "active": "活跃",
+      "inactive": "不活跃"
+    },
+    "infoCard": {
+      "title": "模板信息"
+    },
+    "fields": {
+      "name": "名称",
+      "type": "类型",
+      "version": "版本",
+      "used": "使用次数",
+      "usedCount": "{{count}} 次",
+      "created": "创建时间",
+      "createdBy": "创建者"
+    },
+    "preview": {
+      "title": "预览"
+    },
+    "errors": {
+      "loadFailed": "加载模板时出错"
+    }
+  },
+    "botSettings": {
+    "title": "机器人管理",
+    "tabs": {
+      "accounts": "Telegram 账户",
+      "groups": "代理组",
+      "users": "机器人用户",
+      "adminChat": "管理员聊天"
+    },
+    "actions": {
+      "addAccount": "添加账户",
+      "createGroup": "创建组",
+      "addUser": "添加用户",
+      "sync": "同步",
+      "edit": "更改",
+      "configure": "配置",
+      "create": "创建",
+      "confirm": "确认"
+    },
+    "status": {
+      "active": "活跃",
+      "inactive": "不活跃",
+      "activeGroup": "活跃",
+      "inactiveGroup": "不活跃"
+    },
+    "roles": {
+      "manager": "经理",
+      "agent": "代理"
+    },
+    "tables": {
+      "actions": "操作",
+      "accounts": {
+        "name": "名称",
+        "phone": "电话",
+        "status": "状态",
+        "lastSync": "最后同步"
+      },
+      "groups": {
+        "name": "名称",
+        "chatId": "聊天 ID",
+        "description": "描述",
+        "members": "成员",
+        "status": "状态"
+      },
+      "users": {
+        "telegramId": "Telegram ID",
+        "username": "用户名",
+        "name": "姓名",
+        "role": "角色",
+        "status": "状态"
+      }
+    },
+    "fields": {
+      "accountName": "账户名称",
+      "phoneNumber": "电话号码",
+      "apiId": "API ID",
+      "apiHash": "API Hash",
+      "telegramCode": "来自 Telegram 的代码",
+      "password2FA": "2FA 密码",
+      "groupName": "组名称",
+      "chatId": "聊天 ID",
+      "description": "描述",
+      "active": "活跃",
+      "telegramId": "Telegram ID",
+      "username": "用户名",
+      "firstName": "名字",
+      "lastName": "姓氏",
+      "role": "角色",
+      "name": "名称",
+      "nameOptional": "名称（可选）"
+    },
+    "placeholders": {
+      "accountName": "例如：主账户",
+      "groupName": "例如：主要代理",
+      "groupDescription": "组描述",
+      "firstName": "名字",
+      "lastName": "姓氏",
+      "password2FA": "您的双因素认证密码",
+      "adminChatName": "管理员聊天 NOVA"
+    },
+    "validation": {
+      "enterName": "输入名称",
+      "enterPhone": "输入电话号码",
+      "enterApiId": "输入 API ID",
+      "enterApiHash": "输入 API Hash",
+      "enterCode": "输入代码",
+      "enterPassword": "输入密码",
+      "enterChatId": "输入聊天 ID",
+      "enterTelegramId": "输入 Telegram ID",
+      "selectRole": "选择角色"
+    },
+    "hints": {
+      "getApiCredentials": "在 https://my.telegram.org/apps 获取"
+    },
+    "alerts": {
+      "accounts": {
+        "title": "信息",
+        "description": "要通过机器人创建申请，需要添加至少一个活跃的 Telegram 账户。添加后点击 同步 进行授权。"
+      },
+      "groups": {
+        "title": "如何获取组聊天 ID？",
+        "description": "1. 将机器人添加到组<br />2. 在组中写任何消息<br />3. 使用特殊机器人（例如 @getidsbot）获取聊天 ID"
+      },
+      "users": {
+        "title": "信息",
+        "description": "只有此列表中的用户可以使用机器人。Telegram ID 可以通过 @userinfobot 获取"
+      },
+      "adminChat": {
+        "configured": "管理员聊天已配置",
+        "notConfigured": "管理员聊天未配置",
+        "notConfiguredDescription": "配置管理员聊天以接收有关申请操作的通知"
+      }
+    },
+    "modals": {
+      "addAccount": {
+        "title": "添加 Telegram 账户"
+      },
+      "auth": {
+        "title": "Telegram 账户授权",
+        "steps": {
+          "sendCode": "发送代码",
+          "enterCode": "输入代码",
+          "password2FA": "2FA 密码"
+        },
+        "codeSentTitle": "代码已发送",
+        "codeSentDescription": "授权代码已发送到 Telegram 号码 {{phone}}。在下面输入。"
+      },
+      "group": {
+        "createTitle": "创建组",
+        "editTitle": "编辑组"
+      },
+      "user": {
+        "addTitle": "添加用户",
+        "editTitle": "编辑用户"
+      },
+      "adminChat": {
+        "title": "配置管理员聊天"
+      }
+    },
+    "confirm": {
+      "deleteAccount": "删除账户？",
+      "deleteGroup": "删除组？",
+      "deleteUser": "删除用户？",
+      "cannotUndo": "此操作无法撤销"
+    },
+    "messages": {
+      "accountsLoadError": "加载账户时出错",
+      "accountCreateError": "创建账户时出错",
+      "codeSent": "代码已发送到 Telegram",
+      "authStartError": "启动授权时出错",
+      "passwordRequired": "需要双因素认证密码",
+      "accountAuthorized": "账户已成功授权！",
+      "authError": "授权错误",
+      "accountDeleted": "账户已删除",
+      "deleteError": "删除时出错",
+      "groupsLoadError": "加载组时出错",
+      "groupUpdated": "组已更新",
+      "groupCreated": "组已创建",
+      "groupSaveError": "保存组时出错",
+      "groupDeleted": "组已删除",
+      "usersLoadError": "加载用户时出错",
+      "userUpdated": "用户已更新",
+      "userCreated": "用户已创建",
+      "userSaveError": "保存用户时出错",
+      "userDeleted": "用户已删除",
+      "adminChatLoadError": "加载管理员聊天时出错",
+      "adminChatSet": "管理员聊天已设置",
+      "adminChatSetError": "设置管理员聊天时出错"
+    }
+  },
+    "signaturesModal": {
+    "title": "管理签名",
+    "table": {
+      "signer": "签署人",
+      "role": "角色",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "fields": {
+      "name": "姓名",
+      "visited": "已访问",
+      "signerName": "签署人姓名",
+      "role": "角色"
+    },
+    "placeholders": {
+      "selectRole": "选择角色",
+      "signerName": "伊万·伊万诺夫",
+      "customRole": "或输入自定义角色"
+    },
+    "status": {
+      "signed": "已签署",
+      "waiting": "等待"
+    },
+    "actions": {
+      "copy": "复制",
+      "edit": "编辑",
+      "update": "更新",
+      "notifyAgent": "通知代理",
+      "createSignatures": "创建签名",
+      "addAnotherSigner": "添加另一个签署人",
+      "done": "完成"
+    },
+    "tooltips": {
+      "copyLink": "复制链接",
+      "edit": "编辑",
+      "regenerate": "重新生成链接"
+    },
+    "cards": {
+      "existingSignatures": "现有签名",
+      "signedCount": "{{signed}} / {{total}} 已签署",
+      "addNewSigners": "添加新签署人",
+      "signerNumber": "签署人 {{number}}",
+      "signatureLinks": "签署链接"
+    },
+    "confirm": {
+      "regenerateTitle": "重新生成链接？",
+      "regenerateDescription": "旧链接将失效",
+      "deleteTitle": "删除签名？",
+      "deleteDescription": "此操作无法撤销"
+    },
+    "errors": {
+      "cannotNotify": "无法发送通知：缺少申请数据",
+      "notificationFailed": "发送通知时出错",
+      "duplicateRole": "为多个签署人指定了角色 {{role}}。每个角色必须是唯一的。",
+      "roleAlreadyExists": "角色 {{role}} 已在现有签名中使用。选择另一个角色。",
+      "fillAllFields": "填写所有签署人的姓名和角色",
+      "createFailed": "创建签名时出错",
+      "noDataToSave": "无可保存的数据",
+      "enterSignerName": "输入签署人姓名",
+      "selectRole": "选择角色",
+      "roleUsedByOther": "角色 {{role}} 已被另一个签署人使用。选择另一个角色。",
+      "updateFailed": "更新时出错",
+      "regenerateFailed": "重新生成时出错",
+      "deleteFailed": "删除时出错"
+    },
+    "messages": {
+      "agentNotified": "通知已发送给 Telegram 中的代理",
+      "signaturesCreated": "签名已成功创建",
+      "linkCopied": "链接已复制",
+      "signatureUpdated": "签名已成功更新",
+      "linkRegenerated": "链接已重新生成",
+      "signatureDeleted": "签名已删除"
+    }
+  },
+    "createAgreementModal": {
+    "title": "创建合同",
+    "titleWithRequest": "为申请 {{number}} 创建合同",
+    "steps": {
+      "template": "模板",
+      "details": "详情",
+      "parties": "双方",
+      "finance": "财务"
+    },
+    "sections": {
+      "property": "房产",
+      "documents": "文件（护照）- 可选",
+      "directorInfo": "董事信息",
+      "registrationDocs": "注册文件 - 可选",
+      "financialInfo": "财务信息",
+      "bankDetails": "银行详情"
+    },
+    "fields": {
+      "template": "合同模板",
+      "type": "类型",
+      "description": "描述",
+      "selectProperty": "选择房产或综合体",
+      "propertyNumber": "综合体 {{complex}} 中的房产编号",
+      "addressOverride": "房产地址（覆盖）",
+      "propertyName": "房产名称",
+      "propertyNumberManual": "房产编号",
+      "propertyAddress": "房产地址",
+      "dateFrom": "开始日期",
+      "dateTo": "结束日期",
+      "city": "城市",
+      "fullName": "全名",
+      "passportCountry": "护照国家",
+      "passportNumber": "护照号码",
+      "companyName": "公司名称",
+      "taxId": "税号",
+      "companyAddress": "公司地址",
+      "directorName": "董事姓名",
+      "directorCountry": "护照国家",
+      "directorPassport": "董事护照",
+      "rentMonthly": "租金金额（每月）",
+      "rentTotal": "总租金金额",
+      "deposit": "押金金额",
+      "utilitiesIncluded": "包含的服务",
+      "bankName": "银行名称",
+      "accountHolder": "账户持有人姓名",
+      "accountNumber": "账号"
+    },
+    "placeholders": {
+      "selectTemplate": "选择模板",
+      "startTyping": "开始输入名称...",
+      "selectPropertyNumber": "选择房产编号",
+      "addressOverride": "留空以使用数据库中的地址",
+      "propertyName": "落日别墅",
+      "propertyNumber": "PROP-001",
+      "propertyAddress": "123 海滩路，普吉岛",
+      "selectDate": "选择日期",
+      "city": "城市",
+      "description": "合同简要描述",
+      "fullName": "约翰·多",
+      "passportCountry": "俄罗斯",
+      "passportNumber": "AB1234567",
+      "companyName": "公司有限公司",
+      "taxId": "1234567890",
+      "companyAddress": "123 商业街",
+      "directorName": "约翰·史密斯",
+      "directorCountry": "泰国",
+      "directorPassport": "AB1234567",
+      "utilities": "园艺、泳池清洁、WiFi、电视",
+      "bankName": "曼谷银行",
+      "accountHolder": "约翰·多",
+      "accountNumber": "123-4-56789-0"
+    },
+    "propertyInput": {
+      "selectFromDatabase": "从数据库选择",
+      "enterManually": "手动输入"
+    },
+    "propertyGroups": {
+      "complexes": "🏢 综合体",
+      "standalone": "🏠 独立房产",
+      "property": "房产"
+    },
+    "propertySelected": "已选择房产 ID：{{id}}",
+    "templateDescription": "用于创建 {{type}} 类型合同的模板",
+    "partyTypes": {
+      "company": "公司",
+      "individual": "个人"
+    },
+    "roles": {
+      "tenant": "租户",
+      "lessor": "出租人",
+      "landlord": "房东",
+      "representative": "房东代表",
+      "principal": "委托人",
+      "agent": "代理",
+      "buyer": "买方",
+      "seller": "卖方",
+      "witness": "证人",
+      "company": "公司"
+    },
+    "agreementTypes": {
+      "rent": "租赁",
+      "sale": "买卖",
+      "bilateral": "双边",
+      "trilateral": "三边",
+      "agency": "代理",
+      "transfer_act": "接收-移交证书"
+    },
+    "buttons": {
+      "back": "返回",
+      "next": "下一步",
+      "create": "创建合同",
+      "addParty": "添加一方",
+      "uploadMore": "上传更多文件",
+      "uploadPassport": "上传护照照片",
+      "uploadCompanyDoc": "上传公司文件"
+    },
+    "uploading": "上传中...",
+    "documentAlt": "文件 {{number}}",
+    "requestAlert": {
+      "title": "来自申请的数据",
+      "request": "申请",
+      "client": "客户",
+      "rentalDates": "租赁日期",
+      "prefilled": "表单已用申请数据预填充。您可以编辑它们。"
+    },
+    "validation": {
+      "selectTemplate": "选择模板",
+      "fillAllParties": "填写双方的所有必填字段",
+      "selectPropertyNumber": "选择房产编号",
+      "enterName": "输入名称",
+      "enterNumber": "输入编号",
+      "enterAddress": "输入地址"
+    },
+    "messages": {
+      "requestDataLoaded": "申请数据已加载",
+      "requestLoadError": "加载申请数据时出错",
+      "templatesLoadError": "加载模板时出错",
+      "propertiesLoadError": "加载房产时出错",
+      "loadingRequest": "加载申请数据...",
+      "createdAndLinked": "合同已创建并关联到申请",
+      "createdNotLinked": "合同已创建，但未能关联到申请",
+      "created": "合同已成功创建",
+      "createError": "创建合同时出错"
+    }
+  },
+    "folderPermissionsModal": {
+    "title": "管理访问权限",
+    "table": {
+      "user": "用户",
+      "view": "查看",
+      "upload": "上传",
+      "download": "下载",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "buttons": {
+      "addUser": "添加用户",
+      "add": "添加"
+    },
+    "placeholders": {
+      "selectUser": "选择用户"
+    },
+    "confirm": {
+      "removeUser": "删除用户？"
+    },
+    "warnings": {
+      "selectUser": "选择用户",
+      "userAlreadyAdded": "用户已添加"
+    },
+    "errors": {
+      "loadPermissions": "加载访问权限时出错",
+      "loadUsers": "加载用户时出错",
+      "savePermissions": "保存访问权限时出错"
+    },
+    "messages": {
+      "saved": "访问权限已更新"
+    }
+  },
+    "filePreview": {
+    "videoNotSupported": "您的浏览器不支持视频。",
+    "previewNotAvailable": "此文件类型无法预览"
+  },
+    "fileManager": {
+    "title": "文件管理器",
+    "rootFolder": "根文件夹",
+    "emptyFolder": "文件夹为空",
+    "selected": "已选择 {{count}}",
+    "total": "总计 {{total}}",
+    "audioNotSupported": "您的浏览器不支持音频。",
+    "previewFallback": "如果预览不起作用，请下载文件查看",
+    "table": {
+      "folder": "文件夹",
+      "file": "文件",
+      "size": "大小",
+      "created": "创建时间",
+      "uploaded": "上传时间",
+      "author": "作者"
+    },
+    "actions": {
+      "info": "信息",
+      "preview": "预览",
+      "download": "下载",
+      "rename": "重命名",
+      "permissions": "访问权限"
+    },
+    "buttons": {
+      "downloadSelected": "下载选中项",
+      "deleteSelected": "删除选中项",
+      "clearSelection": "取消选择",
+      "createFolder": "创建文件夹",
+      "fromGoogleDrive": "从 Google Drive",
+      "uploadFromGoogleDrive": "从 Google Drive 上传",
+      "uploadFiles": "上传文件",
+      "create": "创建",
+      "upload": "上传",
+      "close": "关闭",
+      "rename": "重命名"
+    },
+    "tooltips": {
+      "downloadFolder": "下载文件夹",
+      "rename": "重命名",
+      "permissions": "访问权限",
+      "info": "信息",
+      "preview": "预览",
+      "download": "下载"
+    },
+    "drawer": {
+      "actions": "操作"
+    },
+    "modals": {
+      "createFolder": "创建文件夹",
+      "uploadFromGoogleDrive": "从 Google Drive 上传",
+      "fileInfo": "文件信息",
+      "rename": "重命名{{type}}"
+    },
+    "renameTypes": {
+      "file": "文件",
+      "folder": "文件夹"
+    },
+    "placeholders": {
+      "folderName": "文件夹名称",
+      "googleDriveUrl": "https://drive.google.com/drive/folders/...",
+      "newName": "新名称"
+    },
+    "googleDrive": {
+      "instruction": "粘贴 Google Drive 文件夹或文件的链接：",
+      "note": "注意：链接必须是公开的，或者您需要配置 Google API 密钥"
+    },
+    "fileInfo": {
+      "name": "名称",
+      "size": "大小",
+      "type": "类型",
+      "uploaded": "上传时间",
+      "author": "作者"
+    },
+    "confirm": {
+      "deleteFile": "删除文件？",
+      "deleteFolder": "删除文件夹？",
+      "deleteFolderDescription": "所有文件和子文件夹将被删除",
+      "deleteSelectedFiles": "删除选中的文件？",
+      "deleteSelectedFilesDescription": "将删除文件：{{count}}"
+    },
+    "loading": {
+      "pdf": "加载 PDF...",
+      "preparingArchive": "准备压缩包...",
+      "uploadingFiles": "上传文件..."
+    },
+    "validation": {
+      "enterFolderName": "输入文件夹名称",
+      "enterDriveLink": "输入 Google Drive 链接",
+      "enterNewName": "输入新名称"
+    },
+    "errors": {
+      "imageLoadError": "加载图像时出错",
+      "textLoadError": "加载文本时出错",
+      "pdfLoadError": "加载 PDF 时出错",
+      "loadContent": "加载内容时出错",
+      "createFolder": "创建文件夹时出错",
+      "uploadFiles": "上传文件时出错",
+      "downloadFile": "下载文件时出错",
+      "downloadFolder": "下载文件夹时出错",
+      "downloadFiles": "下载文件时出错",
+      "deleteFile": "删除文件时出错",
+      "deleteFolder": "删除文件夹时出错",
+      "deleteFiles": "删除文件时出错",
+      "driveImport": "从 Google Drive 导入时出错",
+      "rename": "重命名时出错"
+    },
+    "warnings": {
+      "selectFilesToDownload": "选择要下载的文件",
+      "selectFilesToDelete": "选择要删除的文件"
+    },
+    "messages": {
+      "folderCreated": "文件夹已创建",
+      "filesUploaded": "已上传文件：{{count}}",
+      "fileDownloaded": "文件已下载",
+      "folderDownloaded": "文件夹已下载",
+      "filesDownloaded": "文件已下载",
+      "fileDeleted": "文件已删除",
+      "folderDeleted": "文件夹已删除",
+      "filesDeleted": "已删除文件：{{count}}",
+      "driveImportStarted": "从 Google Drive 加载已开始...",
+      "uploadComplete": "加载完成！",
+      "renamed": "重命名成功"
+    }
+  },
+    "receiptDetail": {
+    "title": "收据",
+    "loading": "加载中...",
+    "notFound": "收据未找到",
+    "noFiles": "未上传文件",
+    "buttons": {
+      "backToList": "返回列表",
+      "back": "返回",
+      "edit": "编辑",
+      "copyLink": "复制链接",
+      "downloadPDF": "下载 PDF"
+    },
+    "statuses": {
+      "pending": "处理中",
+      "verified": "已验证",
+      "rejected": "已拒绝"
+    },
+    "paymentMethods": {
+      "bankTransfer": "银行转账",
+      "cash": "现金",
+      "crypto": "加密货币",
+      "barter": "易货"
+    },
+    "sections": {
+      "mainInfo": "基本信息",
+      "paidItems": "已付项目",
+      "paymentProofs": "付款证明",
+      "qrCode": "验证二维码",
+      "notes": "备注"
+    },
+    "fields": {
+      "amountPaid": "付款金额",
+      "paymentMethod": "付款方式",
+      "paymentDate": "付款日期",
+      "invoice": "发票",
+      "agreement": "合同",
+      "created": "创建时间"
+    },
+    "confirm": {
+      "deleteTitle": "删除收据？",
+      "deleteDescription": "此操作无法撤销。金额将从发票中扣除。"
+    },
+    "messages": {
+      "loadError": "加载收据时出错",
+      "deleted": "收据已成功删除",
+      "deleteError": "删除收据时出错",
+      "uuidNotFound": "收据 UUID 未找到",
+      "linkCopied": "链接已复制到剪贴板",
+      "linkCopyError": "复制链接时出错",
+      "generatingPDF": "生成 PDF...",
+      "pdfDownloaded": "PDF 下载成功",
+      "pdfDownloadError": "下载 PDF 时出错"
+    }
+  },
+    "invoiceDetail": {
+    "title": "发票",
+    "loading": "加载中...",
+    "notFound": "发票未找到",
+    "notSpecified": "未指定",
+    "buttons": {
+      "backToList": "返回列表",
+      "back": "返回",
+      "edit": "编辑",
+      "copyLink": "复制链接",
+      "downloadPDF": "下载 PDF"
+    },
+    "statuses": {
+      "draft": "草稿",
+      "sent": "已发送",
+      "partiallyPaid": "部分付款",
+      "paid": "已付款",
+      "overdue": "逾期",
+      "cancelled": "已取消"
+    },
+    "paymentMethods": {
+      "bank": "银行",
+      "cash": "现金",
+      "crypto": "加密货币",
+      "barter": "易货"
+    },
+    "receiptStatuses": {
+      "pending": "处理中",
+      "verified": "已验证",
+      "rejected": "已拒绝"
+    },
+    "stats": {
+      "totalAmount": "总金额",
+      "paid": "已付款",
+      "remaining": "剩余"
+    },
+    "sections": {
+      "mainInfo": "基本信息",
+      "from": "发件人",
+      "to": "收件人",
+      "items": "项目",
+      "bankDetails": "银行详情",
+      "qrCode": "验证二维码",
+      "paymentHistory": "付款历史",
+      "notes": "备注"
+    },
+    "fields": {
+      "invoiceDate": "发票日期",
+      "dueDate": "付款期限",
+      "agreement": "合同",
+      "created": "创建时间",
+      "company": "公司",
+      "taxId": "税号",
+      "address": "地址",
+      "director": "董事",
+      "fullName": "全名",
+      "country": "国家",
+      "passport": "护照",
+      "bank": "银行",
+      "accountHolder": "账户持有人",
+      "accountNumber": "账号"
+    },
+    "table": {
+      "items": {
+        "number": "№",
+        "description": "描述",
+        "quantity": "数量",
+        "price": "价格",
+        "total": "总计"
+      },
+      "receipts": {
+        "receiptNumber": "收据编号",
+        "date": "日期",
+        "amount": "金额",
+        "method": "方式",
+        "status": "状态"
+      }
+    },
+    "summary": {
+      "subtotal": "小计",
+      "tax": "税",
+      "total": "总计"
+    },
+    "confirm": {
+      "deleteTitle": "删除发票？",
+      "deleteDescription": "此操作无法撤销"
+    },
+    "messages": {
+      "loadError": "加载发票时出错",
+      "deleted": "发票已成功删除",
+      "deleteError": "删除发票时出错",
+      "uuidNotFound": "发票 UUID 未找到",
+      "linkCopied": "链接已复制到剪贴板",
+      "linkCopyError": "复制链接时出错",
+      "generatingPDF": "生成 PDF...",
+      "pdfDownloaded": "PDF 下载成功",
+      "pdfDownloadError": "下载 PDF 时出错"
+    }
+  },
+    "financialDocuments": {
+    "title": "财务文件",
+    "search": "搜索...",
+    "tabs": {
+      "invoices": "发票",
+      "receipts": "收据"
+    },
+    "stats": {
+      "totalInvoices": "发票总数",
+      "paidInvoices": "已付款",
+      "totalAmount": "总金额",
+      "amountReceived": "已收到"
+    },
+    "filters": {
+      "status": "状态",
+      "all": "全部"
+    },
+    "statuses": {
+      "draft": "草稿",
+      "sent": "已发送",
+      "partiallyPaid": "部分付款",
+      "paid": "已付款",
+      "overdue": "逾期",
+      "cancelled": "已取消",
+      "pending": "等待",
+      "verified": "已确认",
+      "rejected": "已拒绝"
+    },
+    "paymentMethods": {
+      "bankTransfer": "银行转账",
+      "cash": "现金",
+      "crypto": "加密货币",
+      "barter": "易货"
+    },
+    "buttons": {
+      "createInvoice": "创建发票",
+      "createReceipt": "创建收据"
+    },
+    "table": {
+      "invoices": {
+        "number": "编号",
+        "status": "状态",
+        "agreement": "合同",
+        "amount": "金额",
+        "paid": "已付款",
+        "date": "日期",
+        "actions": "操作"
+      },
+      "receipts": {
+        "number": "编号",
+        "status": "状态",
+        "invoice": "发票",
+        "amount": "金额",
+        "paymentMethod": "付款方式",
+        "date": "日期",
+        "actions": "操作"
+      }
+    },
+    "actions": {
+      "view": "查看",
+      "downloadPDF": "下载 PDF"
+    },
+    "messages": {
+      "invoicesLoadError": "加载发票时出错",
+      "receiptsLoadError": "加载收据时出错",
+      "pdfDownloaded": "PDF 已下载",
+      "pdfDownloadError": "下载 PDF 时出错",
+      "invoiceDeleted": "发票已删除",
+      "invoiceDeleteError": "删除发票时出错",
+      "receiptDeleted": "收据已删除",
+      "receiptDeleteError": "删除收据时出错"
+    }
+  },
+    "createInvoiceModal": {
+    "title": "创建发票",
+    "steps": {
+      "basic": "基本",
+      "parties": "双方",
+      "items": "项目",
+      "bank": "银行"
+    },
+    "sections": {
+      "from": "发件人",
+      "to": "收件人",
+      "director": "董事",
+      "bankDetails": "付款银行详情",
+      "summary": "总信息"
+    },
+    "fields": {
+      "agreement": "合同",
+      "invoiceDate": "发票日期",
+      "dueDate": "付款期限（可选）",
+      "notes": "备注",
+      "type": "类型",
+      "companyName": "公司名称 *",
+      "taxId": "税号 *",
+      "companyAddress": "公司地址",
+      "directorName": "董事姓名 *",
+      "passportCountry": "护照国家",
+      "directorPassport": "董事护照",
+      "fullName": "全名 *",
+      "country": "国家 *",
+      "passportNumber": "护照号码 *",
+      "tax": "税（如果有）",
+      "bankName": "银行名称",
+      "accountHolder": "账户持有人姓名",
+      "accountNumber": "账号"
+    },
+    "partyTypes": {
+      "company": "公司",
+      "individual": "个人"
+    },
+    "items": {
+      "position": "项目 {{number}}",
+      "quantity": "数量",
+      "price": "价格",
+      "total": "总计"
+    },
+    "totals": {
+      "subtotal": "小计",
+      "total": "总计"
+    },
+    "summary": {
+      "itemsCount": "项目数量",
+      "totalAmount": "总金额"
+    },
+    "buttons": {
+      "addItem": "添加项目",
+      "back": "返回",
+      "next": "下一步",
+      "create": "创建发票"
+    },
+    "placeholders": {
+      "selectAgreement": "选择合同（可选）",
+      "notes": "有关发票的附加信息",
+      "itemDescription": "服务或商品描述 *"
+    },
+    "validation": {
+      "selectAgreement": "选择合同",
+      "specifyDate": "指定日期",
+      "specifyName": "指定名称",
+      "specifyTaxId": "指定税号",
+      "specifyFullName": "指定全名",
+      "specifyCountry": "指定国家",
+      "specifyPassport": "指定护照",
+      "addAtLeastOneItem": "至少添加一个带有描述和价格的项目"
+    },
+    "messages": {
+      "agreementsLoadError": "加载合同时出错",
+      "agreementDataLoaded": "合同数据已加载。您可以编辑它们",
+      "agreementDataLoadError": "加载合同数据时出错",
+      "created": "发票已成功创建",
+      "createError": "创建发票时出错"
+    }
+  },
+    "createReceiptModal": {
+    "title": "创建付款收据",
+    "remaining": "剩余",
+    "selectAll": "全选",
+    "steps": {
+      "basic": "基本",
+      "files": "文件"
+    },
+    "sections": {
+      "selectItems": "选择要付款的项目",
+      "summary": "总信息"
+    },
+    "fields": {
+      "agreement": "合同",
+      "invoice": "发票",
+      "paymentDate": "付款日期",
+      "paymentAmount": "付款金额",
+      "paymentMethod": "付款方式",
+      "notes": "备注"
+    },
+    "paymentMethods": {
+      "bankTransfer": "银行转账",
+      "cash": "现金",
+      "crypto": "加密货币",
+      "barter": "易货"
+    },
+    "invoiceInfo": {
+      "title": "发票信息",
+      "totalAmount": "总金额",
+      "alreadyPaid": "已付款",
+      "remainingToPay": "剩余付款"
+    },
+    "fileUpload": {
+      "title": "上传付款证明",
+      "description": "上传付款的截图或照片。这是可选的，但将有助于验证付款。",
+      "uploadButton": "上传付款证明",
+      "uploadedMore": "已上传文件：{{count}}。上传更多"
+    },
+    "summary": {
+      "paymentAmount": "付款金额",
+      "paymentMethod": "付款方式",
+      "itemsPaid": "已付项目",
+      "filesAttached": "附加文件"
+    },
+    "buttons": {
+      "back": "返回",
+      "next": "下一步",
+      "create": "创建收据"
+    },
+    "placeholders": {
+      "selectAgreement": "选择合同",
+      "selectInvoice": "选择发票",
+      "selectMethod": "选择方式",
+      "notes": "有关付款的附加信息"
+    },
+    "validation": {
+      "selectAgreement": "选择合同",
+      "selectInvoice": "选择发票",
+      "specifyDate": "指定日期",
+      "specifyAmount": "指定金额",
+      "amountExceedsRemaining": "金额超过剩余付款",
+      "selectPaymentMethod": "选择付款方式",
+      "selectAtLeastOneItem": "至少选择一个要付款的项目"
+    },
+    "messages": {
+      "agreementsLoadError": "加载合同时出错",
+      "invoiceLoadError": "加载发票时出错",
+      "invoicesLoadError": "加载发票时出错",
+      "createdButFilesNotUploaded": "收据已创建，但并非所有文件都已上传",
+      "created": "收据已成功创建",
+      "createError": "创建收据时出错"
+    }
+  },
+    "editInvoiceModal": {
+    "title": "编辑发票",
+    "buttons": {
+      "save": "保存更改"
+    },
+    "messages": {
+      "agreementDataLoaded": "合同数据已加载",
+      "updated": "发票已成功更新",
+      "updateError": "更新发票时出错"
+    }
+  },
+    "editReceiptModal": {
+    "title": "编辑收据",
+    "sections": {
+      "paidItems": "已付项目"
+    },
+    "buttons": {
+      "save": "保存更改"
+    },
+    "placeholders": {
+      "receiptNotes": "有关收据的附加信息"
+    },
+    "messages": {
+      "invoiceItemsLoadError": "加载发票项目时出错",
+      "updated": "收据已成功更新",
+      "updateError": "更新收据时出错"
+    }
+  },
+    "receiptsList": {
+    "table": {
+      "number": "编号",
+      "status": "状态",
+      "invoice": "发票",
+      "amountPaid": "付款金额",
+      "paymentMethod": "付款方式",
+      "files": "文件",
+      "date": "日期",
+      "actions": "操作"
+    },
+    "statuses": {
+      "pending": "处理中",
+      "verified": "已验证",
+      "rejected": "已拒绝"
+    },
+    "actions": {
+      "view": "查看",
+      "copyLink": "复制链接",
+      "downloadPDF": "下载 PDF"
+    },
+    "pagination": {
+      "total": "总计：{{total}}"
+    },
+    "mobile": {
+      "loading": "加载中...",
+      "noReceipts": "收据未找到",
+      "method": "方式",
+      "invoice": "发票",
+      "filesCount": "{{count}} 个文件",
+      "open": "打开"
+    },
+    "confirm": {
+      "deleteTitle": "删除收据？",
+      "deleteDescription": "此操作无法撤销。金额将从发票中扣除。"
+    },
+    "messages": {
+      "deleted": "收据已成功删除",
+      "deleteError": "删除收据时出错",
+      "linkCopied": "链接已复制到剪贴板",
+      "linkCopyError": "复制链接时出错",
+      "generatingPDF": "生成 PDF...",
+      "pdfDownloaded": "PDF 下载成功",
+      "pdfDownloadError": "下载 PDF 时出错"
+    }
+  },
+  "requestsList": {
+    "title": "申请",
+    "client": "客户",
+    "agent": "代理",
+    "notAssigned": "未分配",
+    "screenshots": "截图",
+    "chat": "聊天",
+    "request": "申请",
+    "screenshot": "截图 {{number}}",
+    "upload": "上传",
+    "uploadDescription": "上传 WhatsApp 与客户的对话截图（最多 10 张）",
+    "table": {
+      "requestNumber": "申请编号",
+      "client": "客户",
+      "agent": "代理",
+      "status": "状态",
+      "firstMessage": "第一条消息",
+      "lastMessage": "最后一条消息",
+      "views": "查看次数",
+      "created": "创建时间",
+      "actions": "操作"
+    },
+    "statuses": {
+      "new": "新",
+      "inProgress": "进行中",
+      "rejected": "拒绝",
+      "completed": "完成",
+      "dealCreated": "合同已创建"
+    },
+    "tooltips": {
+      "createAgreement": "创建合同",
+      "chatHistory": "聊天历史",
+      "manageRequest": "管理申请"
+    },
+    "buttons": {
+      "createRequest": "创建申请",
+      "botManagement": "机器人管理"
+    },
+    "placeholders": {
+      "search": "按编号、姓名、电话搜索",
+      "allStatuses": "所有状态",
+      "clientName": "例如：伊万·伊万诺夫",
+      "phone": "例如：+7 900 123 45 67",
+      "selectAgentGroup": "选择代理组",
+      "note": "有关申请的附加信息"
+    },
+    "pagination": {
+      "total": "总计：{{total}}"
+    },
+    "modals": {
+      "createRequest": "创建申请",
+      "createWhatsAppRequest": "从 WhatsApp 创建申请"
+    },
+    "form": {
+      "clientName": "客户姓名",
+      "whatsappPhone": "WhatsApp 电话号码",
+      "agentGroup": "代理组",
+      "note": "备注",
+      "screenshots": "对话截图"
+    },
+    "validation": {
+      "enterClientName": "输入客户姓名",
+      "enterPhone": "输入电话号码"
+    },
+    "confirm": {
+      "deleteTitle": "确定吗？",
+      "deleteDescription": "此操作无法撤销"
+    },
+    "messages": {
+      "loadError": "加载申请时出错",
+      "deleted": "申请已删除",
+      "deleteError": "删除申请时出错",
+      "telegramInfo": "从 Telegram 创建申请可通过 Telegram 机器人进行",
+      "screenshotUploaded": "截图已上传",
+      "screenshotUploadError": "上传截图时出错",
+      "uploadAtLeastOneScreenshot": "至少上传一张对话截图",
+      "whatsappRequestCreated": "WhatsApp 申请已成功创建！",
+      "createError": "创建申请时出错"
+    },
+    "successModal": {
+      "title": "申请已创建",
+      "requestNumber": "申请编号",
+      "viewScreenshots": "查看截图",
+      "manageRequest": "管理申请"
+    }
+  },
+  "properties": {
+    "title": "房产",
+    "list": "房产列表",
+    "add": "添加房产",
+    "edit": "编辑房产",
+    "createSuccess": "房产已成功创建",
+    "updateSuccess": "房产已成功更新",
+    "deleteSuccess": "房产已成功删除",
+    "confirmDelete": "确定要删除此房产吗？",
+    "search": "按名称或编号搜索",
+    "searchButton": "搜索",
+    "noProperties": "无房产",
+    "loadingProperties": "加载房产...",
+    
+    "photo": "照片",
+    "propertyNumber": "房产编号",
+    "propertyName": "房产名称",
+    "name": "名称",
+    "dealType": "交易类型",
+    "propertyType": "房产类型",
+    "type": "类型",
+    "region": "地区",
+    "address": "地址",
+    "googleMapsLink": "Google 地图链接",
+    "latitude": "纬度",
+    "longitude": "经度",
+    "complexName": "综合体名称",
+    "complexNamePlaceholder": "例如：拉古娜村",
+    "complexInfo": "有关综合体的重要信息",
+    "complexInfoText": "综合体名称用于对房产进行分组。确保为同一综合体的所有房产指定完全相同的名称。",
+    "bedrooms": "卧室",
+    "bathrooms": "浴室",
+    "price": "价格",
+    "noOwnerInfo": "业主信息缺失",
+    "salePrice": "售价",
+    "rentPrice": "租金价格",
+    "indoorArea": "室内面积",
+    "outdoorArea": "室外面积",
+    "plotSize": "地块大小",
+    "floors": "楼层数",
+    "floor": "楼层",
+    "constructionYear": "建造年份",
+    "constructionMonth": "建造月份",
+    "furnitureStatus": "家具",
+    "parkingSpaces": "停车位",
+    "status": "状态",
+    "creator": "创建者",
+    "createdAt": "创建日期",
+    "updatedAt": "更新日期",
+    "ownerName": "业主姓名",
+    "ownerPhone": "业主电话",
+    "ownerEmail": "业主电子邮件",
+    "ownerTelegram": "业主 Telegram",
+    "ownerInstagram": "业主 Instagram",
+    "ownerNotes": "有关业主的备注",
+    "ownerInfo": "业主信息",
+    "ownership": "产权类型",
+    "buildingOwnership": "建筑产权",
+    "landOwnership": "土地产权",
+    "minimumNights": "最少夜数",
+    "petsAllowed": "允许宠物",
+    "icsCalendarUrl": "ICS 日历 URL",
+    "videoUrl": "视频 URL",
+    "coordinatesDetected": "坐标已确定",
+    "coordinatesError": "无法确定坐标",
+    "autoDetectCoordinates": "自动确定坐标",
+    "description": "描述",
+    "sale": "销售",
+    "rent": "租赁",
+    "published": "已发布",
+    "draft": "草稿",
+    "source": "来源",
+    "addedBy": "添加者",
+    "prices": "价格",
+
+    "form": {
+      "viewMode": "查看房产",
+      "editMode": "编辑房产",
+      "createMode": "创建房产",
+      "createWithAI": "使用 AI 创建",
+      "editButton": "编辑",
+      "saveButton": "保存",
+      "createButton": "创建",
+      "cancelButton": "取消",
+      
+      "propertyNameLabel": "房产名称",
+      "propertyNameTooltip": "此名称将用于所有语言。例如：'拉古娜村' 或 '海景别墅'",
+      "propertyNameExtra": "房产名称对所有语言相同",
+      "propertyNamePlaceholder": "例如：拉古娜村",
+      
+      "videoUrlLabel": "视频 URL（YouTube、Vimeo）",
+      "videoUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+      
+      "addressPlaceholder": "房产的确切地址",
+      "googleMapsPlaceholder": "https://maps.google.com/...",
+      "googleMapsWarning": "需要确定坐标",
+      
+      "floorPlaceholder": "1、2、3 或 1-2",
+      "constructionMonthPlaceholder": "月份",
+      
+      "months": {
+        "january": "一月",
+        "february": "二月",
+        "march": "三月",
+        "april": "四月",
+        "may": "五月",
+        "june": "六月",
+        "july": "七月",
+        "august": "八月",
+        "september": "九月",
+        "october": "十月",
+        "november": "十一月",
+        "december": "十二月"
+      },
+      
+      "furnitureStatuses": {
+        "fullyFurnished": "全装修",
+        "partiallyFurnished": "部分装修",
+        "unfurnished": "无家具",
+        "builtIn": "内置家具",
+        "empty": "空"
+      },
+      
+      "petsOptions": {
+        "yes": "允许",
+        "no": "不允许",
+        "negotiable": "可协商",
+        "custom": "特殊条件"
+      },
+      
+      "statusTooltip": "只有超级管理员才能更改状态",
+      
+      "ownerNotesPlaceholder": "有关业主的附加备注"
+    },
+
+    "messages": {
+      "noEditPermission": "您无权编辑此房产",
+      "propertyNameRequired": "必须在基本信息中填写房产名称",
+      "descriptionRequired": "要发布房产，必须至少用一种语言填写描述。使用 AI 生成器或手动填写。",
+      "fillRequiredFields": "请填写所有必填字段",
+      "coordinatesWarning": "输入 Google 地图链接",
+      "coordinatesDetected": "坐标已确定",
+      "coordinatesError": "确定坐标时出错",
+      "beachDistanceCalculated": "距海滩距离：{{distance}}（{{beach}}）",
+      "aiFillingForm": "用 AI 数据填充表单...",
+      "aiFormFilled": "表单已成功用 AI 数据填充！",
+      "aiCoordinatesDetecting": "自动确定坐标...",
+      "aiMonthlyPrices": "AI 确定了 {{count}} 个月的月租价格",
+      "aiBlockedDates": "AI 确定了 {{count}} 个阻止日期",
+      "aiGoogleDrivePhotos": "AI 在 Google Drive 中找到了照片链接",
+      "savedMonthlyPrices": "已保存 {{count}} 个月租价格",
+      "savedBlockedDates": "已保存 {{count}} 个阻止日期",
+      "googleDrivePhotosLoading": "正在从 Google Drive 加载照片...",
+      "aiFillError": "填充表单时出错",
+      "aiDescriptionsGenerated": "描述已成功生成！不要忘记保存更改。",
+      "aiFeaturesFound": "从照片中找到并添加了 {{count}} 个特点"
+    },
+
+    "ai": {
+      "modalTitle": "AI 已填充表单",
+      "modalDescription": "人工智能根据您的描述自动填充了表单字段。",
+      "modalWarning": "请在保存房产前检查所有数据的正确性！",
+      "modalCheckTitle": "特别注意：",
+      "modalCheckPrices": "价格（季节性和月租）- {{info}}",
+      "modalCheckCoordinates": "地图上的坐标",
+      "modalCheckFeatures": "房产特点",
+      "modalCheckOwner": "业主信息",
+      "modalCheckCalendar": "日历占用（{{count}} 个日期）",
+      "modalCheckPhotos": "来自 Google Drive 的照片（保存时将上传）",
+      "modalPricesNotSet": "未指定",
+      "modalPricesSet": "{{count}} 个月",
+      "modalOkButton": "明白了",
+      
+      "generatorAlert": "AI 生成描述",
+      "generatorAlertDescription": "创建房产后，您可以使用人工智能自动生成 5 种语言的描述。"
+    },
+
+    "distance": {
+      "title": "距海滩距离",
+      "label": "距离（米）",
+      "tooltip": "指定坐标时将自动计算",
+      "placeholder": "例如：500",
+      "autoCalculateAlert": "自动计算",
+      "autoCalculateDescription": "保存房产时将根据指定的坐标自动计算距海滩的距离",
+      "categories": {
+        "onBeach": "海滩边",
+        "nearBeach": "海滩旁（最多 500 米）",
+        "closeToBeach": "靠近海滩（最多 1 公里）",
+        "within2km": "2 公里内",
+        "within5km": "5 公里内",
+        "farFromBeach": "远离海滩"
+      }
+    },
+
+    "rental": {
+      "includedTitle": "租金中包含",
+      "includedLabel": "租金中包含什么",
+      "includedTooltip": "例如：每周 2 次泳池和草坪，互联网，有线电视",
+      "includedPlaceholder": "包含：每周 2 次泳池和草坪，互联网，有线电视，电和水"
+    },
+
+    "salePrice": {
+      "title": "售价"
+    },
+
+    "constantRentPrice": {
+      "title": "固定租金价格",
+      "yearPriceLabel": "年价格"
+    },
+
+    "dealTypes": {
+      "sale": "销售",
+      "rent": "租赁",
+      "both": "销售和租赁"
+    },
+
+    "propertyTypes": {
+      "villa": "别墅",
+      "apartment": "公寓",
+      "condo": "公寓",
+      "penthouse": "顶层公寓",
+      "house": "房屋",
+      "land": "土地"
+    },
+
+    "regions": {
+      "bangtao": "邦涛",
+      "kamala": "卡马拉",
+      "surin": "苏林",
+      "layan": "拉杨",
+      "rawai": "拉威",
+      "patong": "芭东",
+      "kata": "卡塔",
+      "karon": "卡伦",
+      "naiharn": "奈汉",
+      "maikhao": "迈考",
+      "yamu": "雅木",
+      "paklok": "帕克洛克"
+    },
+
+    "statuses": {
+      "draft": "草稿",
+      "published": "已发布",
+      "hidden": "已隐藏",
+      "archived": "存档"
+    },
+
+    "furnitureStatuses": {
+      "furnished": "有家具",
+      "unfurnished": "无家具",
+      "partially": "部分家具"
+    },
+
+    "ownershipTypes": {
+      "freehold": "永久产权",
+      "leasehold": "租赁产权",
+      "company": "公司"
+    },
+
+    "filters": {
+      "search": "按名称或编号搜索",
+      "byStatus": "按状态",
+      "byType": "按类型",
+      "byDealType": "按交易类型",
+      "byRegion": "按地区",
+      "clearAll": "清除全部"
+    },
+
+    "visibility": {
+      "publishSuccess": "房产已发布",
+      "hideSuccess": "房产已隐藏",
+      "showOnSite": "在网站上显示",
+      "hideFromSite": "从网站上隐藏",
+      "changeVisibility": "更改可见性"
+    },
+
+    "tabs": {
+      "basic": "基本信息",
+      "owner": "业主",
+      "translations": "描述",
+      "features": "特点",
+      "pricing": "定价",
+      "media": "媒体"
+    },
+
+    "translations": {
+      "title": "翻译和描述",
+      "namePlaceholder": "输入房产名称",
+      "descriptionPlaceholder": "输入房产的完整描述...",
+      "languageRequired": "必须至少填写一种语言"
+    },
+
+    "renovation": {
+      "title": "翻新",
+      "type": "翻新类型",
+      "date": "翻新日期",
+      "noRenovation": "无翻新",
+      "types": {
+        "full": "全面翻新",
+        "partial": "部分翻新"
+      }
+    },
+
+    "features": {
+      "title": "房产特点",
+      "propertyFeatures": "房产特点",
+      "outdoorFeatures": "外部特点",
+      "rentalFeatures": "租赁条件",
+      "locationFeatures": "位置",
+      "views": "景观",
+      
+      "mediaRoom": "媒体室",
+      "privateGym": "私人健身房",
+      "privateLift": "私人电梯",
+      "privateSauna": "私人桑拿",
+      "jacuzzi": "按摩浴缸",
+      "cornerUnit": "角落公寓",
+      "maidsQuarters": "佣人房",
+      "duplex": "复式",
+      "triplex": "三层",
+      "balcony": "阳台",
+      "westernKitchen": "西式厨房",
+      "thaiKitchen": "泰式厨房",
+      "openKitchen": "开放式厨房",
+      "closedKitchen": "封闭式厨房",
+      "bathtub": "浴缸",
+      "shower": "淋浴",
+      "separateShower": "独立淋浴",
+      "smartHome": "智能家居",
+      "privatePool": "私人泳池",
+      "sharedPool": "公共泳池",
+      "infinityPool": "无边泳池",
+      "kidPool": "儿童泳池",
+      "securitySystem": "安全系统",
+      "cctv": "视频监控",
+      "alarmSystem": "警报系统",
+      "airConditioning": "空调",
+      "centralAC": "中央空调",
+      "heating": "供暖",
+      "floorHeating": "地暖",
+      "fireplace": "壁炉",
+      "solarPanels": "太阳能电池板",
+      "waterHeater": "热水器",
+      "solarWaterHeater": "太阳能热水器",
+      "highCeiling": "高天花板",
+      "largeWindows": "大窗户",
+      "floorToFloorWindows": "落地窗",
+      "walkinCloset": "步入式衣帽间",
+      "builtinWardrobe": "内置衣柜",
+      "study": "书房",
+      "library": "图书馆",
+      "winecellar": "酒窖",
+      "elevator": "电梯",
+      "homeElevator": "家用电梯",
+      "furnished": "有家具",
+      "partiallyFurnished": "部分家具",
+      "fullyEquipped": "全装备",
+      "euroRenovation": "欧式装修",
+      "designerRenovation": "设计师装修",
+      "modernDesign": "现代设计",
+      "traditionalStyle": "传统风格",
+      "minimalist": "极简主义",
+      "luxury": "豪华",
+      "penthouseLevel": "顶层公寓级别",
+      "groundFloor": "一楼",
+      "topFloor": "顶楼",
+      "multiLevel": "多层",
+      "studio": "工作室",
+      "openPlan": "开放式布局",
+      "separateEntrance": "独立入口",
+      "privateEntrance": "私人入口",
+      "soundproofing": "隔音",
+      "waterFiltration": "水过滤",
+      "airPurifier": "空气净化器",
+      "intercom": "对讲机",
+      "videoIntercom": "视频对讲机",
+      "safebox": "保险箱",
+      "washer": "洗衣机",
+      "dryer": "烘干机",
+      "dishwasher": "洗碗机",
+      "refrigerator": "冰箱",
+      "microwave": "微波炉",
+      "oven": "烤箱",
+      "stove": "炉灶",
+      "gasStove": "燃气灶",
+      "electricStove": "电炉",
+      "inductionStove": "电磁炉",
+      "coffeemaker": "咖啡机",
+      "waterDispenser": "饮水机",
+      "tv": "电视",
+      "smartTV": "智能电视",
+      "wifi": "WiFi",
+      "highSpeedInternet": "高速互联网",
+      "fiberOptic": "光纤",
+      "telephone": "电话",
+      "satelliteTV": "卫星电视",
+      "surround": "环绕声",
+      "homeTheater": "家庭影院",
+      "musicSystem": "音乐系统",
+      "piano": "钢琴",
+      "gameRoom": "游戏室",
+      "billiardRoom": "台球室",
+      "kidsRoom": "儿童房",
+      "nursery": "婴儿房",
+      "guestRoom": "客房",
+      "serviceRoom": "服务房",
+      "utilityRoom": "杂物房",
+      "pantry": "食品储藏室",
+      "wetRoom": "湿室",
+      "powderRoom": "化妆室",
+      "ensuiteБathroom": "套间浴室",
+      "sharedBathroom": "公共浴室",
+      "outdoorBathroom": "户外浴室",
+      "steamRoom": "蒸汽室",
+      "hammam": "土耳其浴",
+      "massage": "按摩室",
+      "yogaRoom": "瑜伽室",
+      "meditationRoom": "冥想室",
+      "artStudio": "艺术工作室",
+      "workshop": "工作坊",
+      "petFriendly": "允许宠物",
+      "childFriendly": "适合儿童",
+      "wheelchair": "轮椅",
+      "disabledAccess": "无障碍通道",
+      "ramp": "坡道",
+      "emergencyExit": "紧急出口",
+      "fireExtinguisher": "灭火器",
+      "firstAidKit": "急救箱",
+      "smokeDetector": "烟雾探测器",
+      "carbonMonoxide": "一氧化碳探测器",
+      "generator": "发电机",
+      "ups": "不间断电源",
+      "waterTank": "水箱",
+      "waterPump": "水泵",
+      "septicTank": "化粪池",
+      "sewageSystem": "污水系统",
+      "drainageSystem": "排水系统",
+      "irrigationSystem": "灌溉系统",
+      "rainwaterCollection": "雨水收集",
+      "eco": "生态",
+      "energyEfficient": "节能",
+      "sustainable": "可持续",
+      "greenBuilding": "绿色建筑",
+      "leed": "LEED 认证",
+      "newConstruction": "新建",
+      "underConstruction": "建设中",
+      "readyToMove": "准备入住",
+      "offPlan": "按计划",
+      "resale": "转售",
+      
+      "garden": "花园",
+      "privateGarden": "私人花园",
+      "landscaped": "景观设计",
+      "tropicalGarden": "热带花园",
+      "japaneseGarden": "日式花园",
+      "vegetableGarden": "菜园",
+      "fruitTrees": "果树",
+      "flowerGarden": "花园",
+      "terrace": "露台",
+      "rooftop": "屋顶",
+      "rooftopTerrace": "屋顶露台",
+      "skyGarden": "空中花园",
+      "bbqArea": "烧烤区",
+      "outdoorKitchen": "户外厨房",
+      "outdoorShower": "户外淋浴",
+      "beachShower": "海滩淋浴",
+      "garage": "车库",
+      "carport": "车棚",
+      "coveredParking": "有盖停车场",
+      "openParking": "露天停车场",
+      "secureParking": "安全停车场",
+      "guestParking": "访客停车场",
+      "electricCarCharger": "电动汽车充电器",
+      "bikestorage": "自行车存放处",
+      "poolBar": "泳池酒吧",
+      "summerKitchen": "夏季厨房",
+      "outdoorDining": "户外用餐区",
+      "lounge": "休息区",
+      "sunbeds": "日光浴床",
+      "sunshade": "遮阳篷",
+      "pergola": "凉棚",
+      "gazebo": "凉亭",
+      "pavilion": "亭子",
+      "fountain": "喷泉",
+      "pond": "池塘",
+      "koiPond": "锦鲤池",
+      "waterfall": "瀑布",
+      "streambed": "溪流",
+      "playground": "游乐场",
+      "swingSet": "秋千",
+      "slide": "滑梯",
+      "sandbox": "沙坑",
+      "trampoline": "蹦床",
+      "petArea": "宠物区",
+      "dogRun": "遛狗区",
+      "petShower": "宠物淋浴",
+      "storageRoom": "储藏室",
+      "shed": "棚屋",
+      "greenhouse": "温室",
+      "laundryRoom": "洗衣房",
+      "dryingArea": "晾晒区",
+      "outdoorGym": "户外健身房",
+      "sportsArea": "运动区",
+      "tennisCourt": "网球场",
+      "basketballCourt": "篮球场",
+      "footballField": "足球场",
+      "volleyball": "排球场",
+      "badminton": "羽毛球场",
+      "puttingGreen": "高尔夫练习场",
+      "bocce": "滚球场",
+      "skatepark": "滑板公园",
+      "joggingTrack": "慢跑道",
+      "walkingPath": "步行道",
+      "cyclingPath": "自行车道",
+      "fishingPier": "钓鱼码头",
+      "boatDock": "船坞",
+      "marina": "码头",
+      "beachAccess": "海滩通道",
+      "privateBeach": "私人海滩",
+      "beachCabana": "海滩小屋",
+      "fence": "围栏",
+      "wall": "墙",
+      "gate": "大门",
+      "electricGate": "电动门",
+      "securityGate": "安全门",
+      "driveway": "车道",
+      "pavedDriveway": "铺装车道",
+      "gravelDriveway": "碎石车道",
+      "streetLighting": "街灯",
+      "gardenLighting": "花园照明",
+      "securityLighting": "安全照明",
+      "decorativeLighting": "装饰照明",
+      "sprinklerSystem": "洒水系统",
+      "automaticSprinklers": "自动洒水",
+      "drip": "滴灌",
+      "well": "井",
+      "borehole": "钻孔",
+      
+      "maidService": "女佣服务",
+      "dailyCleaning": "每日清洁",
+      "weeklyCleaning": "每周清洁",
+      "chefService": "厨师服务",
+      "privateChef": "私人厨师",
+      "cateringService": "餐饮服务",
+      "airportTransfer": "机场接送",
+      "carRental": "汽车租赁",
+      "driverService": "司机服务",
+      "breakfastIncluded": "含早餐",
+      "halfBoard": "半膳",
+      "fullBoard": "全膳",
+      "allInclusive": "全包",
+      "cleaning": "清洁",
+      "linenChange": "更换床单",
+      "towelChange": "更换毛巾",
+      "laundryService": "洗衣服务",
+      "dryClean": "干洗",
+      "ironing": "熨烫",
+      "utilitiesIncluded": "包含公用事业",
+      "electricityIncluded": "包含电",
+      "waterIncluded": "包含水",
+      "gasIncluded": "包含煤气",
+      "wifiIncluded": "包含 WiFi",
+      "internetIncluded": "包含互联网",
+      "cableTv": "有线电视",
+      "streamingServices": "流媒体服务",
+      "conciergeService": "礼宾服务",
+      "24hConcierge": "24/7 礼宾",
+      "securityGuard": "保安",
+      "24hSecurity": "24/7 保安",
+      "management": "管理",
+      "propertyManagement": "物业管理",
+      "maintenance": "维护",
+      "repairService": "维修服务",
+      "gardenMaintenance": "花园维护",
+      "poolMaintenance": "泳池维护",
+      "pestControl": "害虫控制",
+      "wasteDisposal": "垃圾处理",
+      "recycling": "回收",
+      "petCare": "宠物护理",
+      "petSitting": "宠物看护",
+      "dogWalking": "遛狗",
+      "babysitting": "保姆服务",
+      "childcare": "儿童看护",
+      "eldercare": "老年护理",
+      "medicalService": "医疗服务",
+      "nurseOnCall": "随叫随到的护士",
+      "doctorOnCall": "随叫随到的医生",
+      "ambulance": "救护车",
+      "pharmacy": "药房",
+      "grocery": "送货",
+      "shopping": "购物",
+      "delivery": "送货",
+      "courierService": "快递服务",
+      "mailHandling": "邮件处理",
+      "packageReceiving": "包裹接收",
+      "valetParking": "代客泊车",
+      "carWash": "洗车",
+      "carService": "汽车保养",
+      "bicycleRental": "自行车租赁",
+      "scooterRental": "摩托车租赁",
+      "boatRental": "船只租赁",
+      "kayakRental": "皮划艇租赁",
+      "snorkeling": "浮潜设备",
+      "divingEquipment": "潜水设备",
+      "fishing": "钓鱼",
+      "tourBooking": "旅游预订",
+      "ticketBooking": "门票预订",
+      "restaurantReservation": "餐厅预订",
+      "spaBooking": "水疗预订",
+      "massageService": "按摩服务",
+      "beautyService": "美容服务",
+      "hairSalon": "美发沙龙",
+      "nailSalon": "美甲沙龙",
+      "personalTrainer": "私人教练",
+      "yogaInstructor": "瑜伽教练",
+      "pilatesInstructor": "普拉提教练",
+      "tennisCoach": "网球教练",
+      "golfCoach": "高尔夫教练",
+      "swimInstructor": "游泳教练",
+      "surfingLessons": "冲浪课程",
+      "kitesurfing": "风筝冲浪",
+      "wakeboarding": "滑水",
+      "jetski": "水上摩托",
+      "parasailing": "滑翔伞",
+      "bananaBoat": "香蕉船",
+      "speedboat": "快艇",
+      "yachtCharter": "游艇租赁",
+      "helicopterService": "直升机服务",
+      "privatePlane": "私人飞机",
+      "limousineService": "豪华轿车服务",
+      "eventPlanning": "活动策划",
+      "partyPlanning": "派对策划",
+      "weddingPlanning": "婚礼策划",
+      "catering": "餐饮",
+      "florist": "花艺师",
+      "photographer": "摄影师",
+      "videographer": "摄像师",
+      "musician": "音乐家",
+      "dj": "DJ",
+      "entertainer": "娱乐人员",
+      "translation": "翻译服务",
+      "interpreter": "口译员",
+      "legalService": "法律服务",
+      "lawyer": "律师",
+      "notary": "公证人",
+      "accounting": "会计服务",
+      "taxService": "税务服务",
+      "insurance": "保险",
+      "visaAssistance": "签证协助",
+      "immigration": "移民服务",
+      "relocation": "搬迁服务",
+      "storage": "储存",
+      "furnitureRental": "家具租赁",
+      "applianceRental": "电器租赁",
+      "shortTermRental": "短期租赁",
+      "longTermRental": "长期租赁",
+      "monthlyRental": "月租",
+      "weeklyRental": "周租",
+      "dailyRental": "日租",
+      "flexibleCheckIn": "灵活入住",
+      "lateCheckOut": "延迟退房",
+      "earlyCheckIn": "提前入住",
+      "depositRequired": "需要押金",
+      "noDeposit": "无押金",
+      "creditCardRequired": "需要信用卡",
+      "cashPayment": "现金支付",
+      "bankTransfer": "银行转账",
+      "onlinePayment": "在线支付",
+      "installmentPlan": "分期付款",
+      "discountAvailable": "可优惠",
+      "seasonalDiscount": "季节性折扣",
+      "longStayDiscount": "长期住宿折扣",
+      "earlyBooking": "提前预订",
+      "lastMinute": "最后一刻",
+      "noSmoking": "禁止吸烟",
+      "smokingAllowed": "允许吸烟",
+      "noPets": "不允许宠物",
+      "noParties": "禁止派对",
+      "quietHours": "安静时间",
+      "noiseCurfew": "噪音宵禁",
+      "minimumAge": "最低年龄",
+      "adultsOnly": "仅成人",
+      "familyFriendly": "适合家庭",
+      "kidfriendly": "适合儿童",
+      "infantFriendly": "适合婴儿",
+      "teenagerFriendly": "适合青少年",
+      "studentDiscount": "学生折扣",
+      "seniorDiscount": "老年折扣",
+      "militaryDiscount": "军人折扣",
+      "corporateRate": "企业价",
+      "groupRate": "团体价",
+      
+      "beachFront": "海滩第一线",
+      "secondLine": "第二线",
+      "walkToBeach": "步行到海滩",
+      "beachDistance": "距海滩距离",
+      "oceanView": "海景",
+      "seaView": "海景",
+      "bayView": "海湾景",
+      "beachView": "海滩景",
+      "nearSchool": "靠近学校",
+      "nearInternationalSchool": "靠近国际学校",
+      "nearKindergarten": "靠近幼儿园",
+      "nearUniversity": "靠近大学",
+      "nearHospital": "靠近医院",
+      "nearClinic": "靠近诊所",
+      "nearPharmacy": "靠近药房",
+      "nearSupermarket": "靠近超市",
+      "nearConvenience": "靠近便利店",
+      "nearMarket": "靠近市场",
+      "nearMall": "靠近购物中心",
+      "nearShops": "靠近商店",
+      "nearRestaurant": "靠近餐厅",
+      "nearCafe": "靠近咖啡馆",
+      "nearBar": "靠近酒吧",
+      "nearNightlife": "靠近夜生活",
+      "nearGolfCourse": "靠近高尔夫球场",
+      "nearMarina": "靠近码头",
+      "nearYachtClub": "靠近游艇俱乐部",
+      "nearAirport": "靠近机场",
+      "nearBusStop": "靠近公交站",
+      "nearBusTerminal": "靠近汽车站",
+      "nearTaxiStand": "靠近出租车站",
+      "nearMetro": "靠近地铁",
+      "nearTrain": "靠近火车站",
+      "nearHighway": "靠近高速公路",
+      "nearMainRoad": "靠近主干道",
+      "nearBank": "靠近银行",
+      "nearAtm": "靠近 ATM",
+      "nearPostOffice": "靠近邮局",
+      "nearPolice": "靠近警察局",
+      "nearFireStation": "靠近消防站",
+      "nearEmbassy": "靠近大使馆",
+      "nearGovernment": "靠近政府机构",
+      "nearTemple": "靠近寺庙",
+      "nearMosque": "靠近清真寺",
+      "nearChurch": "靠近教堂",
+      "nearSynagogue": "靠近犹太教堂",
+"nearPark": "靠近公园",
+      "nearPlayground": "靠近游乐场",
+      "nearGarden": "靠近花园",
+      "nearForest": "靠近森林",
+      "nearMountain": "靠近山",
+      "nearLake": "靠近湖",
+      "nearRiver": "靠近河",
+      "nearWaterfall": "靠近瀑布",
+      "nearNationalPark": "靠近国家公园",
+      "nearNatureReserve": "靠近自然保护区",
+      "nearZoo": "靠近动物园",
+      "nearAquarium": "靠近水族馆",
+      "nearMuseum": "靠近博物馆",
+      "nearGallery": "靠近画廊",
+      "nearTheater": "靠近剧院",
+      "nearCinema": "靠近电影院",
+      "nearConcertHall": "靠近音乐厅",
+      "nearStadium": "靠近体育场",
+      "nearSportsCenter": "靠近体育中心",
+      "nearGym": "靠近健身房",
+      "nearFitness": "靠近健身中心",
+      "nearYoga": "靠近瑜伽工作室",
+      "nearSpa": "靠近水疗中心",
+      "nearWellness": "靠近康体中心",
+      "nearSalon": "靠近美容院",
+      "nearVet": "靠近兽医",
+      "nearPetShop": "靠近宠物店",
+      "nearLibrary": "靠近图书馆",
+      "nearBookstore": "靠近书店",
+      "nearTouristAttraction": "靠近旅游景点",
+      "nearLandmark": "靠近地标",
+      "nearViewpoint": "靠近观景点",
+      "nearDiveSite": "靠近潜水点",
+      "nearSurfSpot": "靠近冲浪点",
+      "nearSnorkeling": "靠近浮潜点",
+      "nearHiking": "靠近徒步路线",
+      "nearCycling": "靠近自行车道",
+      "nearJogging": "靠近慢跑道",
+      "nearTennisCourt": "靠近网球场",
+      "nearBasketball": "靠近篮球场",
+      "nearFootball": "靠近足球场",
+      "nearVolleyball": "靠近排球场",
+      "nearSkatepark": "靠近滑板公园",
+      "quietArea": "安静区域",
+      "peacefulLocation": "宁静的位置",
+      "residentialArea": "住宅区",
+      "commercialArea": "商业区",
+      "businessDistrict": "商务区",
+      "touristArea": "旅游区",
+      "localArea": "本地区",
+      "expatArea": "外籍人士区",
+      "internationalCommunity": "国际社区",
+      "gatedCommunity": "封闭式社区",
+      "secureComplex": "安全综合体",
+      "privateCommunity": "私人社区",
+      "luxuryDevelopment": "豪华开发项目",
+      "newDevelopment": "新开发项目",
+      "establishedArea": "成熟区域",
+      "upAndComing": "发展中区域",
+      "trendyArea": "时尚区域",
+      "historicDistrict": "历史街区",
+      "culturalQuarter": "文化区",
+      "artDistrict": "艺术区",
+      "entertainmentDistrict": "娱乐区",
+      "financialDistrict": "金融区",
+      "shoppingDistrict": "购物区",
+      "cityCentre": "市中心",
+      "cityCenter": "市中心",
+      "downtown": "市中心",
+      "midtown": "中城",
+      "uptown": "上城",
+      "suburb": "郊区",
+      "outskirts": "郊外",
+      "countryside": "乡村",
+      "rural": "农村",
+      "urban": "城市",
+      "metropolitan": "大都市",
+      "coastal": "沿海",
+      "inland": "内陆",
+      "hillside": "山坡",
+      "hilltop": "山顶",
+      "valley": "山谷",
+      "plateau": "高原",
+      "peninsula": "半岛",
+      "island": "岛屿",
+      "mainland": "大陆",
+      "waterfront": "滨水",
+      "riverside": "河边",
+      "lakeside": "湖边",
+      "mountainside": "山脚",
+      "forestEdge": "林边",
+      "parkside": "公园边",
+      "greenBelt": "绿带",
+      "openSpace": "开放空间",
+      "lowDensity": "低密度",
+      "highDensity": "高密度",
+      "walkable": "适合步行",
+      "bikeFriendly": "适合骑自行车",
+      "publicTransport": "公共交通",
+      "transitOriented": "交通导向",
+      "carDependent": "需要汽车",
+      "carFree": "无车",
+      "pedestrianZone": "步行区",
+      "lowTraffic": "低交通量",
+      "noThroughTraffic": "无过境交通",
+      "deadEnd": "死胡同",
+      "culDeSac": "回车道",
+      "mainStreet": "主街",
+      "sideStreet": "侧街",
+      "privateStreet": "私人街道",
+      "pavedRoad": "铺装道路",
+      "dirtRoad": "土路",
+      "streetParking": "街边停车",
+      "wellLit": "照明良好",
+      "darkAtNight": "夜间黑暗",
+      "safeArea": "安全区域",
+      "lowCrime": "低犯罪率",
+      "neighborhood": "社区",
+      "communitySpirit": "社区精神",
+      "familyOriented": "以家庭为导向",
+      "professionalArea": "专业区域",
+      "studentArea": "学生区",
+      "retirementCommunity": "退休社区",
+      "mixedUse": "混合用途",
+      "liveworkPlay": "生活-工作-娱乐",
+      "masterPlanned": "总体规划",
+      "smartCity": "智慧城市",
+      "ecoVillage": "生态村",
+      "sustainableCommunity": "可持续社区",
+      
+      "sunsetView": "日落景观",
+      "sunriseView": "日出景观",
+      "mountainView": "山景",
+      "hillView": "山丘景观",
+      "volcanoView": "火山景观",
+      "poolView": "泳池景观",
+      "gardenView": "花园景观",
+      "parkView": "公园景观",
+      "forestView": "森林景观",
+      "lakeView": "湖景",
+      "riverView": "河景",
+      "waterfallView": "瀑布景观",
+      "pondView": "池塘景观",
+      "cityView": "城市景观",
+      "skylineView": "天际线景观",
+      "panoramicView": "全景",
+      "unobstructedView": "无遮挡景观",
+      "180View": "180度景观",
+      "360View": "360度景观",
+      "rooftopView": "屋顶景观",
+      "balconyView": "阳台景观",
+      "terraceView": "露台景观",
+      "windowView": "窗景",
+      "floorToFloorView": "落地景观",
+      "elevatedView": "高处景观",
+      "groundLevelView": "地面景观",
+      "partialSeaView": "部分海景",
+      "glimpseOfSea": "海景一瞥",
+      "distantSeaView": "远海景观",
+      "obstructedView": "受阻景观",
+      "limitedView": "有限景观",
+      "noView": "无景观",
+      "interiorView": "内部景观",
+      "courtyardView": "庭院景观",
+      "atriumView": "中庭景观",
+      "lobbyView": "大堂景观",
+      "corridorView": "走廊景观",
+      "parkingView": "停车场景观",
+      "streetView": "街景",
+      "roadView": "道路景观",
+      "neighborView": "邻居景观",
+      "wallView": "墙景",
+      "buildingView": "建筑景观",
+      "roofView": "屋顶景观",
+      "antennaView": "天线景观",
+      "towerView": "塔楼景观",
+      "bridgeView": "桥景",
+      "monumentView": "纪念碑景观",
+      "templeView": "寺庙景观",
+      "palaceView": "宫殿景观",
+      "castleView": "城堡景观",
+      "stadiumView": "体育场景观",
+      "airportView": "机场景观",
+      "portView": "港口景观",
+      "marinaView": "码头景观",
+      "yachtView": "游艇景观",
+      "boatView": "船只景观",
+      "shipView": "船舶景观",
+      "islandView": "岛屿景观",
+      "horizonView": "地平线景观",
+      "skylightView": "天窗景观",
+      "clearView": "清晰景观",
+      "scenicView": "风景如画",
+      "spectacularView": "壮观景观",
+      "breathtakingView": "令人惊叹的景观",
+      "stunningView": "令人震撼的景观",
+      "magnificentView": "壮丽景观",
+      "beautifulView": "美丽景观",
+      "niceView": "不错的景观",
+      "pleasantView": "愉快的景观",
+      "averageView": "一般景观",
+      "poorView": "差的景观",
+      "privateView": "私密景观",
+      "sharedView": "共享景观",
+      "facingNorth": "朝北",
+      "facingSouth": "朝南",
+      "facingEast": "朝东",
+      "facingWest": "朝西",
+      "northeastView": "东北景观",
+      "northwestView": "西北景观",
+      "southeastView": "东南景观",
+      "southwestView": "西南景观"
+    },
+
+    "pricingOptions": {
+      "seasonal": "季节性定价",
+      "constant": "固定价格",
+      "constantPrice": "年租价格"
+    },
+
+    "pricing": {
+      "title": "价格",
+      "addPeriod": "添加期间",
+      "seasonType": "季节类型",
+      "period": "期间",
+      "seasonalPricing": "季节性定价",
+      "pricePerNight": "价格",
+      "noPricing": "未指定价格",
+      "sourcePricePerNight": "原价",
+      "minimumNights": "最少夜数",
+      "periodAdded": "期间已添加",
+      "periodDeleted": "期间已删除",
+      "periodUpdated": "期间已更新",
+      "salePrice": "售价",
+      "rentalPrices": "租金价格",
+      "seasonalDisclaimer": "有关季节性价格的重要信息",
+      "seasonalDisclaimerDescription": "价格指定为指定期间内每晚（天）的价格，除非选择 整个期间 选项",
+      
+      "pricingType": "定价类型",
+      "perNight": "每晚",
+      "perNightOption": "每晚价格",
+      "perNightHint": "价格指定为期间内每晚的价格",
+      "perPeriodOption": "整个期间的价格",
+      "perPeriodHint": "价格指定为整个期间的总价",
+      "forWholePeriod": "整个期间",
+      "totalPeriodPrice": "期间价格",
+      "seasonTypes": {
+        "high": "高峰季节",
+        "low": "淡季",
+        "peak": "旺季",
+        "mid": "中季",
+        "holiday": "假期",
+        "custom": "自定义"
+      }
+    },
+
+    "commission": {
+      "title": "佣金",
+      "saleCommission": "销售佣金",
+      "rentCommission": "租赁佣金",
+      "type": "佣金类型",
+      "value": "佣金值",
+      "types": {
+        "percentage": "百分比",
+        "title": "指定佣金类型和数字",
+        "fixed": "固定金额",
+        "monthlyRent": "佣金等于一个月租金"
+      }
+    },
+
+    "media": {
+      "title": "媒体",
+      "photos": "照片",
+      "floorPlan": "平面图",
+      "vrTour": "VR 游览",
+      "video": "视频",
+      "uploadPhotos": "上传照片",
+      "uploadFloorPlan": "上传平面图",
+      "uploadVideo": "上传视频",
+      "deletePhoto": "删除照片",
+      "deleteFloorPlan": "删除平面图",
+      "deleteVideo": "删除视频",
+      "setAsPrimary": "设为主要",
+      "primaryPhoto": "主照片",
+      "photoCategory": "照片类别",
+      "selectCategory": "选择类别",
+      "categories": {
+        "general": "一般",
+        "bedroom": "卧室",
+        "bathroom": "浴室",
+        "kitchen": "厨房",
+        "living": "客厅",
+        "exterior": "外观",
+        "pool": "游泳池",
+        "view": "景观"
+      }
+    },
+
+    "calendar": {
+      "title": "占用日历",
+      "button": "日历",
+      "blocked": "已阻止",
+      "booked": "已预订",
+      "available": "可用",
+      "today": "今天",
+      "blockedDay": "已占用",
+      "noSync": "无日历同步",
+      "noSyncDescription": "此房产未配置占用日历",
+      "syncCalendar": "同步日历",
+      "blockDates": "阻止日期",
+      "unblockDates": "解除阻止日期"
+    }
+  },
+
+  "vr": {
+    "title": "360° 虚拟游览",
+    "editor": {
+      "title": "360° 虚拟游览",
+      "panoramasCount": "{{count}} 个全景",
+      "newPanorama": "新 VR 全景",
+      "locationType": "位置类型",
+      "locationNumber": "房间编号",
+      "selectLocation": "选择位置...",
+      "uploadImages": "上传 6 张图像",
+      "uploadHint": "每个全景需要 6 张图像：前、后、左、右、上和下。每张图像最大 50MB。",
+      "uploading": "上传中...",
+      "create": "创建全景",
+      "imagesCount": "{{count}} 张图像",
+      "deleteConfirm": "删除此 VR 全景？"
+    },
+    
+    "locations": {
+      "bedroom": "卧室",
+      "bathroom": "浴室",
+      "living_room": "客厅",
+      "kitchen": "厨房",
+      "pool": "游泳池",
+      "terrace": "露台",
+      "wardrobe": "衣帽间",
+      "gym": "健身房",
+      "sauna": "桑拿",
+      "balcony": "阳台",
+      "dining_room": "餐厅",
+      "office": "办公室",
+      "laundry": "洗衣房",
+      "garage": "车库",
+      "entrance": "入口"
+    },
+    
+    "directions": {
+      "front": "前",
+      "back": "后",
+      "left": "左",
+      "right": "右",
+      "top": "上",
+      "bottom": "下"
+    },
+    
+    "errors": {
+      "loadFailed": "加载 VR 全景失败",
+      "invalidFileType": "只允许图像文件",
+      "fileTooLarge": "文件大小不得超过 50MB",
+      "fillAllFields": "填写所有必填字段并上传所有 6 张图像",
+      "createFailed": "创建 VR 全景失败",
+      "deleteFailed": "删除 VR 全景失败"
+    },
+    
+    "success": {
+      "created": "VR 全景创建成功",
+      "deleted": "VR 全景删除成功"
+    },
+    
+    "confirm": {
+      "delete": "确定要删除此 VR 全景吗？"
+    }
+  },
+
+  "users": {
+    "title": "用户",
+    "list": "用户列表",
+    "add": "添加用户",
+    "edit": "编辑用户",
+    "createSuccess": "用户创建成功",
+    "updateSuccess": "用户更新成功",
+    "deleteSuccess": "用户删除成功",
+    "confirmDelete": "确定要删除此用户吗？",
+    "onlyAdminCanCreate": "只有超级管理员可以创建用户",
+    "search": "按用户名搜索",
+    "noRoles": "无角色",
+    "noUsers": "无用户",
+    
+    "username": "用户名",
+    "fullName": "全名",
+    "email": "电子邮件",
+    "password": "密码",
+    "newPassword": "新密码（留空不更改）",
+    "confirmPassword": "确认密码",
+    "roles": "角色",
+    "selectRoles": "选择角色",
+    "isActive": "活跃",
+    "active": "活跃",
+    "inactive": "不活跃",
+    "status": "状态",
+    "lastLogin": "最后登录",
+    "createdAt": "创建日期",
+    "updatedAt": "更新日期"
+  },
+
+  "roles": {
+    "title": "角色",
+    "list": "角色列表",
+    "add": "添加角色",
+    "edit": "编辑角色",
+    "createSuccess": "角色创建成功",
+    "updateSuccess": "角色更新成功",
+    "deleteSuccess": "角色删除成功",
+    "confirmDelete": "确定要删除此角色吗？",
+    "cannotDeleteWithUsers": "无法删除已分配用户的角色",
+    "noRoles": "无角色",
+    
+    "roleName": "角色名称",
+    "description": "描述",
+    "permissions": "权限",
+    "usersCount": "用户",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    
+    "modules": {
+      "properties": "房产",
+      "users": "用户",
+      "roles": "角色",
+      "settings": "设置"
+    },
+    
+    "permissionsList": {
+      "properties.create": "创建房产",
+      "properties.read": "查看房产",
+      "properties.update": "编辑房产",
+      "properties.delete": "删除房产",
+      "properties.visibility": "管理可见性",
+      "users.create": "创建用户",
+      "users.read": "查看用户",
+      "users.update": "编辑用户",
+      "users.delete": "删除用户",
+      "roles.create": "创建角色",
+      "roles.read": "查看角色",
+      "roles.update": "编辑角色",
+      "roles.delete": "删除角色"
+    }
+  },
+
+  "notifications": {
+    "title": "通知",
+    "markAsRead": "标记为已读",
+    "markAllAsRead": "全部标记为已读",
+    "noNotifications": "无通知",
+    "new": "新",
+    "viewAll": "查看全部"
+  },
+
+  "settings": {
+    "title": "设置",
+    "general": "一般",
+    "profile": "个人资料",
+    "security": "安全",
+    "appearance": "外观",
+    "language": "语言",
+    "theme": "主题",
+    "light": "浅色",
+    "dark": "深色",
+    "saveSuccess": "设置已保存"
+  }
+}

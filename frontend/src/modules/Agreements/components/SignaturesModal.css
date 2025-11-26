@@ -1,0 +1,200 @@
+/* frontend/src/modules/Agreements/components/SignaturesModal.css */
+
+/* ========== Dark Theme Styles ========== */
+.signatures-modal-dark .ant-modal-content {
+  background: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-modal-header {
+  background: #1f1f1f;
+  border-bottom-color: #303030;
+}
+
+.signatures-modal-dark .ant-modal-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-modal-close {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.signatures-modal-dark .ant-card {
+  background: #141414;
+  border-color: #303030;
+}
+
+.signatures-modal-dark .ant-card-head {
+  background: #1f1f1f;
+  border-bottom-color: #303030;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-card-head-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-input,
+.signatures-modal-dark .ant-select-selector {
+  background: #141414 !important;
+  border-color: #303030 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.signatures-modal-dark .ant-input::placeholder,
+.signatures-modal-dark .ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.signatures-modal-dark .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.signatures-modal-dark .ant-table {
+  background: #141414;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-table-thead > tr > th {
+  background: #1f1f1f;
+  border-bottom-color: #303030;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-table-tbody > tr > td {
+  border-bottom-color: #303030;
+}
+
+.signatures-modal-dark .ant-table-tbody > tr:hover > td {
+  background: #262626;
+}
+
+.signatures-modal-dark .ant-typography {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.signatures-modal-dark .ant-typography-secondary {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ========== Desktop View ========== */
+.signatures-desktop-table {
+  display: block;
+}
+
+.signatures-mobile-cards {
+  display: none;
+}
+
+/* ========== Mobile Responsive ========== */
+@media (max-width: 768px) {
+  /* Скрываем таблицу на мобильных */
+  .signatures-desktop-table {
+    display: none;
+  }
+
+  /* Показываем карточки на мобильных */
+  .signatures-mobile-cards {
+    display: block;
+  }
+
+  /* Стили для мобильных карточек */
+  .signature-mobile-card {
+    margin-bottom: 12px;
+    border: 1px solid #303030;
+    background: #141414;
+  }
+
+  .signature-mobile-card .ant-card-body {
+    padding: 12px;
+  }
+
+  .signature-mobile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #303030;
+  }
+
+  .signature-mobile-info {
+    flex: 1;
+  }
+
+  .signature-mobile-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 4px;
+  }
+
+  .signature-mobile-role {
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  .signature-mobile-visit {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 4px;
+  }
+
+  .signature-mobile-status {
+    display: flex;
+    align-items: center;
+  }
+
+  .signature-mobile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .signature-mobile-actions .ant-btn {
+    flex: 1;
+    min-width: calc(50% - 4px);
+  }
+
+  /* Уменьшаем модальное окно на мобильных */
+  .signatures-modal-dark.ant-modal {
+    max-width: 100vw !important;
+    margin: 0 !important;
+    top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .signatures-modal-dark .ant-modal-content {
+    border-radius: 0;
+  }
+
+  .signatures-modal-dark .ant-modal-body {
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .signature-mobile-card .ant-card-body {
+    padding: 8px;
+  }
+
+  .signature-mobile-header {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+
+  .signature-mobile-name {
+    font-size: 13px;
+  }
+
+  .signature-mobile-actions {
+    gap: 6px;
+  }
+
+  .signature-mobile-actions .ant-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    height: auto;
+  }
+}

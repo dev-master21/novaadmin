@@ -1,0 +1,415 @@
+/* frontend/src/modules/Properties/components/AIResponseViewer.css */
+
+/* Основной контейнер модального окна */
+.ai-response-viewer-modal .ant-modal-body {
+  padding: 24px !important;
+  background: #fafafa !important;
+}
+
+/* Темная тема для модального окна */
+.ai-response-viewer-modal .ant-modal-content {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-modal-header {
+  background: #1f1f1f !important;
+  border-bottom: 1px solid #434343 !important;
+}
+
+.ai-response-viewer-modal .ant-modal-title {
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-modal-close {
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-modal-close:hover {
+  color: #1890ff !important;
+}
+
+/* Табы */
+.ai-response-viewer-modal .ant-tabs {
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-nav {
+  background: transparent !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-tab {
+  font-weight: 500 !important;
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-tab:hover {
+  color: #1890ff !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-tab-active {
+  color: #1890ff !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #1890ff !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-ink-bar {
+  background: #1890ff !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-content {
+  color: #ffffff !important;
+}
+
+/* Основной контент */
+.ai-interpretation-viewer {
+  padding: 16px !important;
+  background: #262626 !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+}
+
+/* Блок уверенности */
+.confidence-block {
+  padding: 16px !important;
+  background: #0d3a52 !important;
+  border-left: 4px solid #1890ff !important;
+  border-radius: 6px !important;
+  margin-bottom: 20px !important;
+  color: #ffffff !important;
+}
+
+.confidence-block .ant-space-item {
+  color: #ffffff !important;
+}
+
+/* Блок объяснения */
+.reasoning-block {
+  margin-bottom: 20px !important;
+}
+
+.reasoning-block .ant-typography {
+  color: #ffffff !important;
+}
+
+.reasoning-block p {
+  background: #2b2b2b !important;
+  color: #ffffff !important;
+  padding: 12px !important;
+  border-radius: 6px !important;
+}
+
+/* Заголовки */
+.ai-response-viewer-modal .ant-typography h5,
+.ai-response-viewer-modal .ant-typography-h5 {
+  color: #ffffff !important;
+  margin-bottom: 12px !important;
+}
+
+/* Параграфы и текст */
+.ai-response-viewer-modal .ant-typography,
+.ai-response-viewer-modal p,
+.ai-response-viewer-modal span,
+.ai-response-viewer-modal div {
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-typography-secondary {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Descriptions (таблица параметров) */
+.ai-interpretation-viewer .ant-descriptions {
+  margin-top: 20px !important;
+}
+
+.ai-interpretation-viewer .ant-descriptions-item-label {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  width: 200px !important;
+  border: 1px solid #434343 !important;
+}
+
+.ai-interpretation-viewer .ant-descriptions-item-content {
+  background: #262626 !important;
+  color: #ffffff !important;
+  border: 1px solid #434343 !important;
+}
+
+.ai-interpretation-viewer .ant-descriptions-header {
+  margin-bottom: 16px !important;
+}
+
+.ai-interpretation-viewer .ant-descriptions-title {
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+.ai-interpretation-viewer .ant-descriptions-view {
+  border: 1px solid #434343 !important;
+  background: #262626 !important;
+}
+
+/* Tags */
+.ai-response-viewer-modal .ant-tag {
+  border: 1px solid #434343 !important;
+}
+
+/* Темная тема для JSON блоков */
+.ai-response-viewer-modal pre {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  padding: 16px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+  overflow-x: auto !important;
+  border: 1px solid #434343 !important;
+}
+
+/* Space компоненты */
+.ai-response-viewer-modal .ant-space {
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-space-item {
+  color: #ffffff !important;
+}
+
+/* Divider */
+.ai-response-viewer-modal .ant-divider {
+  border-color: #434343 !important;
+}
+
+/* Empty state */
+.ai-response-viewer-modal .ant-empty-description {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Spin (загрузка) */
+.ai-response-viewer-modal .ant-spin {
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-spin-text {
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-spin-dot-item {
+  background-color: #1890ff !important;
+}
+
+/* Buttons */
+.ai-response-viewer-modal .ant-btn {
+  color: #ffffff !important;
+  border-color: #434343 !important;
+}
+
+.ai-response-viewer-modal .ant-btn:hover {
+  color: #1890ff !important;
+  border-color: #1890ff !important;
+}
+
+/* Специфичные стили для блоков контента */
+.ai-response-viewer-modal .ant-space > .ant-space-item > div {
+  color: #ffffff !important;
+}
+
+/* Скроллбар для темной темы */
+.ai-response-viewer-modal .ant-tabs-content::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-content::-webkit-scrollbar-track {
+  background: #1f1f1f !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-content::-webkit-scrollbar-thumb {
+  background: #434343 !important;
+  border-radius: 4px !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-content::-webkit-scrollbar-thumb:hover {
+  background: #595959 !important;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .ai-response-viewer-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .ai-interpretation-viewer .ant-descriptions-item-label {
+    width: 120px !important;
+  }
+  
+  .ai-response-viewer-modal .ant-modal-body {
+    padding: 16px !important;
+  }
+}
+
+/* Дополнительные исправления для вложенных элементов */
+.ai-response-viewer-modal * {
+  color: inherit !important;
+}
+
+.ai-response-viewer-modal .ant-descriptions-row > th,
+.ai-response-viewer-modal .ant-descriptions-row > td {
+  color: #ffffff !important;
+}
+
+/* Иконки */
+.ai-response-viewer-modal .anticon {
+  color: inherit !important;
+}
+
+/* Alert компоненты если есть */
+.ai-response-viewer-modal .ant-alert {
+  background: #262626 !important;
+  border: 1px solid #434343 !important;
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-alert-message {
+  color: #ffffff !important;
+}
+
+.ai-response-viewer-modal .ant-alert-description {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+/* ✅ ИСПРАВЛЕНИЕ БЕЛОГО ФОНА - ФИНАЛЬНАЯ ВЕРСИЯ */
+
+/* Основной контейнер модального окна */
+.ai-response-viewer-modal {
+  background: #1f1f1f !important;
+}
+
+/* Тело модального окна */
+.ai-response-viewer-modal .ant-modal-body {
+  background: #1f1f1f !important;
+  padding: 0 !important;
+}
+
+/* Контейнер табов */
+.ai-response-viewer-modal .ant-tabs {
+  background: #1f1f1f !important;
+}
+
+/* Навигация табов */
+.ai-response-viewer-modal .ant-tabs-nav {
+  background: #1f1f1f !important;
+  margin: 0 !important;
+}
+
+/* Контент табов */
+.ai-response-viewer-modal .ant-tabs-content {
+  background: #1f1f1f !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-content-holder {
+  background: #1f1f1f !important;
+}
+
+.ai-response-viewer-modal .ant-tabs-tabpane {
+  background: #1f1f1f !important;
+  padding: 20px 24px !important;
+}
+
+/* Активная панель */
+.ai-response-viewer-modal .ant-tabs-tabpane-active {
+  background: #1f1f1f !important;
+}
+
+/* Контейнеры внутри */
+.ai-response-viewer-modal .ant-space {
+  background: transparent !important;
+}
+
+.ai-response-viewer-modal .ant-row {
+  background: transparent !important;
+}
+
+.ai-response-viewer-modal .ant-col {
+  background: transparent !important;
+}
+
+/* Карточки с правильным фоном */
+.ai-response-viewer-modal .query-card {
+  background: #262626 !important;
+}
+
+.ai-response-viewer-modal .confidence-card {
+  background: #262626 !important;
+}
+
+.ai-response-viewer-modal .query-type-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.ai-response-viewer-modal .parameter-card {
+  background: #262626 !important;
+}
+
+.ai-response-viewer-modal .features-card {
+  background: #262626 !important;
+}
+
+/* Card компоненты Ant Design */
+.ai-response-viewer-modal .ant-card {
+  background: #262626 !important;
+  border: 1px solid #434343 !important;
+}
+
+.ai-response-viewer-modal .ant-card-head {
+  background: #1f1f1f !important;
+  border-bottom: 1px solid #434343 !important;
+}
+
+.ai-response-viewer-modal .ant-card-body {
+  background: #262626 !important;
+}
+
+/* Statistic компоненты */
+.ai-response-viewer-modal .ant-statistic {
+  background: transparent !important;
+}
+
+/* Progress bar */
+.ai-response-viewer-modal .ant-progress {
+  background: transparent !important;
+}
+
+.ai-response-viewer-modal .ant-progress-outer {
+  background: transparent !important;
+}
+
+.ai-response-viewer-modal .ant-progress-inner {
+  background: #434343 !important;
+}
+
+/* Pre блоки для JSON */
+.ai-response-viewer-modal pre {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  padding: 16px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+  overflow-x: auto !important;
+  border: 1px solid #434343 !important;
+}
+
+/* Footer модального окна */
+.ai-response-viewer-modal .ant-modal-footer {
+  background: #1f1f1f !important;
+  border-top: 1px solid #434343 !important;
+}

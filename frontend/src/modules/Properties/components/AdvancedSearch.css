@@ -1,0 +1,702 @@
+/* frontend/src/modules/Properties/components/AdvancedSearch.css */
+
+/* ============================================
+   ОБЩИЕ СТИЛИ КОМПОНЕНТА
+   ============================================ */
+
+.advanced-search-card {
+  background: #1f1f1f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+}
+
+.advanced-search-card .ant-card-body {
+  padding: 20px !important;
+}
+
+/* ============================================
+   COLLAPSE (АККОРДЕОН)
+   ============================================ */
+
+.advanced-search-collapse {
+  background: transparent !important;
+  border: none !important;
+}
+
+.advanced-search-collapse .ant-collapse-item {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  margin-bottom: 16px !important;
+  background: #2a2a2a !important;
+  overflow: hidden !important;
+}
+
+.advanced-search-collapse .ant-collapse-header {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  padding: 16px 20px !important;
+  font-size: 15px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.advanced-search-collapse .ant-collapse-header:hover {
+  background: #333333 !important;
+}
+
+.advanced-search-collapse .ant-collapse-content {
+  background: #2a2a2a !important;
+  border-top: none !important;
+}
+
+.advanced-search-collapse .ant-collapse-content-box {
+  padding: 20px !important;
+  background: #2a2a2a !important;
+}
+
+.advanced-search-collapse .ant-collapse-arrow {
+  color: #ffffff !important;
+}
+
+/* ============================================
+   ЛЕЙБЛЫ
+   ============================================ */
+
+.filter-label {
+  display: block !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  margin-bottom: 8px !important;
+}
+
+/* ============================================
+   ТЕМНЫЕ INPUT
+   ============================================ */
+
+.dark-input,
+.dark-input input {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+}
+
+.dark-input:hover,
+.dark-input input:hover {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.dark-input:focus,
+.dark-input input:focus,
+.dark-input-focused {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+.dark-input::placeholder,
+.dark-input input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* ============================================
+   ТЕМНЫЕ INPUT NUMBER
+   ============================================ */
+
+.dark-input-number {
+  width: 100% !important;
+}
+
+.dark-input-number .ant-input-number-input {
+  background: #1a1a1a !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.dark-input-number .ant-input-number-handler-wrap {
+  background: #2a2a2a !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-input-number .ant-input-number-handler {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.dark-input-number .ant-input-number-handler:hover {
+  background: #333333 !important;
+  color: #ffffff !important;
+}
+
+.dark-input-number,
+.dark-input-number:hover {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+}
+
+.dark-input-number:focus,
+.dark-input-number-focused {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* ============================================
+   ТЕМНЫЕ SELECT
+   ============================================ */
+
+.dark-select .ant-select-selector {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+}
+
+.dark-select .ant-select-selector:hover {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.dark-select.ant-select-focused .ant-select-selector {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+.dark-select .ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dark-select .ant-select-selection-item {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark-select .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.dark-select .ant-select-clear {
+  background: #2a2a2a !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Dropdown для select */
+.ant-select-dropdown {
+  background: #2a2a2a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.ant-select-item {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ant-select-item:hover {
+  background: #333333 !important;
+}
+
+.ant-select-item-option-selected {
+  background: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.ant-select-item-option-active {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ============================================
+   ТЕМНЫЕ DATE PICKER
+   ============================================ */
+
+.dark-date-picker .ant-picker {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+}
+
+.dark-date-picker .ant-picker:hover {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.dark-date-picker .ant-picker-focused {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+.dark-date-picker .ant-picker-input > input {
+  color: #ffffff !important;
+}
+
+.dark-date-picker .ant-picker-input > input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dark-date-picker .ant-picker-suffix,
+.dark-date-picker .ant-picker-clear {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.dark-date-picker .ant-picker-separator {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Dropdown панель для date picker */
+.ant-picker-dropdown {
+  background: #2a2a2a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.ant-picker-panel-container {
+  background: #2a2a2a !important;
+}
+
+.ant-picker-panel {
+  background: #2a2a2a !important;
+  border: none !important;
+}
+
+.ant-picker-header {
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.ant-picker-header button {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ant-picker-header button:hover {
+  color: #1890ff !important;
+}
+
+.ant-picker-content th {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.ant-picker-cell {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ant-picker-cell:hover:not(.ant-picker-cell-selected):not(.ant-picker-cell-range-start):not(.ant-picker-cell-range-end) .ant-picker-cell-inner {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner,
+.ant-picker-cell-in-view.ant-picker-cell-range-start .ant-picker-cell-inner,
+.ant-picker-cell-in-view.ant-picker-cell-range-end .ant-picker-cell-inner {
+  background: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.ant-picker-cell-in-view.ant-picker-cell-in-range .ant-picker-cell-inner {
+  background: rgba(24, 144, 255, 0.2) !important;
+}
+
+.ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
+  border-color: #1890ff !important;
+}
+
+.ant-picker-footer {
+  background: #2a2a2a !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.ant-picker-today-btn {
+  color: #1890ff !important;
+}
+
+/* ============================================
+   ТЕМНЫЕ CHECKBOX
+   ============================================ */
+
+.dark-checkbox {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark-checkbox .ant-checkbox-inner {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+.dark-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+  background: #1890ff !important;
+  border-color: #1890ff !important;
+}
+
+.dark-checkbox:hover .ant-checkbox-inner {
+  border-color: #1890ff !important;
+}
+
+.dark-checkbox .ant-checkbox-input:focus + .ant-checkbox-inner {
+  border-color: #1890ff !important;
+}
+
+/* ============================================
+   ТЕМНЫЕ RADIO
+   ============================================ */
+
+.dark-radio-group {
+  width: 100% !important;
+}
+
+.dark-radio-group .ant-radio-button-wrapper {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark-radio-group .ant-radio-button-wrapper:hover {
+  color: #1890ff !important;
+}
+
+.dark-radio-group .ant-radio-button-wrapper-checked {
+  background: #1890ff !important;
+  border-color: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.dark-radio-group .ant-radio-button-wrapper-checked:hover {
+  background: #40a9ff !important;
+  border-color: #40a9ff !important;
+}
+
+.dark-radio-group .ant-radio-button-wrapper:not(:first-child)::before {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ============================================
+   ОСОБЕННОСТИ
+   ============================================ */
+
+.feature-search {
+  margin-bottom: 16px !important;
+}
+
+.feature-search .ant-input {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+}
+
+.feature-search .ant-input:focus {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+.feature-search .ant-input-prefix {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.features-legend {
+  padding: 12px !important;
+  background: rgba(24, 144, 255, 0.1) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+}
+
+.features-category {
+  margin-bottom: 20px !important;
+}
+
+.category-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 12px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.category-header strong {
+  color: #ffffff !important;
+  font-size: 14px !important;
+}
+
+.features-grid {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.feature-tag {
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  padding: 4px 12px !important;
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  user-select: none !important;
+}
+
+.feature-tag:hover {
+  border-color: #1890ff !important;
+  color: #1890ff !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3) !important;
+}
+
+.feature-tag.desired {
+  background: rgba(24, 144, 255, 0.2) !important;
+  border-color: #1890ff !important;
+  color: #1890ff !important;
+}
+
+.feature-tag.must-have {
+  background: rgba(255, 77, 79, 0.2) !important;
+  border-color: #ff4d4f !important;
+  color: #ff4d4f !important;
+  font-weight: 600 !important;
+}
+
+.selected-features {
+  padding: 16px !important;
+  background: rgba(24, 144, 255, 0.05) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(24, 144, 255, 0.2) !important;
+}
+
+.selected-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 8px !important;
+}
+
+.selected-header strong {
+  color: #ffffff !important;
+}
+
+/* ============================================
+   INFO BLOCKS
+   ============================================ */
+
+.info-block {
+  padding: 12px 16px !important;
+  background: rgba(24, 144, 255, 0.1) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+}
+
+.info-block.success {
+  background: rgba(82, 196, 26, 0.1) !important;
+  border-color: rgba(82, 196, 26, 0.3) !important;
+}
+
+/* ============================================
+   КНОПКИ
+   ============================================ */
+
+.search-button {
+  height: 48px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4) !important;
+  transition: all 0.3s ease !important;
+}
+
+.search-button:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.5) !important;
+}
+
+.search-button:active {
+  transform: translateY(0) !important;
+}
+
+.reset-button {
+  height: 48px !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  background: #2a2a2a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  transition: all 0.3s ease !important;
+}
+
+.reset-button:hover {
+  background: #333333 !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.map-search-button {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+.map-search-button:hover {
+  border-color: #1890ff !important;
+  color: #1890ff !important;
+}
+
+.map-search-button.active {
+  background: rgba(24, 144, 255, 0.2) !important;
+  border-color: #1890ff !important;
+  color: #1890ff !important;
+}
+
+/* ============================================
+   TAGS
+   ============================================ */
+
+.header-tag {
+  margin-left: 8px !important;
+}
+
+.ant-tag {
+  border-radius: 4px !important;
+  font-size: 12px !important;
+}
+
+/* ============================================
+   BADGE
+   ============================================ */
+
+.ant-badge {
+  color: #ffffff !important;
+}
+
+.ant-badge-count {
+  background: #52c41a !important;
+  box-shadow: 0 0 0 1px #1f1f1f !important;
+}
+
+/* ============================================
+   DIVIDER
+   ============================================ */
+
+.ant-divider {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ============================================
+   АДАПТИВНОСТЬ
+   ============================================ */
+
+@media (max-width: 768px) {
+  .advanced-search-card .ant-card-body {
+    padding: 16px !important;
+  }
+
+  .advanced-search-collapse .ant-collapse-header {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+  }
+
+  .advanced-search-collapse .ant-collapse-content-box {
+    padding: 16px !important;
+  }
+
+  .features-grid {
+    gap: 6px !important;
+  }
+
+  .feature-tag {
+    font-size: 11px !important;
+    padding: 3px 10px !important;
+  }
+
+  .search-button,
+  .reset-button {
+    height: 44px !important;
+    font-size: 14px !important;
+  }
+
+  .filter-label {
+    font-size: 12px !important;
+    margin-bottom: 6px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .category-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .selected-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+.advanced-search-card ::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.advanced-search-card ::-webkit-scrollbar-track {
+  background: #1a1a1a !important;
+  border-radius: 4px !important;
+}
+
+.advanced-search-card ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 4px !important;
+}
+
+.advanced-search-card ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ============================================
+   АНИМАЦИИ
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.advanced-search-collapse .ant-collapse-item {
+  animation: fadeIn 0.3s ease-out !important;
+}
+
+/* ============================================
+   ДОПОЛНИТЕЛЬНЫЕ УЛУЧШЕНИЯ
+   ============================================ */
+
+.ant-select-selection-overflow {
+  gap: 4px !important;
+}
+
+.ant-select-selection-overflow-item {
+  margin: 0 !important;
+}
+
+.ant-tooltip {
+  max-width: 300px !important;
+}
+
+.ant-tooltip-inner {
+  background: #2a2a2a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32) !important;
+}
+
+.ant-tooltip-arrow-content {
+  background: #2a2a2a !important;
+}

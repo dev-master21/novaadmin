@@ -1,0 +1,128 @@
+/* frontend/src/modules/Properties/components/AIInterpretationModal.css */
+
+.ai-interpretation-modal .ant-modal-content {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+.ai-interpretation-modal .ant-modal-header {
+  background: #2a2a2a !important;
+  border-bottom: 1px solid #404040 !important;
+}
+
+.ai-interpretation-modal .ant-modal-title {
+  color: #ffffff !important;
+}
+
+.ai-interpretation-modal .ant-modal-close {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.ai-interpretation-modal .ant-modal-close:hover {
+  color: #ffffff !important;
+}
+
+.ai-interpretation-modal .ant-modal-body {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+/* Confidence Section */
+.confidence-section {
+  padding: 16px;
+  background: #2a2a2a !important;
+  border-radius: 8px;
+  border: 1px solid #404040;
+}
+
+/* Reasoning Section */
+.reasoning-section {
+  padding: 16px;
+  background: #2a2a2a !important;
+  border-radius: 8px;
+  border: 1px solid #404040;
+}
+
+.reasoning-text {
+  color: #ffffff !important;
+  background: rgba(24, 144, 255, 0.15) !important;
+  padding: 12px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+  margin-bottom: 0 !important;
+}
+
+/* Parameters Section */
+.parameters-section {
+  padding: 16px;
+  background: #2a2a2a !important;
+  border-radius: 8px;
+  border: 1px solid #404040;
+}
+
+/* Descriptions */
+.ai-parameters-descriptions.ant-descriptions-bordered .ant-descriptions-item-label {
+  background: #333333 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500;
+  border-right: 1px solid #404040 !important;
+}
+
+.ai-parameters-descriptions.ant-descriptions-bordered .ant-descriptions-item-content {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+  border-right: 1px solid #404040 !important;
+}
+
+.ai-parameters-descriptions.ant-descriptions-bordered .ant-descriptions-row {
+  border-bottom: 1px solid #404040 !important;
+}
+
+.ai-parameters-descriptions.ant-descriptions-bordered {
+  border: 1px solid #404040 !important;
+}
+
+/* Progress Bar */
+.ai-interpretation-modal .ant-progress-text {
+  color: #ffffff !important;
+}
+
+/* Alert */
+.ai-interpretation-modal .ant-alert {
+  background: rgba(250, 173, 20, 0.1) !important;
+  border: 1px solid rgba(250, 173, 20, 0.3) !important;
+}
+
+.ai-interpretation-modal .ant-alert-warning {
+  background: rgba(250, 173, 20, 0.1) !important;
+  border-color: rgba(250, 173, 20, 0.3) !important;
+}
+
+.ai-interpretation-modal .ant-alert-message {
+  color: #faad14 !important;
+}
+
+.ai-interpretation-modal .ant-alert-description {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ai-interpretation-modal .ant-alert-info {
+  background: rgba(24, 144, 255, 0.1) !important;
+  border-color: rgba(24, 144, 255, 0.3) !important;
+}
+
+.ai-interpretation-modal .ant-alert-info .ant-alert-message {
+  color: #1890ff !important;
+}
+
+/* Tags */
+.ai-interpretation-modal .ant-tag {
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Space */
+.ai-interpretation-modal .ant-space {
+  display: flex;
+  flex-wrap: wrap;
+}

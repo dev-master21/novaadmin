@@ -1,0 +1,204 @@
+/* frontend/src/styles/index.css */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #141414 !important;
+  overflow-x: hidden;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  background-color: #141414;
+}
+
+/* Убираем белые полоски - фиксим Layout */
+.ant-layout {
+  background: #141414 !important;
+}
+
+.ant-layout-header {
+  background: #001529 !important;
+}
+
+.ant-layout-content {
+  background: #141414 !important;
+}
+
+.ant-layout-sider {
+  background: #001529 !important;
+}
+
+/* Белый SVG логотип */
+.logo-svg {
+  filter: brightness(0) invert(1);
+  transition: all 0.3s ease;
+}
+
+.logo-svg:hover {
+  filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  /* Уменьшаем отступы на мобильных */
+  .ant-card {
+    margin-bottom: 12px !important;
+  }
+
+  .ant-card-head-title {
+    font-size: 16px !important;
+  }
+
+  .ant-card-body {
+    padding: 16px 12px !important;
+  }
+
+  /* Адаптивные таблицы */
+  .ant-table {
+    font-size: 13px !important;
+  }
+
+  .ant-table-cell {
+    padding: 8px 4px !important;
+  }
+
+  /* Формы */
+  .ant-form-item {
+    margin-bottom: 16px !important;
+  }
+
+  /* Кнопки */
+  .ant-btn {
+    height: 36px !important;
+  }
+
+  .ant-btn-sm {
+    height: 28px !important;
+    padding: 0 8px !important;
+  }
+
+  /* Убираем горизонтальный скролл на мобильных */
+  body, html, #root {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+}
+
+/* Скроллы */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive tables */
+.ant-table-wrapper {
+  overflow-x: auto;
+}
+
+/* Убираем лишние отступы */
+.ant-layout-content > div {
+  max-width: 100%;
+}
+
+/* Responsive cards */
+.responsive-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 576px) {
+  .responsive-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Фикс для drawer на мобильных */
+.ant-drawer-body {
+  padding: 0 !important;
+  background: #001529 !important;
+}
+
+/* Убираем белые края у контента */
+.ant-layout-content {
+  padding: 0 !important;
+}
+
+/* Стили для календаря в мобильной версии */
+@media (max-width: 768px) {
+  .seasonal-pricing-calendar {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999 !important;
+    max-width: 90vw !important;
+  }
+  
+  .seasonal-pricing-calendar .ant-picker-panel-container {
+    max-width: 90vw !important;
+    overflow-x: auto;
+  }
+}
+
+/* Глобальные стили для модальных окон */
+
+/* Warning Modal */
+.ant-modal-confirm-warning .ant-modal-content {
+  background: #fff !important;
+}
+
+.ant-modal-confirm-warning .ant-modal-body {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.ant-modal-confirm-warning .ant-modal-confirm-title {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.ant-modal-confirm-warning .ant-modal-confirm-content {
+  color: rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Info Modal */
+.ant-modal-confirm-info .ant-modal-content {
+  background: #fff !important;
+}
+
+.ant-modal-confirm-info .ant-modal-body {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.ant-modal-confirm-info .ant-modal-confirm-title {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.ant-modal-confirm-info .ant-modal-confirm-content {
+  color: rgba(0, 0, 0, 0.65) !important;
+}

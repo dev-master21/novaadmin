@@ -1,0 +1,387 @@
+/* frontend/src/modules/Properties/components/PropertySearchResults.css */
+
+.property-search-results {
+  padding: 24px 0;
+}
+
+/* Заголовок результатов */
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #2a2a2a;
+  border-radius: 8px;
+  border: 1px solid #404040;
+}
+
+/* Карточка объекта */
+.property-result-card {
+  background: #1f1f1f !important;
+  border: 1px solid #404040 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.property-result-card:hover {
+  border-color: #1890ff !important;
+  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.2);
+  transform: translateY(-4px);
+}
+
+.property-result-card .ant-card-cover {
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.property-image-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.property-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.property-result-card:hover .property-image {
+  transform: scale(1.05);
+}
+
+.photos-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.photos-badge .ant-badge-count {
+  background: rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+  border: none;
+  font-size: 12px;
+  padding: 4px 8px;
+  height: auto;
+  line-height: 1.4;
+}
+
+.property-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a2a;
+}
+
+.property-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.property-result-card .ant-card-body {
+  background: #1f1f1f !important;
+  padding: 16px !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Заголовок */
+.property-header {
+  margin-bottom: 12px;
+}
+
+.property-title {
+  color: #ffffff !important;
+  margin: 0 0 8px 0 !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Локация */
+.property-location {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* Характеристики */
+.property-features {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* Цена */
+.price-info {
+  background: rgba(24, 144, 255, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  margin-top: auto;
+}
+
+.price-main {
+  font-size: 20px;
+  font-weight: 700;
+  color: #40a9ff;
+  margin-bottom: 4px;
+}
+
+.price-details {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
+}
+
+.price-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+}
+
+.pricing-method {
+  margin-top: 8px;
+}
+
+/* Tags */
+.property-result-card .ant-tag {
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+/* Buttons */
+.property-result-card .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* Divider */
+.property-result-card .ant-divider {
+  border-color: #404040 !important;
+}
+
+/* Модальное окно доступных периодов */
+.available-periods-modal .ant-modal-content {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+.available-periods-modal .ant-modal-header {
+  background: #2a2a2a !important;
+  border-bottom: 1px solid #404040 !important;
+}
+
+.available-periods-modal .ant-modal-title {
+  color: #ffffff !important;
+}
+
+.available-periods-modal .ant-modal-body {
+  background: #1f1f1f !important;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.period-list-item {
+  background: #2a2a2a !important;
+  border: 1px solid #404040 !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 12px !important;
+  transition: all 0.3s ease;
+}
+
+.period-list-item:hover {
+  background: #333333 !important;
+  border-color: #1890ff !important;
+}
+
+.period-list-item .ant-list-item-meta-title {
+  color: #ffffff !important;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .property-search-results {
+    padding: 12px 0;
+  }
+
+  .results-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 16px;
+  }
+
+  .property-result-card .ant-card-cover {
+    height: 160px;
+  }
+
+  .price-main {
+    font-size: 18px;
+  }
+}
+
+/* Scrollbar для модального окна */
+.available-periods-modal .ant-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.available-periods-modal .ant-modal-body::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 3px;
+}
+
+.available-periods-modal .ant-modal-body::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 3px;
+}
+
+.available-periods-modal .ant-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #505050;
+}
+/* Предупреждение об отсутствии календаря */
+.property-image-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.calendar-warning-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.5);
+  animation: pulse-warning 2s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.calendar-warning-badge .anticon {
+  font-size: 14px;
+  animation: shake 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(255, 77, 79, 0.5);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(255, 77, 79, 0.7);
+    transform: scale(1.02);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+}
+
+/* Для мобильных устройств */
+@media (max-width: 768px) {
+  .calendar-warning-badge {
+    font-size: 10px;
+    padding: 6px 8px;
+    top: 8px;
+    left: 8px;
+  }
+  
+  .calendar-warning-badge span {
+    display: none;
+  }
+  
+  .calendar-warning-badge .anticon {
+    font-size: 16px;
+    margin: 0;
+  }
+}
+
+/* Hover эффект */
+.property-result-card:hover .calendar-warning-badge {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(255, 77, 79, 0.8);
+}
+
+/* frontend/src/modules/Properties/components/PropertySearchResults.css */
+
+.property-search-results {
+  margin-top: 24px;
+}
+
+.property-card {
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.property-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.property-card .ant-card-cover img {
+  transition: transform 0.3s ease;
+}
+
+.property-card:hover .ant-card-cover img {
+  transform: scale(1.05);
+}
+
+.property-card-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.property-card .ant-tag {
+  margin-bottom: 4px;
+}
+
+/* Dark theme support */
+.dark .property-card {
+  background: #1f1f1f;
+  border-color: #303030;
+}
+
+.dark .property-card:hover {
+  background: #262626;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .property-card-content {
+    min-height: auto;
+  }
+
+  .property-card .ant-card-cover img {
+    height: 160px;
+  }
+}

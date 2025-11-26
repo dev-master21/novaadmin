@@ -1,0 +1,3713 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "add": "Add",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No",
+    "total": "Total: {{total}}",
+    "reset": "Reset",
+    "logout": "Logout",
+    "search": "Search",
+    "actions": "Actions",
+    "characters": "characters",
+    "confirmDelete": "Are you sure you want to delete?",
+    "loading": "Loading...",
+    "previous": "Previous",
+    "next": "Next",
+    "select": "Select",
+    "upload": "Upload",
+    "download": "Download",
+    "close": "Close",
+    "apply": "Apply",
+    "clear": "Clear",
+    "filter": "Filter",
+    "all": "All",
+    "none": "None",
+    "optional": "Optional",
+    "required": "Required",
+    "create": "Create"
+  },
+  
+  "validation": {
+    "required": "This field is required",
+    "email": "Invalid email format",
+    "minLength": "Minimum {{min}} characters",
+    "maxLength": "Maximum {{max}} characters",
+    "min": "Minimum value {{min}}",
+    "max": "Maximum value {{max}}",
+    "pattern": "Invalid format",
+    "url": "Invalid URL format",
+    "phone": "Invalid phone format",
+    "number": "Must be a number",
+    "integer": "Must be an integer",
+    "positive": "Must be a positive number"
+  },
+
+  "errors": {
+    "generic": "An error occurred",
+    "network": "Network error",
+    "serverError": "Server error",
+    "notFound": "Not found",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Action forbidden",
+    "timeout": "Request timeout",
+    "invalidData": "Invalid data"
+  },
+
+  "auth": {
+    "login": "Login",
+    "loginSubtitle": "Sign in to admin panel",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Sign in",
+    "loggingIn": "Signing in...",
+    "loginSuccess": "Login successful",
+    "loginError": "Login error",
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?",
+    "sessionExpired": "Session expired",
+    "invalidCredentials": "Invalid credentials"
+  },
+
+  "nav": {
+    "dashboard": "Dashboard",
+    "properties": "Properties",
+    "users": "Users",
+    "roles": "Roles",
+    "agreements": "Agreements",
+    "addProperty": "Add Property",
+    "propertiesList": "Properties List",
+    "addUser": "Add User",
+    "settings": "Settings",
+    "reports": "Reports"
+  },
+  
+  "menu": {
+    "fileManager": "File Manager"
+  },
+
+  "agreements": {
+    "title": "Agreements",
+    "loading": "Loading...",
+    "noAgreements": "No agreements found",
+    "notSpecified": "Not specified",
+    "stats": {
+      "total": "Total",
+      "drafts": "Drafts",
+      "pending": "Pending",
+      "signed": "Signed",
+      "active": "Active"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "pendingSignatures": "Pending Signatures",
+      "signed": "Signed",
+      "active": "Active",
+      "expired": "Expired",
+      "cancelled": "Cancelled"
+    },
+    "types": {
+      "rent": "Rental",
+      "sale": "Sale",
+      "bilateral": "Bilateral",
+      "trilateral": "Trilateral",
+      "agency": "Agency",
+      "transferAct": "Transfer Act"
+    },
+    "table": {
+      "number": "Number",
+      "type": "Type",
+      "status": "Status",
+      "property": "Property",
+      "description": "Description",
+      "signatures": "Signatures",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "publicLink": "Public Link"
+    },
+    "buttons": {
+      "templates": "Templates",
+      "invoicesAndReceipts": "Invoices & Receipts",
+      "createAgreement": "Create Agreement"
+    },
+    "filters": {
+      "type": "Type",
+      "status": "Status"
+    },
+    "placeholders": {
+      "search": "Search by number or description"
+    },
+    "mobile": {
+      "property": "Property",
+      "view": "View"
+    },
+    "pagination": {
+      "total": "Total: {{total}}",
+      "back": "Back",
+      "forward": "Forward",
+      "pageInfo": "Page {{current}} of {{total}}"
+    },
+    "confirm": {
+      "deleteTitle": "Delete agreement?",
+      "deleteDescription": "This action cannot be undone"
+    },
+    "messages": {
+      "loadError": "Error loading agreements",
+      "deleted": "Agreement successfully deleted",
+      "deleteError": "Error deleting agreement",
+      "linkCopied": "Link copied to clipboard"
+    }
+  },
+
+  "fileManager": {
+    "title": "File Manager",
+    "rootFolder": "Root Folder",
+    "createFolder": "Create Folder",
+    "uploadFiles": "Upload Files",
+    "folderName": "Folder Name",
+    "fileName": "File Name",
+    "fileSize": "Size",
+    "uploadedAt": "Uploaded",
+    "createdBy": "Author",
+    "actions": "Actions",
+    "download": "Download",
+    "downloadFolder": "Download Folder",
+    "downloadSelected": "Download Selected",
+    "rename": "Rename",
+    "delete": "Delete",
+    "deleteFile": "Delete file?",
+    "deleteFolder": "Delete folder?",
+    "deleteFolderWarning": "All files and subfolders will be deleted",
+    "renameFile": "Rename File",
+    "renameFolder": "Rename Folder",
+    "newName": "New Name",
+    "emptyFolder": "Folder is empty",
+    "selected": "selected",
+    "clearSelection": "Clear Selection",
+    "permissions": "Permissions",
+    "managePermissions": "Manage Permissions",
+    "addUser": "Add User",
+    "selectUser": "Select User",
+    "canView": "View",
+    "canUpload": "Upload",
+    "canDownload": "Download",
+    "canEdit": "Edit",
+    "canDelete": "Delete",
+    "folderCreated": "Folder created",
+    "filesUploaded": "Files uploaded",
+    "fileDownloaded": "File downloaded",
+    "folderDownloaded": "Folder downloaded",
+    "fileDeleted": "File deleted",
+    "folderDeleted": "Folder deleted",
+    "renamed": "Renamed successfully",
+    "permissionsUpdated": "Permissions updated",
+    "preparingArchive": "Preparing archive...",
+    "enterFolderName": "Enter folder name",
+    "enterNewName": "Enter new name",
+    "userAlreadyAdded": "User already added",
+    "selectUserWarning": "Select a user"
+  },
+  
+  "dashboard": {
+    "welcome": "Welcome",
+    "stats": {
+      "totalProperties": "Total Properties",
+      "publishedProperties": "Published",
+      "draftProperties": "Drafts",
+      "hiddenProperties": "Hidden"
+    },
+    "recentProperties": "Recent Properties",
+    "quickActions": "Quick Actions"
+  },
+
+  "propertySearch": {
+    "title": "Property Search",
+    "noAccess": "You don't have access to this section",
+    "backToList": "Back to List",
+    "search": "Search",
+    "dialogs": "Dialogs",
+    "searchHistory": "Search History",
+    
+    "errorLoadingConversations": "Error loading conversations",
+    "conversationLoaded": "Conversation loaded",
+    "errorLoadingConversation": "Error loading conversation",
+    "conversationDeleted": "Conversation deleted",
+    "errorDeletingConversation": "Error deleting conversation",
+    
+    "enterQueryText": "Enter query text",
+    "enterMessageText": "Enter message text",
+    "foundProperties": "Found {{count}} properties in {{time}}s",
+    "foundPropertiesCount": "Properties found: {{count}}",
+    "loadedFromHistory": "Loaded {{count}} properties from history",
+    
+    "lowConfidence": "Low AI Confidence",
+    "lowConfidenceDescription": "AI is not fully confident in interpreting your query.",
+    "reason": "Reason",
+    "lowConfidenceRecommendation": "We recommend clarifying search parameters or viewing detailed interpretation.",
+    "understood": "Understood",
+    
+    "errorAISearch": "Error in AI search",
+    "responseReceived": "Response received",
+    "errorAIChat": "Error in AI chat",
+    "errorSearch": "Search error",
+    "mapZoneSet": "Search zone set on map",
+    
+    "startDialogWithAI": "Start dialog with AI for property search",
+    "startCommunicationWithClient": "Start communication with client",
+    
+    "propertySearch": "Property Search",
+    "clientAgent": "Client-Agent",
+    "aiPropertySearch": "AI Property Search",
+    "clientAgentMode": "Client-Agent Mode",
+    "aiSearchDescription": "Describe what you're looking for in your own words. AI will help find the perfect option.",
+    "clientAgentDescription": "Communicate with client through AI agent. It will answer questions and select options.",
+    
+    "conversationNumber": "Dialog #{{id}}",
+    "conversationId": "Dialog #{{id}}",
+    "newConversation": "New Dialog",
+    
+    "searchPlaceholder": "For example: 2-bedroom apartment in Kamala area, budget up to 100k baht, check-in December 15 for a month",
+    "clientMessagePlaceholder": "Enter message from client...",
+    "send": "Send",
+    
+    "aiInterpretation": "AI Interpretation",
+    "details": "Details",
+    "queryUnderstanding": "Query Understanding",
+    
+    "searchDialogs": "Search Dialogs",
+    "clientDialogs": "Client Dialogs",
+    "refresh": "Refresh",
+    "noConversations": "No conversations",
+    
+    "continueDialog": "Continue Dialog",
+    "open": "Open",
+    "deleteDialog": "Delete Dialog",
+    "deleteDialogConfirm": "Delete dialog?",
+    "cannotUndo": "This action cannot be undone",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    
+    "messages": "msg.",
+    "firstMessage": "First message",
+    "updated": "Updated",
+    
+    "aiSearch": "AI Search",
+    "advanced": "Advanced",
+    "startSearchToSeeResults": "Start search to see results",
+
+    "advancedSearch": {
+      "mainParameters": "Main Parameters",
+      "dealType": "Deal Type",
+      "selectType": "Select type",
+      "any": "Any",
+      "complexPlaceholder": "For example: Laguna",
+      "furniture": "Furniture",
+      "fullyFurnished": "Fully",
+      "partiallyFurnished": "Partially",
+      "unfurnished": "Unfurnished",
+      "regionsMultiple": "Regions (multiple selection)",
+      "selectRegions": "Select regions",
+      "withParking": "🚗 With Parking",
+      "withPets": "🐕 With Pets",
+      "radiusKm": "📍 Radius: {{radius}} km",
+      "searchOnMap": "🗺️ Search on map by radius",
+      "clearSearchZone": "Clear search zone",
+      
+      "bedroomsAndBathrooms": "🛏️ Bedrooms and Bathrooms",
+      "bedrooms": "Bedrooms",
+      "bathrooms": "Bathrooms",
+      "exactNumber": "Exact number",
+      "range": "Range",
+      "bedroomsCount": "Number of bedrooms",
+      "bathroomsCount": "Number of bathrooms",
+      "from": "From",
+      "to": "To",
+      
+      "budget": "💰 Budget",
+      "currency": "Currency",
+      "currencyTHB": "฿ THB (Baht)",
+      "currencyUSD": "$ USD (Dollars)",
+      "currencyRUB": "₽ RUB (Rubles)",
+      "currencyEUR": "€ EUR (Euros)",
+      "minBudget": "Minimum budget",
+      "maxBudget": "Maximum budget",
+      "minimum": "Minimum",
+      "maximum": "Maximum",
+      "tolerance": "Tolerance (%)",
+      "searchBelowMax": "Search for cheaper or equal to budget",
+      
+      "datesAndAvailability": "📅 Dates and Availability",
+      "specificDates": "📍 Specific dates",
+      "flexibleDates": "🔄 Flexible dates",
+      "rentalPeriod": "Rental period",
+      "checkInDate": "Check-in date",
+      "checkOutDate": "Check-out date",
+      "toleranceDays": "Tolerance (days) ℹ️",
+      "toleranceTooltip": "Tolerance allows searching for properties within ±N days",
+      "searchWithinDays": "ℹ️ Search within ±{{days}} days from specified dates",
+      "nightsCount": "Number of nights 🌙",
+      "nightsTooltip": "How many nights do you want to stay",
+      "nightsPlaceholder": "For example: 7",
+      "searchWindow": "Search window (period) 📆",
+      "searchWindowTooltip": "In which period to search for available dates",
+      "periodStart": "Period start",
+      "periodEnd": "Period end",
+      "searchingNights": "✅ Searching for {{duration}} available nights in specified period",
+      
+      "features": "✨ Features",
+      "searchFeatures": "🔍 Search features...",
+      "mustHave": "🚨 Required",
+      "desired": "✨ Desired",
+      "clickInstruction": "Click once for desired, twice for required",
+      "indoorFeatures": "🏠 Indoor Features",
+      "outdoorFeatures": "🌳 Outdoor Features",
+      "views": "🌅 Views",
+      "locationFeatures": "📍 Location and Infrastructure",
+      "rentalServices": "🛎️ Services",
+      "selectedFeatures": "Selected features:",
+      "clearAll": "Clear all",
+      
+      "areas": "📐 Areas",
+      "indoorArea": "Indoor area (m²)",
+      "outdoorArea": "Outdoor area (m²)",
+      "plotSize": "Plot size (m²)",
+      "distanceToBeach": "Distance to beach (max.)",
+      "anyDistance": "Any distance",
+      "beach100": "🏖️ On beach (up to 100m)",
+      "beach200": "🏖️ On beach (up to 200m)",
+      "beach500": "🚶 Near beach (up to 500m)",
+      "beach1000": "🚶 Close (up to 1km)",
+      "beach2000": "🚗 Within 2km",
+      "beach5000": "🚗 Within 5km",
+      
+      "floors": "🏢 Floors",
+      "floorNumber": "Floor (for apartments)",
+      "buildingFloors": "Building floors",
+      
+      "constructionYear": "📅 Construction Year",
+      "fromYear": "From year",
+      "toYear": "To year",
+      "yearPlaceholder": "For example: {{year}}",
+      
+      "ownershipTypes": "🏛️ Ownership Types (for sale)",
+      "ownershipInfo": "ℹ️ Freehold - full ownership forever. Leasehold - long-term lease (usually 30-90 years). Company - ownership through Thai company.",
+      
+      "searchButton": "🔍 Search Properties",
+      "resetButton": "🔄 Reset All Filters"
+    }
+  },
+
+  "aiDescriptionGenerator": {
+    "title": "AI Description Generation",
+    "generationSettings": "Generation Settings",
+    "readinessCheck": "Readiness Check:",
+    "checkingReadiness": "Checking readiness...",
+    
+    "errorCheckingReadiness": "Error checking readiness",
+    "conditionsNotMet": "Not all conditions for generation are met",
+    "pleaseWait": "Please wait {{minutes}} more minutes before regeneration",
+    "waitMinutes": "Wait {{minutes}} min.",
+    
+    "preparing": "Preparing...",
+    "analyzingPhotos": "Analyzing photos...",
+    "detectingFeatures": "Detecting features...",
+    "generatingDescriptions": "Generating descriptions in 5 languages...",
+    "done": "Done!",
+    
+    "descriptionsGenerated": "Descriptions successfully generated!",
+    "featuresFoundTitle": "Features found from photos",
+    "aiDetected": "AI detected {{count}} features in photos:",
+    "featuresAdded": "These features were automatically added to the property.",
+    "errorGenerating": "Error generating descriptions",
+    
+    "specifyFeatures": "Specify at least 15 property features",
+    "uploadPhotos": "Upload at least 12 photos (preferably from different categories)",
+    "specifyAddress": "Specify address and region",
+    "specifyBedrooms": "Specify number of bedrooms",
+    
+    "tipTitle": "Tip",
+    "tipDescription": "The more data you enter about the property, the better the description will be.",
+    
+    "rateLimitTitle": "Generation Rate Limit",
+    
+    "generating": "Generating...",
+    "generateButton": "Generate Description with AI",
+    
+    "cancel": "Cancel",
+    "apply": "Apply",
+    
+    "additionalRequirementsTitle": "Additional Requirements (optional)",
+    "additionalRequirementsDescription": "You can specify additional requirements for description generation. This is not mandatory - description will be generated without them.",
+    "additionalPrompt": "Additional prompt:",
+    "additionalPromptPlaceholder": "For example: Mention proximity to school, emphasize family-friendly neighborhood, add information about long-term rental possibility...",
+    "requirementsNote": "These requirements will be added to the main prompt and considered during description generation."
+  },
+
+  "aiInterpretationModal": {
+    "title": "Detailed AI Interpretation",
+    "aiConfidence": "AI Confidence:",
+    "highConfidence": "High",
+    "mediumConfidence": "Medium",
+    "lowConfidence": "Low",
+    "accuracyPercent": "{{level}} accuracy - {{percent}}%",
+    
+    "mediumAccuracyWarning": "Medium accuracy - we recommend checking parameters",
+    "mediumAccuracyDescription": "AI is not fully confident in interpreting your query. Please check extracted parameters and clarify query if necessary.",
+    
+    "queryUnderstanding": "Query Understanding:",
+    "noDescription": "No description",
+    "extractedParameters": "Extracted Parameters:",
+    
+    "dealType": "Deal Type",
+    "dates": "Dates",
+    "dateFrom": "From",
+    "dateTo": "to",
+    "days": "days",
+    "regions": "Regions",
+    "features": "Features",
+    
+    "parking": "Parking",
+    "required": "Required",
+    "notRequired": "Not required",
+    
+    "pets": "Pets",
+    "allowed": "Allowed",
+    "notAllowed": "Not allowed",
+    
+    "upTo": "Up to",
+    "meters": "m",
+    "complex": "Complex",
+    "floor": "Floor",
+    "owner": "Owner",
+    
+    "noParametersExtracted": "Parameters not extracted",
+    "noParametersDescription": "AI could not extract specific parameters from your query. Try clarifying the query or use advanced search."
+  },
+
+  "aiPropertyCreation": {
+    "title": "Create Property with AI",
+    "cancel": "Cancel",
+    "createButton": "Create with AI",
+    "processing": "Processing...",
+    
+    "enterDescription": "Enter property description",
+    "sendingRequest": "Sending request to AI...",
+    "analyzingText": "Analyzing text...",
+    "extractingData": "Extracting data...",
+    "structuringInfo": "Structuring information...",
+    "done": "Done!",
+    
+    "dataExtracted": "Data successfully extracted from text!",
+    "warnings": "Warnings",
+    "photosDownloaded": "Photos downloaded",
+    "downloadedCount": "Downloaded {{count}} photos from Google Drive",
+    "category": "category",
+    
+    "errorCreating": "Error creating property through AI",
+    "driveAccessError": "Google Drive access error",
+    "howToFix": "How to fix:",
+    "fixStep1": "Open folder in Google Drive",
+    "fixStep2": "Right-click → \"Share settings\"",
+    "fixStep3": "Select \"Anyone with the link\"",
+    "fixStep4": "Try again",
+    "alternativeOption": "If the problem persists, create property without photos and upload them later manually.",
+    
+    "howItWorks": "How does it work?",
+    "howItWorksDescription": "Simply paste text description of the property, and AI will automatically extract all data:",
+    
+    "basicInfo": "Basic Information",
+    "pricesCommissions": "Prices and Commissions",
+    "calendarOccupancy": "Calendar Occupancy",
+    "ownerData": "Owner Data",
+    "propertyFeatures": "Property Features",
+    "photosFromDrive": "Photos from Google Drive",
+    
+    "pasteDescription": "Paste property description:",
+    "placeholder": "For example:\n\nProperty Anchan Flora, number 55. Sale price 55 million, rent 200k from January to March, rest of time 300k, annual contract 150k. 2 floors, 500 sq inside, 1000 non-residential, 1200 plot. Freehold. Pets allowed, Bangtao area, 3 bedrooms 2 bathrooms, 2 parking spaces.\n\nFeatures: kitchen, TV, internet, pool, garden. Sea view.\n\nOccupancy: from December 15 to February 5 occupied.\n\nGoogle Maps link: https://maps.app.goo.gl/example\nPhotos: https://drive.google.com/drive/folders/example\nOwner: Anna, tel +66123456789",
+    
+    "importantWarning": "⚠️ Important!",
+    "importantDescription": "After AI generation, all form fields will be filled. Be sure to check correctness of all data before saving property!"
+  },
+
+  "aiResponseViewer": {
+    "title": "AI Assistant Response",
+    "close": "Close",
+    "errorLoading": "Error loading AI response",
+    "copiedToClipboard": "Copied to clipboard",
+    "jsonDownloaded": "JSON file downloaded",
+    "loadingData": "Loading AI data...",
+    "noData": "No data to display",
+    
+    "unknownQueryType": "Unknown query type",
+    "flexibleSearch": "Flexible search",
+    "flexibleSearchDesc": "Searching for {{duration}} nights in period from {{start}} to {{end}}",
+    "fixedDates": "Fixed dates",
+    "fixedDatesDesc": "Entire period from {{checkIn}} to {{checkOut}}",
+    "parameterSearch": "Parameter search",
+    "searchWithoutDates": "Search without dates",
+    
+    "bedroomsCount": "{{count}} bedroom",
+    "bedroomsCount_plural": "{{count}} bedrooms",
+    "perNight": "/night",
+    "perMonth": "/month",
+    "perYear": "/year",
+    
+    "parametersNotSpecified": "Parameters not specified",
+    "furnitureLabel": "Furniture: {{type}}",
+    "withPets": "With pets",
+    "requiredFeatures": "Required features",
+    
+    "yourQuery": "💬 Your Query:",
+    "copy": "Copy",
+    "explanation": "Explanation",
+    "propertiesFound": "Properties Found",
+    
+    "lowConfidenceWarning": "Low AI Confidence",
+    "lowConfidenceDescription": "We recommend clarifying search parameters for more accurate results",
+    
+    "copyJSON": "Copy JSON",
+    "downloadJSON": "Download JSON",
+    "copyFilters": "Copy Filters",
+    
+    "interpretationTab": "Interpretation",
+    "rawJSONTab": "Raw JSON",
+    "filtersTab": "Filters"
+  },
+
+  "calendarManager": {
+    "title": "Occupancy Management",
+    "downloadIcs": "Download .ics",
+    "addPeriod": "Add Period",
+    "syncCalendars": "Calendar Sync",
+    "analysis": "Analysis",
+    "synchronize": "Synchronize",
+    "addCalendar": "Add Calendar",
+    
+    "noExternalCalendars": "No external calendars",
+    "noExternalCalendarsDesc": "Add .ics links from Booking, Airbnb, Agoda and other services for automatic synchronization",
+    
+    "on": "On",
+    "off": "Off",
+    "deleteCalendar": "Delete calendar?",
+    "deleteCalendarDesc": "Do you want to delete occupancy dates from this calendar?",
+    "yesDeleteDates": "Yes, delete dates",
+    "noKeepDates": "No, keep dates",
+    
+    "events": "events",
+    "syncError": "Sync error",
+    "lastSync": "Last sync",
+    "error": "Error",
+    
+    "occupancyCalendar": "Occupancy Calendar",
+    "icsCreatedAfter": "After creating property, .ics file with blocked dates will be automatically created.",
+    "addedTemporarily": "Added temporarily",
+    "dates": "dates",
+    
+    "combinedIcsFile": "Combined calendar file (.ics)",
+    "blockedDays": "Blocked days",
+    "updated": "Updated",
+    
+    "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "weekDays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    
+    "today": "Today",
+    "occupied": "Occupied",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "checkInOut": "Check-in + Check-out",
+    
+    "blockedPeriods": "Blocked Periods",
+    "deletePeriod": "Delete this period?",
+    "daysWillBeDeleted": "{{count}} days will be deleted",
+    "yes": "Yes",
+    "no": "No",
+    "delete": "Delete",
+    "daysCount": "day",
+    "daysCount_plural": "days",
+    "noDescription": "No description",
+    
+    "addOccupancyPeriod": "Add Occupancy Period",
+    "selectPeriod": "Select period",
+    "selectPeriodRequired": "Select period",
+    "start": "Start",
+    "end": "End",
+    
+    "occupiedDatesDetected": "Occupied dates detected!",
+    "periodHasOccupied": "Selected period already has {{count}} occupied date",
+    "periodHasOccupied_plural": "Selected period already has {{count}} occupied dates",
+    "andMoreDates": "... and {{count}} more dates",
+    "selectOtherPeriod": "Select another period or force add, replacing old dates",
+    
+    "descriptionOptional": "Description (optional)",
+    "reasonPlaceholder": "Blocking reason (e.g.: Booked, Maintenance, Personal use)",
+    
+    "info": "Information",
+    "infoDescription": "Each date in selected period will be blocked separately. After adding, .ics file will be automatically updated.",
+    
+    "cancel": "Cancel",
+    "forceAddButton": "Force Add",
+    "add": "Add",
+    
+    "forceAdd": "Force Addition",
+    "forceAddDescription": "If you continue, old dates will be deleted and replaced with new period. This action cannot be undone!",
+    
+    "finalConfirmation": "Final Confirmation",
+    "areYouSure": "Are you sure about this action?",
+    "actionWarning": "This may affect the system and it's better not to do this. Action cannot be rolled back!",
+    "yesImSure": "Yes, I'm sure",
+    
+    "addExternalCalendar": "Add External Calendar",
+    "serviceName": "Service Name",
+    "specifyName": "Specify name",
+    "serviceNamePlaceholder": "For example: Booking.com, Airbnb, Agoda",
+    "icsLink": "Link to .ics file",
+    "specifyLink": "Specify link",
+    "invalidURL": "Invalid URL format",
+    "externalCalendarInfo": "After adding calendar, it will be automatically synchronized every 15 minutes. You can enable or disable sync at any time.",
+    
+    "conflictAnalysis": "Calendar Conflict Analysis",
+    "continueSync": "Continue Sync",
+    "date": "Date",
+    "calendars": "Calendars",
+    "period": "Period",
+    
+    "noConflicts": "No conflicts detected",
+    "conflictsDetected": "{{count}} conflicts detected",
+    "noConflictsDesc": "All calendars have unique dates. Safe to continue sync.",
+    "conflictsDetectedDesc": "Following dates are present in multiple calendars simultaneously. Check information before sync.",
+    
+    "whatHappensOnSync": "What happens on sync?",
+    "syncStep1": "All dates from enabled calendars will be merged",
+    "syncStep2": "On conflict, description from first calendar will be used",
+    "syncStep3": "Single .ics file for export will be created",
+    "syncStep4": "Sync will happen automatically every 15 minutes",
+    
+    "errorLoadingCalendar": "Error loading calendar",
+    "datesAddedTemporarily": "Added {{count}} dates. They will be saved after creating property.",
+    "periodBlocked": "Period successfully blocked",
+    "errorBlocking": "Error blocking period",
+    "datesRemovedTemporarily": "Dates successfully removed from temporary list",
+    "datesUnblocked": "Dates successfully unblocked",
+    "errorRemovingDates": "Error removing dates",
+    
+    "calendarAdded": "Calendar successfully added",
+    "errorAddingCalendar": "Error adding calendar",
+    "calendarRemoved": "Calendar successfully removed",
+    "errorRemovingCalendar": "Error removing calendar",
+    
+    "syncToggled": "Sync {{state}}",
+    "enabled": "enabled",
+    "disabled": "disabled",
+    "errorTogglingSync": "Error toggling sync",
+    
+    "minTwoCalendars": "Need to add at least 2 calendars for analysis",
+    "errorAnalyzing": "Error analyzing calendars",
+    
+    "syncSuccess": "Synced {{calendars}} calendars, {{events}} events",
+    "syncWithErrors": "Sync completed with errors",
+    "errorSyncing": "Error syncing",
+    
+    "periodAddedForced": "Period successfully added (forced)",
+    
+    "calendarModalTitle": "Occupancy Calendar",
+    "noCalendarData": "No occupancy data",
+    "noCalendarDataDesc": "Calendar not synced or no blocked dates"
+  },
+
+  "depositForm": {
+    "title": "Deposit",
+    "depositType": "Deposit Type",
+    "oneMonth": "Deposit equals one month rent",
+    "twoMonths": "Deposit equals two months rent",
+    "custom": "Specify deposit",
+    "depositAmount": "Deposit Amount",
+    "depositAmountPlaceholder": "Enter deposit amount"
+  },
+
+  "floorPlanUploader": {
+    "fileSizeExceeds": "File exceeds 50MB",
+    "fileMustBeImage": "File must be an image",
+    "floorPlanUploaded": "Floor plan uploaded",
+    "errorUploading": "Error uploading floor plan",
+    "floorPlanDeleted": "Floor plan deleted",
+    "errorDeleting": "Error deleting floor plan",
+    "floorPlanDownloaded": "Floor plan downloaded",
+    "changeFloorPlan": "Change Floor Plan",
+    "uploadFloorPlan": "Upload Floor Plan",
+    "uploadingProgress": "Uploading floor plan... {{percent}}%",
+    "floorPlanAlt": "Floor Plan",
+    "viewFullSize": "View Full Size",
+    "downloadFloorPlan": "Download Floor Plan",
+    "noFloorPlan": "Floor plan not uploaded",
+    "clickButtonAbove": "Click button above to upload",
+    "supportedFormats": "Supported formats: JPG, PNG",
+    "maxSize": "Maximum size: 50MB"
+  },
+
+  "mapSearchModal": {
+    "title": "Map Search",
+    "selectPointOnMap": "Select point on map",
+    "description": "Select search zone center on map and specify radius:",
+    "apply": "Apply",
+    "km": "km",
+    "kmMark": "{{value}} km",
+    "loadingMap": "Loading map..."
+  },
+
+  "monthlyPricing": {
+    "title": "Monthly Rental Prices",
+    "clearAll": "Clear All",
+    "infoTitle": "Monthly Prices Information",
+    "infoDescription": "Specify rental cost for each month. These prices will be used for long-term rental. Leave field empty if price for month is not needed.",
+    "pricePerMonth": "Price per Month",
+    "priceMustBePositive": "Price must be positive",
+    "minimumDays": "Minimum Days",
+    "minimumOneDayError": "Minimum 1 day",
+    "notSpecified": "Not specified",
+    "importantInfoTitle": "Important Information",
+    "importantInfoDescription": "Monthly prices have priority over seasonal prices when calculating long-term rental. If price for month is not specified, seasonal price will be used (if available).",
+    "pricesUpdated": "Monthly prices successfully updated",
+    "errorUpdating": "Error updating prices",
+    "allPricesCleared": "All monthly prices cleared",
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    }
+  },
+
+  "photosUploader": {
+    "selectAll": "Select All ({{count}})",
+    "deselectAll": "Deselect All",
+    "selected": "{{count}} selected",
+    "downloadSelected": "Download Selected ({{count}})",
+    "downloadAll": "Download All ({{count}})",
+    "uploadingPhotos": "Uploading Photos",
+    "selectCategory": "Select category:",
+    "addBedroom": "Add Bedroom",
+    "bedroomNumber": "Bedroom {{number}}",
+    "removeBedroom": "Remove Bedroom",
+    "selectFiles": "Select Files",
+    "uploadingProgress": "Uploading {{percent}}%",
+    "uploadInfoCreating": "Photos will be uploaded after saving property. Maximum file size: 50MB",
+    "uploadInfo": "Maximum file size: 50MB",
+    "photosForUpload": "Photos for Upload",
+    "photoCount": "{{count}} photo",
+    "willBeUploadedAfterSave": "Will be uploaded after saving",
+    "tempPhotoAlt": "Temp {{index}}",
+    "deletePhoto": "Delete photo?",
+    "noPhotos": "No uploaded photos",
+    "uploadPhotosInstruction": "Upload photos by selecting category above",
+    "primary": "Primary",
+    "makePrimary": "Make Primary",
+    "moveMultiplePhotos": "Move {{count}} photos",
+    "moveToCategory": "Move to Category",
+    "changePosition": "Change Position",
+    "moveSelectedPhotosTitle": "Move {{count}} selected photos to category",
+    "movePhotoTitle": "Move photo to category",
+    "willBeMoved": "{{count}} selected photos will be moved",
+    "changePositionTitle": "Change Position",
+    "change": "Change",
+    "enterNewPosition": "Enter new position:",
+    "position": "Position",
+    "photoAlt": "Photo {{id}}",
+    
+    "bedroomAdded": "Bedroom {{number}} added",
+    "removeBedroomConfirm": "Bedroom {{number}} has {{count}} photos. All photos will be deleted.",
+    "bedroomRemoved": "Bedroom {{number}} removed",
+    "filesExceedSize": "Some files exceed 50MB: {{files}}",
+    "filesNotImages": "Some files are not images: {{files}}",
+    "photosAddedTemp": "Added {{count}} photos. They will be uploaded after saving property.",
+    "photosUploaded": "Uploaded {{count}} photos",
+    "errorUploading": "Error uploading photos",
+    "photoDeleted": "Photo deleted",
+    "errorDeleting": "Error deleting",
+    "primaryPhotoSet": "Primary photo set",
+    "error": "Error",
+    "photosMoved": "Moved {{count}} photos",
+    "photoMoved": "Photo moved",
+    "errorMoving": "Error moving",
+    "positionRange": "Position must be from 1 to {{max}}",
+    "positionChanged": "Position changed",
+    "errorChangingPosition": "Error changing position",
+    "errorReordering": "Error reordering",
+    "selectPhotosToDownload": "Select photos to download",
+    "photosDownloaded": "Downloaded {{count}} photos",
+    "errorDownloading": "Error downloading photos",
+    "noPhotosToDownload": "No photos to download",
+    
+    "categories": {
+      "general": "General Photos",
+      "bedroom": "Bedroom",
+      "bathroom": "Bathroom",
+      "kitchen": "Kitchen",
+      "living": "Living Room",
+      "exterior": "Exterior",
+      "pool": "Pool",
+      "view": "View"
+    }
+  },
+
+  "pricingModal": {
+    "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  },
+
+  "searchHistory": {
+    "title": "Search History",
+    "errorLoading": "Error loading history",
+    "recordDeleted": "Record deleted",
+    "errorDeleting": "Error deleting record",
+    "propertiesLoaded": "Loaded {{count}} properties",
+    "errorLoadingResults": "Error loading results",
+    
+    "dealType": "Deal Type",
+    "upTo": "Up to {{amount}} {{currency}}",
+    "flexibleSearch": "Flexible Search",
+    "nightsCount": "{{duration}} nights",
+    
+    "aiSearch": "AI Search",
+    "aiConfidence": "AI Confidence",
+    "deleteRecord": "Delete this record?",
+    "found": "Found",
+    "parameters": "Parameters",
+    "time": "Time",
+    "seconds": "s",
+    "extractedParameters": "Extracted Parameters:",
+    "viewResults": "View Results ({{count}})",
+    "hide": "Hide",
+    "details": "Details",
+    
+    "formSearch": "Form Search",
+    "searchParameters": "Search Parameters:",
+    
+    "loadingHistory": "Loading search history...",
+    "historyEmpty": "Search history is empty",
+    "performFirstSearch": "Perform first search and it will appear here",
+    "totalRecords": "Total records: {{total}}",
+    "refresh": "Refresh",
+    "paginationInfo": "{{start}}-{{end}} of {{total}} records"
+  },
+
+  "searchResults": {
+    "errorLoadingPeriods": "Error loading available periods",
+    "salePrice": "Sale Price",
+    "priceOnRequest": "Price on Request",
+    "priceOnRequestDescription": "For this property prices need to be clarified with manager",
+    "period": "Period",
+    "nightsCount_one": "night",
+    "nightsCount_few": "nights",
+    "nightsCount_many": "nights",
+    "nightsCount_other": "nights",
+    "thbPerNight": "THB/night",
+    "thbPerMonth": "THB/month",
+    "for": "For",
+    "pricingMethods": {
+      "seasonal": "Seasonal Prices",
+      "monthly": "Monthly Prices",
+      "yearly": "Annual Contract",
+      "combined": "Combined Prices"
+    },
+    "estimatedPriceYearly": "Estimated Price (annual contract)",
+    "noPrices": "Prices not specified",
+    "noPricesDescription": "No price data filled in database for this property",
+    "noCalendar": "No calendar for property",
+    "noCalendarDescription": "Property shown as available, but occupancy needs to be clarified with manager",
+    "checkAvailability": "Check Availability",
+    "photosCount": "{{count}} photos",
+    "metersToBeach": "m to beach",
+    "bedrooms": "bedrooms",
+    "bathrooms": "bathrooms",
+    "sqm": "m²",
+    "featuresMatch": "Feature matches: {{matched}}/{{total}}",
+    "missingFeatures": "Missing features",
+    "andMore": "and {{count}} more...",
+    "availablePeriods": "Available periods ({{nights}} night)",
+    "viewDetails": "View Details",
+    "foundProperties": "Properties found: {{count}}",
+    "viewAIResponse": "View AI Response",
+    "executedIn": "Executed in {{time}}s",
+    "availablePeriodsTitle": "Available Periods",
+    "searchingPeriods": "Searching for available periods...",
+    "noPeriodsAvailable": "Unfortunately, no available periods for specified number of nights",
+    "foundPeriods": "Found <strong>{{count}}</strong> available periods. Periods sorted by price (from cheap to expensive).",
+    "periodSelected": "Period: {{checkIn}} - {{checkOut}}",
+    "select": "Select",
+    "nightsTag": "{{nights}} night",
+    "total": "Total",
+    "showingFirst20": "Showing first 20 periods of {{total}}"
+  },
+
+  "seasonalPricing": {
+    "seasonTypes": {
+      "prime": "Prime Season",
+      "holiday": "Holiday Season"
+    },
+    "addAnotherSeason": "Add Another Season",
+    "selectSeasonType": "Select Season Type",
+    "start": "Start",
+    "end": "End",
+    "periodColumn": "Period",
+    "actionsColumn": "Actions",
+    "seasonDetails": "Season Details",
+    "seasonType": "Season Type",
+    "period": "Period",
+    "pricingType": "Pricing Type",
+    "price": "Price",
+    "sourcePrice": "Source Price",
+    "minimumNights": "Minimum Nights"
+  },
+
+  "translationsEditor": {
+    "propertyNameInfo": "Property Name Information",
+    "propertyNameInfoDescription": "Property name is specified once in 'Basic Information' tab and automatically applied to all languages. Only descriptions are edited here.",
+    "languages": {
+      "russian": "🇷🇺 Russian",
+      "english": "🇬🇧 English",
+      "thai": "🇹🇭 ภาษาไทย (Thai)",
+      "chinese": "🇨🇳 中文 (Chinese)",
+      "hebrew": "🇮🇱 עברית (Hebrew)"
+    },
+    "placeholders": {
+      "ru": "Detailed property description in Russian...",
+      "en": "Detailed property description in English...",
+      "th": "คำอธิบายทรัพย์สินโดยละเอียด...",
+      "zh": "详细的房产描述...",
+      "he": "תיאור מפורט של הנכס..."
+    }
+  },
+
+  "utilitiesForm": {
+    "title": "Utilities",
+    "electricity": "Electricity",
+    "water": "Water",
+    "thbPerUnit": "(THB / per 1 unit)",
+    "perUnit": "฿ per unit",
+    "electricityPlaceholder": "For example: 8.50",
+    "waterPlaceholder": "For example: 18.00"
+  },
+
+  "videoUploader": {
+    "title": "Video",
+    "uploadVideo": "Upload Video",
+    "invalidFiles": "Some files are not videos: {{files}}",
+    "videosUploaded": "Uploaded {{count}} videos",
+    "errorUploading": "Error uploading videos",
+    "uploadingProgress": "Uploading video... {{percent}}%",
+    "noVideos": "No video uploaded",
+    "supportedFormats": "Supported formats: MP4, MOV, AVI, WebM",
+    "maxSize": "Maximum size: 5 GB",
+    "downloadVideo": "Download Video",
+    "edit": "Edit",
+    "thumbnailAlt": "Video Preview",
+    "noTitle": "No Title",
+    "noDescription": "Description missing",
+    "editVideoTitle": "Edit Video",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter video title",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Enter video description",
+    "playingVideo": "Playing Video",
+    "browserNotSupported": "Your browser does not support video playback.",
+    "videoDownloading": "Video downloading"
+  },
+
+  "vr": {
+    "editor": {
+      "title": "VR Panoramas",
+      "newPanorama": "New Panorama",
+      "locationType": "Location Type",
+      "locationNumber": "Number",
+      "uploadImages": "Upload images for all directions",
+      "uploadHint": "Need to upload 6 images (all sides). Max. file size: 50MB",
+      "create": "Create Panorama",
+      "panoramasCount": "Uploaded Panoramas ({{count}})",
+      "imagesCount": "{{count}} images",
+      "downloadDirection": "Download {{direction}}"
+    },
+    "locations": {
+      "bedroom": "Bedroom",
+      "bathroom": "Bathroom",
+      "living_room": "Living Room",
+      "kitchen": "Kitchen",
+      "pool": "Pool",
+      "terrace": "Terrace",
+      "wardrobe": "Wardrobe",
+      "gym": "Gym",
+      "sauna": "Sauna",
+      "balcony": "Balcony",
+      "dining_room": "Dining Room",
+      "office": "Office",
+      "laundry": "Laundry",
+      "garage": "Garage",
+      "entrance": "Entrance"
+    },
+    "directions": {
+      "front": "Front",
+      "back": "Back",
+      "left": "Left",
+      "right": "Right",
+      "top": "Top",
+      "bottom": "Bottom"
+    },
+    "errors": {
+      "loadFailed": "Error loading panoramas",
+      "fileTooLarge": "File exceeds 50MB",
+      "invalidFileType": "File must be an image",
+      "fillAllFields": "Need to upload all 6 images",
+      "createFailed": "Error creating panorama",
+      "deleteFailed": "Error deleting panorama"
+    },
+    "success": {
+      "created": "Panorama successfully created",
+      "deleted": "Panorama successfully deleted",
+      "imageDownloaded": "Image downloaded"
+    },
+    "confirm": {
+      "delete": "Delete this panorama?"
+    }
+  },
+
+  "agreementPrint": {
+    "loading": "Loading agreement...",
+    "backToList": "Back to Agreements List",
+    "errors": {
+      "noToken": "Access token is missing",
+      "invalidToken": "Invalid or expired access token",
+      "notFound": "Agreement not found",
+      "loadFailed": "Error loading agreement"
+    }
+  },
+
+  "agreementDetail": {
+    "title": "Agreement {{number}}",
+    "tabs": {
+      "document": "Document",
+      "details": "Details",
+      "parties": "Parties",
+      "signatures": "Signatures"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "pendingSignatures": "Pending Signatures",
+      "signed": "Signed",
+      "active": "Active",
+      "expired": "Expired",
+      "cancelled": "Cancelled",
+      "waiting": "Waiting"
+    },
+    "types": {
+      "rent": "Rental",
+      "sale": "Sale",
+      "bilateral": "Bilateral",
+      "trilateral": "Trilateral",
+      "agency": "Agency",
+      "transferAct": "Transfer Act"
+    },
+    "deviceTypes": {
+      "mobile": "Mobile Version",
+      "desktop": "Desktop Version"
+    },
+    "viewModes": {
+      "formatted": "Formatted Mode",
+      "simple": "Simple Mode"
+    },
+    "fields": {
+      "agreementNumber": "Agreement Number",
+      "type": "Type",
+      "status": "Status",
+      "property": "Property",
+      "description": "Description",
+      "city": "City",
+      "dateFrom": "Start Date",
+      "dateTo": "End Date",
+      "rentMonthly": "Monthly Rent",
+      "deposit": "Deposit",
+      "created": "Created",
+      "author": "Author",
+      "country": "Country",
+      "passport": "Passport",
+      "signedCount": "Signed: {{signed}} / {{total}}"
+    },
+    "table": {
+      "signer": "Signer",
+      "status": "Status",
+      "device": "Device",
+      "ipAddress": "IP Address",
+      "viewTime": "View Time",
+      "actions": "Actions"
+    },
+    "actions": {
+      "back": "Back",
+      "edit": "Edit",
+      "downloadPDF": "Download PDF",
+      "print": "Print",
+      "link": "Link",
+      "notifyAgent": "Notify Agent",
+      "copy": "Copy",
+      "copyLink": "Copy Link",
+      "regenerateLink": "Regenerate Link",
+      "manageSignatures": "Manage Signatures",
+      "sendForSignature": "Send for Signature"
+    },
+    "signatureDetails": {
+      "title": "Detailed Signature Analytics",
+      "sessionInfo": "Session Information",
+      "ipAddress": "IP Address",
+      "device": "Device",
+      "browser": "Browser",
+      "os": "Operating System",
+      "notDetermined": "Not determined",
+      "timeMetrics": "Time Metrics",
+      "firstVisit": "First Visit",
+      "notVisited": "Not visited",
+      "viewDuration": "Agreement view duration",
+      "totalDuration": "Total time on page",
+      "clearCount": "Signature clear count",
+      "timeFormat": "{{minutes}} min {{seconds}} sec",
+      "seconds": "sec",
+      "signature": "Signature",
+      "signatureLink": "Signature Link"
+    },
+    "drawer": {
+      "title": "Detailed Information"
+    },
+    "messages": {
+      "noParties": "Parties not specified",
+      "noSignatures": "Signatures not configured",
+      "noSignaturesHint": "Click \"Send for Signature\" to create signatures"
+    },
+    "confirm": {
+      "deleteTitle": "Delete agreement?",
+      "deleteContent": "This action cannot be undone",
+      "cancelEditTitle": "Cancel editing?",
+      "cancelEditContent": "Unsaved changes will be lost",
+      "cancelEditOk": "Yes, cancel",
+      "cancelEditCancel": "Continue editing",
+      "deleteSignatureTitle": "Delete signature?"
+    },
+    "success": {
+      "agentNotified": "Notification sent to agent in Telegram",
+      "deleted": "Agreement successfully deleted",
+      "linkCopied": "Link copied to clipboard",
+      "pdfDownloaded": "PDF downloaded successfully",
+      "saved": "Agreement successfully saved",
+      "linkRegenerated": "Link regenerated",
+      "signatureDeleted": "Signature deleted"
+    },
+    "errors": {
+      "cannotNotify": "Cannot send notification: agreement not linked to request",
+      "notificationFailed": "Error sending notification",
+      "loadFailed": "Error loading agreement",
+      "deleteFailed": "Error deleting agreement",
+      "pdfDownloadFailed": "Error downloading PDF",
+      "saveFailed": "Error saving agreement",
+      "regenerateFailed": "Error regenerating"
+    }
+  },
+
+  "createTemplate": {
+    "actions": {
+      "backToList": "Back to List",
+      "saveChanges": "Save Changes",
+      "createTemplate": "Create Template"
+    },
+    "fields": {
+      "templateName": "Template Name",
+      "agreementType": "Agreement Type",
+      "status": "Status",
+      "templateContent": "Template Content"
+    },
+    "placeholders": {
+      "templateName": "Residential Rental Agreement",
+      "selectType": "Select type",
+      "templateContent": "Enter agreement text. Use variables in format {{variable_name}} for dynamic data..."
+    },
+    "validation": {
+      "enterTemplateName": "Enter template name",
+      "selectType": "Select type"
+    },
+    "agreementTypes": {
+      "rent": "Rental",
+      "sale": "Sale",
+      "bilateral": "Bilateral",
+      "trilateral": "Trilateral",
+      "agency": "Agency",
+      "transferAct": "Transfer Act"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "variablesPanel": {
+      "title": "Available Variables (click to insert)"
+    },
+    "hints": {
+      "useVariables": "Use variables above to insert dynamic data"
+    },
+    "messages": {
+      "dataLoaded": "Template data loaded",
+      "loadError": "Error loading template",
+      "emptyContent": "Template content cannot be empty",
+      "updated": "Template successfully updated",
+      "created": "Template successfully created",
+      "saveError": "Error saving template",
+      "variableInserted": "Variable {{{{variable}}}} inserted"
+    },
+    "variables": {
+      "contractNumber": "Contract Number",
+      "agreementNumber": "Agreement Number (alt)",
+      "currentDate": "Current Date",
+      "city": "City",
+      "dateFrom": "Start Date",
+      "dateTo": "End Date",
+      "propertyName": "Property Name",
+      "propertyAddress": "Property Address",
+      "propertyNumber": "Property Number",
+      "rentAmount": "Rent Amount (month)",
+      "rentAmountMonthly": "Rent Amount (month)",
+      "rentAmountTotal": "Total Rent Amount",
+      "depositAmount": "Deposit Amount",
+      "utilitiesIncluded": "Included Services",
+      "bankName": "Bank Name",
+      "bankAccountName": "Account Holder",
+      "bankAccountNumber": "Account Number",
+      "landlordName": "Landlord Name",
+      "landlordCountry": "Country (landlord)",
+      "landlordPassport": "Passport (landlord)",
+      "landlordPassportNumber": "Passport (landlord, alt)",
+      "representativeName": "Representative Name",
+      "representativeCountry": "Country (representative)",
+      "representativePassport": "Passport (representative)",
+      "representativePassportNumber": "Passport (representative, alt)",
+      "tenantName": "Tenant Name",
+      "tenantCountry": "Country (tenant)",
+      "tenantPassport": "Passport (tenant)",
+      "tenantPassportNumber": "Passport (tenant, alt)",
+      "lessorName": "Lessor Name",
+      "lessorCountry": "Country (lessor)",
+      "lessorPassport": "Passport (lessor)",
+      "lessorPassportNumber": "Passport (lessor, alt)",
+      "agentName": "Agent Name",
+      "agentCountry": "Country (agent)",
+      "agentPassport": "Passport (agent)",
+      "agentPassportNumber": "Passport (agent, alt)",
+      "sellerName": "Seller Name",
+      "sellerCountry": "Country (seller)",
+      "sellerPassport": "Passport (seller)",
+      "sellerPassportNumber": "Passport (seller, alt)",
+      "buyerName": "Buyer Name",
+      "buyerCountry": "Country (buyer)",
+      "buyerPassport": "Passport (buyer)",
+      "buyerPassportNumber": "Passport (buyer, alt)",
+      "principalName": "Principal Name",
+      "principalCountry": "Country (principal)",
+      "principalPassport": "Passport (principal)",
+      "principalPassportNumber": "Passport (principal, alt)",
+      "witness1Name": "Witness 1 Name",
+      "witness1Country": "Country (witness 1)",
+      "witness1Passport": "Passport (witness 1)",
+      "witness2Name": "Witness 2 Name",
+      "witness2Country": "Country (witness 2)",
+      "witness2Passport": "Passport (witness 2)",
+      "witness3Name": "Witness 3 Name",
+      "witness3Country": "Country (witness 3)",
+      "witness3Passport": "Passport (witness 3)",
+      "witness4Name": "Witness 4 Name",
+      "witness4Country": "Country (witness 4)",
+      "witness4Passport": "Passport (witness 4)",
+      "witness5Name": "Witness 5 Name",
+      "witness5Country": "Country (witness 5)",
+      "witness5Passport": "Passport (witness 5)",
+      "company1Name": "Company 1 Name",
+      "company1Address": "Company 1 Address",
+      "company1TaxId": "Company 1 TAX ID",
+      "company1DirectorName": "Company 1 Director",
+      "company1DirectorPassport": "Director 1 Passport",
+      "company1DirectorCountry": "Director 1 Country",
+      "company2Name": "Company 2 Name",
+      "company2Address": "Company 2 Address",
+      "company2TaxId": "Company 2 TAX ID",
+      "company2DirectorName": "Company 2 Director",
+      "company2DirectorPassport": "Director 2 Passport",
+      "company2DirectorCountry": "Director 2 Country",
+      "company3Name": "Company 3 Name",
+      "company3Address": "Company 3 Address",
+      "company3TaxId": "Company 3 TAX ID",
+      "company3DirectorName": "Company 3 Director",
+      "company3DirectorPassport": "Director 3 Passport",
+      "company3DirectorCountry": "Director 3 Country"
+    }
+  },
+
+  "templateDetail": {
+    "actions": {
+      "back": "Back",
+      "edit": "Edit",
+      "pdf": "PDF"
+    },
+    "types": {
+      "rent": "Rental",
+      "sale": "Sale",
+      "bilateral": "Bilateral",
+      "trilateral": "Trilateral",
+      "agency": "Agency",
+      "transferAct": "Transfer Act"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "infoCard": {
+      "title": "Template Information"
+    },
+    "fields": {
+      "name": "Name",
+      "type": "Type",
+      "version": "Version",
+      "used": "Used",
+      "usedCount": "{{count}} times",
+      "created": "Created",
+      "createdBy": "Created By"
+    },
+    "preview": {
+      "title": "Preview"
+    },
+    "errors": {
+      "loadFailed": "Error loading template"
+    }
+  },
+
+  "botSettings": {
+    "title": "Bot Management",
+    "tabs": {
+      "accounts": "Telegram Accounts",
+      "groups": "Agent Groups",
+      "users": "Bot Users",
+      "adminChat": "Admin Chat"
+    },
+    "actions": {
+      "addAccount": "Add Account",
+      "createGroup": "Create Group",
+      "addUser": "Add User",
+      "sync": "Synchronize",
+      "edit": "Edit",
+      "configure": "Configure",
+      "create": "Create",
+      "confirm": "Confirm"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "activeGroup": "Active",
+      "inactiveGroup": "Inactive"
+    },
+    "roles": {
+      "manager": "Manager",
+      "agent": "Agent"
+    },
+    "tables": {
+      "actions": "Actions",
+      "accounts": {
+        "name": "Name",
+        "phone": "Phone",
+        "status": "Status",
+        "lastSync": "Last Sync"
+      },
+      "groups": {
+        "name": "Name",
+        "chatId": "Chat ID",
+        "description": "Description",
+        "members": "Members",
+        "status": "Status"
+      },
+      "users": {
+        "telegramId": "Telegram ID",
+        "username": "Username",
+        "name": "Name",
+        "role": "Role",
+        "status": "Status"
+      }
+    },
+    "fields": {
+      "accountName": "Account Name",
+      "phoneNumber": "Phone Number",
+      "apiId": "API ID",
+      "apiHash": "API Hash",
+      "telegramCode": "Telegram Code",
+      "password2FA": "2FA Password",
+      "groupName": "Group Name",
+      "chatId": "Chat ID",
+      "description": "Description",
+      "active": "Active",
+      "telegramId": "Telegram ID",
+      "username": "Username",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "role": "Role",
+      "name": "Name",
+      "nameOptional": "Name (optional)"
+    },
+    "placeholders": {
+      "accountName": "For example: Main Account",
+      "groupName": "For example: Main Agents",
+      "groupDescription": "Group description",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "password2FA": "Your two-factor authentication password",
+      "adminChatName": "NOVA Admin Chat"
+    },
+    "validation": {
+      "enterName": "Enter name",
+      "enterPhone": "Enter phone number",
+      "enterApiId": "Enter API ID",
+      "enterApiHash": "Enter API Hash",
+      "enterCode": "Enter code",
+      "enterPassword": "Enter password",
+      "enterChatId": "Enter Chat ID",
+      "enterTelegramId": "Enter Telegram ID",
+      "selectRole": "Select role"
+    },
+    "hints": {
+      "getApiCredentials": "Get at https://my.telegram.org/apps"
+    },
+    "alerts": {
+      "accounts": {
+        "title": "Information",
+        "description": "To create requests through bot, need to add at least one active Telegram account. After adding, click 'Synchronize' to authorize."
+      },
+      "groups": {
+        "title": "How to get Chat ID?",
+        "description": "1. Add bot to group<br />2. Write any message in group<br />3. Use special bots (e.g. @getidsbot) to get Chat ID"
+      },
+      "users": {
+        "title": "Information",
+        "description": "Only users from this list can use bot. Telegram ID can be found via @userinfobot"
+      },
+      "adminChat": {
+        "configured": "Admin chat configured",
+        "notConfigured": "Admin chat not configured",
+        "notConfiguredDescription": "Configure admin chat to receive notifications about request actions"
+      }
+    },
+    "modals": {
+      "addAccount": {
+        "title": "Add Telegram Account"
+      },
+      "auth": {
+        "title": "Telegram Account Authorization",
+        "steps": {
+          "sendCode": "Sending Code",
+          "enterCode": "Enter Code",
+          "password2FA": "2FA Password"
+        },
+        "codeSentTitle": "Code Sent",
+        "codeSentDescription": "Authorization code sent to Telegram at {{phone}}. Enter it below."
+      },
+      "group": {
+        "createTitle": "Create Group",
+        "editTitle": "Edit Group"
+      },
+      "user": {
+        "addTitle": "Add User",
+        "editTitle": "Edit User"
+      },
+      "adminChat": {
+        "title": "Configure Admin Chat"
+      }
+    },
+    "confirm": {
+      "deleteAccount": "Delete account?",
+      "deleteGroup": "Delete group?",
+      "deleteUser": "Delete user?",
+      "cannotUndo": "This action cannot be undone"
+    },
+    "messages": {
+      "accountsLoadError": "Error loading accounts",
+      "accountCreateError": "Error creating account",
+      "codeSent": "Code sent to Telegram",
+      "authStartError": "Error starting authorization",
+      "passwordRequired": "Two-factor authentication password required",
+      "accountAuthorized": "Account successfully authorized!",
+      "authError": "Authorization error",
+      "accountDeleted": "Account deleted",
+      "deleteError": "Delete error",
+      "groupsLoadError": "Error loading groups",
+      "groupUpdated": "Group updated",
+      "groupCreated": "Group created",
+      "groupSaveError": "Error saving group",
+      "groupDeleted": "Group deleted",
+      "usersLoadError": "Error loading users",
+      "userUpdated": "User updated",
+      "userCreated": "User created",
+      "userSaveError": "Error saving user",
+      "userDeleted": "User deleted",
+      "adminChatLoadError": "Error loading admin chat",
+      "adminChatSet": "Admin chat set",
+      "adminChatSetError": "Error setting admin chat"
+    }
+  },
+
+  "signaturesModal": {
+    "title": "Signature Management",
+    "table": {
+      "signer": "Signer",
+      "role": "Role",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "name": "Name",
+      "visited": "Visited",
+      "signerName": "Signer Name",
+      "role": "Role"
+    },
+    "placeholders": {
+      "selectRole": "Select role",
+      "signerName": "John Doe",
+      "customRole": "Or enter custom role"
+    },
+    "status": {
+      "signed": "Signed",
+      "waiting": "Waiting"
+    },
+    "actions": {
+      "copy": "Copy",
+      "edit": "Edit",
+      "update": "Update",
+      "notifyAgent": "Notify Agent",
+      "createSignatures": "Create Signatures",
+      "addAnotherSigner": "Add Another Signer",
+      "done": "Done"
+    },
+    "tooltips": {
+      "copyLink": "Copy Link",
+      "edit": "Edit",
+      "regenerate": "Regenerate Link"
+    },
+    "cards": {
+      "existingSignatures": "Existing Signatures",
+      "signedCount": "{{signed}} / {{total}} signed",
+      "addNewSigners": "Add New Signers",
+      "signerNumber": "Signer {{number}}",
+      "signatureLinks": "Signature Links"
+    },
+    "confirm": {
+      "regenerateTitle": "Regenerate link?",
+      "regenerateDescription": "Old link will become invalid",
+      "deleteTitle": "Delete signature?",
+      "deleteDescription": "This action cannot be undone"
+    },
+    "errors": {
+      "cannotNotify": "Cannot send notification: request data missing",
+      "notificationFailed": "Error sending notification",
+      "duplicateRole": "Role \"{{role}}\" specified for multiple signers. Each role must be unique.",
+      "roleAlreadyExists": "Role \"{{role}}\" already used in existing signatures. Choose another role.",
+      "fillAllFields": "Fill name and role for all signers",
+      "createFailed": "Error creating signatures",
+      "noDataToSave": "No data to save",
+      "enterSignerName": "Enter signer name",
+      "selectRole": "Select role",
+      "roleUsedByOther": "Role \"{{role}}\" already used by another signer. Choose another role.",
+      "updateFailed": "Update error",
+      "regenerateFailed": "Regenerate error",
+      "deleteFailed": "Delete error"
+    },
+    "messages": {
+      "agentNotified": "Notification sent to agent in Telegram",
+      "signaturesCreated": "Signatures successfully created",
+      "linkCopied": "Link copied",
+      "signatureUpdated": "Signature successfully updated",
+      "linkRegenerated": "Link regenerated",
+      "signatureDeleted": "Signature deleted"
+    }
+  },
+
+  "createAgreementModal": {
+    "title": "Create Agreement",
+    "titleWithRequest": "Create Agreement for Request {{number}}",
+    "steps": {
+      "template": "Template",
+      "details": "Details",
+      "parties": "Parties",
+      "finance": "Finance"
+    },
+    "sections": {
+      "property": "Property",
+      "documents": "Documents (passport) - optional",
+      "directorInfo": "Director Information",
+      "registrationDocs": "Registration Documents - optional",
+      "financialInfo": "Financial Information",
+      "bankDetails": "Bank Details"
+    },
+    "fields": {
+      "template": "Agreement Template",
+      "type": "Type",
+      "description": "Description",
+      "selectProperty": "Select property or complex",
+      "propertyNumber": "Property number in complex \"{{complex}}\"",
+      "addressOverride": "Property address (override)",
+      "propertyName": "Property Name",
+      "propertyNumberManual": "Property Number",
+      "propertyAddress": "Property Address",
+      "dateFrom": "Start Date",
+      "dateTo": "End Date",
+      "city": "City",
+      "fullName": "Full Name",
+      "passportCountry": "Passport Country",
+      "passportNumber": "Passport Number",
+      "companyName": "Company Name",
+      "taxId": "TAX ID",
+      "companyAddress": "Company Address",
+      "directorName": "Director Name",
+      "directorCountry": "Passport Country",
+      "directorPassport": "Director Passport",
+      "rentMonthly": "Rent Amount (monthly)",
+      "rentTotal": "Total Rent Amount",
+      "deposit": "Deposit Amount",
+      "utilitiesIncluded": "Included Services",
+      "bankName": "Bank Name",
+      "accountHolder": "Account Holder Name",
+      "accountNumber": "Account Number"
+    },
+    "placeholders": {
+      "selectTemplate": "Select template",
+      "startTyping": "Start typing name...",
+      "selectPropertyNumber": "Select property number",
+      "addressOverride": "Leave empty to use address from database",
+      "propertyName": "Villa Sunset",
+      "propertyNumber": "PROP-001",
+      "propertyAddress": "123 Beach Road, Phuket",
+      "selectDate": "Select date",
+      "city": "City",
+      "description": "Brief agreement description",
+      "fullName": "John Doe",
+      "passportCountry": "Russia",
+      "passportNumber": "AB1234567",
+      "companyName": "Company Ltd",
+      "taxId": "1234567890",
+      "companyAddress": "123 Business Street",
+      "directorName": "John Smith",
+      "directorCountry": "Thailand",
+      "directorPassport": "AB1234567",
+      "utilities": "Gardening, pool cleaning, Wi-Fi, TV",
+      "bankName": "Bangkok Bank",
+      "accountHolder": "John Doe",
+      "accountNumber": "123-4-56789-0"
+    },
+    "propertyInput": {
+      "selectFromDatabase": "Select from Database",
+      "enterManually": "Enter Manually"
+    },
+    "propertyGroups": {
+      "complexes": "🏢 Complexes",
+      "standalone": "🏠 Standalone Properties",
+      "property": "Property"
+    },
+    "propertySelected": "Selected property ID: {{id}}",
+    "templateDescription": "Template for creating \"{{type}}\" type agreement",
+    "partyTypes": {
+      "company": "Company",
+      "individual": "Individual"
+    },
+    "roles": {
+      "tenant": "Tenant",
+      "lessor": "Lessor",
+      "landlord": "Landlord",
+      "representative": "Landlord Representative",
+      "principal": "Principal",
+      "agent": "Agent",
+      "buyer": "Buyer",
+      "seller": "Seller",
+      "witness": "Witness",
+      "company": "Company"
+    },
+    "agreementTypes": {
+      "rent": "Rental",
+      "sale": "Sale",
+      "bilateral": "Bilateral",
+      "trilateral": "Trilateral",
+      "agency": "Agency",
+      "transfer_act": "Transfer Act"
+    },
+    "buttons": {
+      "back": "Back",
+      "next": "Next",
+      "create": "Create Agreement",
+      "addParty": "Add Party",
+      "uploadMore": "Upload Another Document",
+      "uploadPassport": "Upload Passport Photo",
+      "uploadCompanyDoc": "Upload Company Document"
+    },
+    "uploading": "Uploading...",
+    "documentAlt": "Document {{number}}",
+    "requestAlert": {
+      "title": "Request Data",
+      "request": "Request",
+      "client": "Client",
+      "rentalDates": "Rental Dates",
+      "prefilled": "Form prefilled with request data. You can edit them."
+    },
+    "validation": {
+      "selectTemplate": "Select template",
+      "fillAllParties": "Fill all required party fields",
+      "selectPropertyNumber": "Select property number",
+      "enterName": "Enter name",
+      "enterNumber": "Enter number",
+      "enterAddress": "Enter address"
+    },
+    "messages": {
+      "requestDataLoaded": "Request data loaded",
+      "requestLoadError": "Error loading request data",
+      "templatesLoadError": "Error loading templates",
+      "propertiesLoadError": "Error loading properties",
+      "loadingRequest": "Loading request data...",
+      "createdAndLinked": "Agreement created and linked to request",
+      "createdNotLinked": "Agreement created, but failed to link to request",
+      "created": "Agreement successfully created",
+      "createError": "Error creating agreement"
+    }
+  },
+
+  "folderPermissionsModal": {
+    "title": "Permissions Management",
+    "table": {
+      "user": "User",
+      "view": "View",
+      "upload": "Upload",
+      "download": "Download",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "buttons": {
+      "addUser": "Add User",
+      "add": "Add"
+    },
+    "placeholders": {
+      "selectUser": "Select user"
+    },
+    "confirm": {
+      "removeUser": "Remove user?"
+    },
+    "warnings": {
+      "selectUser": "Select user",
+      "userAlreadyAdded": "User already added"
+    },
+    "errors": {
+      "loadPermissions": "Error loading permissions",
+      "loadUsers": "Error loading users",
+      "savePermissions": "Error saving permissions"
+    },
+    "messages": {
+      "saved": "Permissions updated"
+    }
+  },
+
+  "filePreview": {
+    "videoNotSupported": "Your browser does not support video.",
+    "previewNotAvailable": "Preview not available for this file type"
+  },
+
+  "fileManager": {
+    "title": "File Manager",
+    "rootFolder": "Root Folder",
+    "emptyFolder": "Folder is empty",
+    "selected": "{{count}} selected",
+    "total": "Total {{total}}",
+    "audioNotSupported": "Your browser does not support audio.",
+    "previewFallback": "If preview doesn't work, download file for viewing",
+    "table": {
+      "folder": "Folder",
+      "file": "File",
+      "size": "Size",
+      "created": "Created",
+      "uploaded": "Uploaded",
+      "author": "Author"
+    },
+    "actions": {
+      "info": "Info",
+      "preview": "Preview",
+      "download": "Download",
+      "rename": "Rename",
+      "permissions": "Permissions"
+    },
+    "buttons": {
+      "downloadSelected": "Download Selected",
+      "deleteSelected": "Delete Selected",
+      "clearSelection": "Clear Selection",
+      "createFolder": "Create Folder",
+      "fromGoogleDrive": "From Google Drive",
+      "uploadFromGoogleDrive": "Upload from Google Drive",
+      "uploadFiles": "Upload Files",
+      "create": "Create",
+      "upload": "Upload",
+      "close": "Close",
+      "rename": "Rename"
+    },
+    "tooltips": {
+      "downloadFolder": "Download Folder",
+      "rename": "Rename",
+      "permissions": "Permissions",
+      "info": "Info",
+      "preview": "Preview",
+      "download": "Download"
+    },
+    "drawer": {
+      "actions": "Actions"
+    },
+    "modals": {
+      "createFolder": "Create Folder",
+      "uploadFromGoogleDrive": "Upload from Google Drive",
+      "fileInfo": "File Information",
+      "rename": "Rename {{type}}"
+    },
+    "renameTypes": {
+      "file": "file",
+      "folder": "folder"
+    },
+    "placeholders": {
+      "folderName": "Folder name",
+      "googleDriveUrl": "https://drive.google.com/drive/folders/...",
+      "newName": "New name"
+    },
+    "googleDrive": {
+      "instruction": "Paste Google Drive folder or file link:",
+      "note": "Note: Link must be public or you need to configure Google API Key"
+    },
+    "fileInfo": {
+      "name": "Name",
+      "size": "Size",
+      "type": "Type",
+      "uploaded": "Uploaded",
+      "author": "Author"
+    },
+    "confirm": {
+      "deleteFile": "Delete file?",
+      "deleteFolder": "Delete folder?",
+      "deleteFolderDescription": "All files and subfolders will be deleted",
+      "deleteSelectedFiles": "Delete selected files?",
+      "deleteSelectedFilesDescription": "Files to delete: {{count}}"
+    },
+    "loading": {
+      "pdf": "Loading PDF...",
+      "preparingArchive": "Preparing archive...",
+      "uploadingFiles": "Uploading files..."
+    },
+    "validation": {
+      "enterFolderName": "Enter folder name",
+      "enterDriveLink": "Enter Google Drive link",
+      "enterNewName": "Enter new name"
+    },
+    "errors": {
+      "imageLoadError": "Error loading image",
+      "textLoadError": "Error loading text",
+      "pdfLoadError": "Error loading PDF",
+      "loadContent": "Error loading content",
+      "createFolder": "Error creating folder",
+      "uploadFiles": "Error uploading files",
+      "downloadFile": "Error downloading file",
+      "downloadFolder": "Error downloading folder",
+      "downloadFiles": "Error downloading files",
+      "deleteFile": "Error deleting file",
+      "deleteFolder": "Error deleting folder",
+      "deleteFiles": "Error deleting files",
+      "driveImport": "Error importing from Google Drive",
+      "rename": "Error renaming"
+    },
+    "warnings": {
+      "selectFilesToDownload": "Select files to download",
+      "selectFilesToDelete": "Select files to delete"
+    },
+    "messages": {
+      "folderCreated": "Folder created",
+      "filesUploaded": "Files uploaded: {{count}}",
+      "fileDownloaded": "File downloaded",
+      "folderDownloaded": "Folder downloaded",
+      "filesDownloaded": "Files downloaded",
+      "fileDeleted": "File deleted",
+      "folderDeleted": "Folder deleted",
+      "filesDeleted": "Files deleted: {{count}}",
+      "driveImportStarted": "Google Drive upload started...",
+      "uploadComplete": "Upload complete!",
+      "renamed": "Renamed successfully"
+    }
+  },
+
+  "receiptDetail": {
+    "title": "Receipt",
+    "loading": "Loading...",
+    "notFound": "Receipt not found",
+    "noFiles": "No files uploaded",
+    "buttons": {
+      "backToList": "Back to List",
+      "back": "Back",
+      "edit": "Edit",
+      "copyLink": "Copy Link",
+      "downloadPDF": "Download PDF"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "verified": "Verified",
+      "rejected": "Rejected"
+    },
+    "paymentMethods": {
+      "bankTransfer": "Bank Transfer",
+      "cash": "Cash",
+      "crypto": "Cryptocurrency",
+      "barter": "Barter"
+    },
+    "sections": {
+      "mainInfo": "Main Information",
+      "paidItems": "Paid Items",
+      "paymentProofs": "Payment Proofs",
+      "qrCode": "QR Code for Verification",
+      "notes": "Notes"
+    },
+    "fields": {
+      "amountPaid": "Amount Paid",
+      "paymentMethod": "Payment Method",
+      "paymentDate": "Payment Date",
+      "invoice": "Invoice",
+      "agreement": "Agreement",
+      "created": "Created"
+    },
+    "confirm": {
+      "deleteTitle": "Delete receipt?",
+      "deleteDescription": "This action cannot be undone. Amount will be deducted from invoice."
+    },
+    "messages": {
+      "loadError": "Error loading receipt",
+      "deleted": "Receipt successfully deleted",
+      "deleteError": "Error deleting receipt",
+      "uuidNotFound": "Receipt UUID not found",
+      "linkCopied": "Link copied to clipboard",
+      "linkCopyError": "Error copying link",
+      "generatingPDF": "Generating PDF...",
+      "pdfDownloaded": "PDF successfully downloaded",
+      "pdfDownloadError": "Error downloading PDF"
+    }
+  },
+
+  "invoiceDetail": {
+    "title": "Invoice",
+    "loading": "Loading...",
+    "notFound": "Invoice not found",
+    "notSpecified": "Not specified",
+    "buttons": {
+      "backToList": "Back to List",
+      "back": "Back",
+      "edit": "Edit",
+      "copyLink": "Copy Link",
+      "downloadPDF": "Download PDF"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "partiallyPaid": "Partially Paid",
+      "paid": "Paid",
+      "overdue": "Overdue",
+      "cancelled": "Cancelled"
+    },
+    "paymentMethods": {
+      "bank": "Bank",
+      "cash": "Cash",
+      "crypto": "Crypto",
+      "barter": "Barter"
+    },
+    "receiptStatuses": {
+      "pending": "Pending",
+      "verified": "Verified",
+      "rejected": "Rejected"
+    },
+    "stats": {
+      "totalAmount": "Total Amount",
+      "paid": "Paid",
+      "remaining": "Remaining"
+    },
+    "sections": {
+      "mainInfo": "Main Information",
+      "from": "From",
+      "to": "To",
+      "items": "Items",
+      "bankDetails": "Bank Details",
+      "qrCode": "QR Code for Verification",
+      "paymentHistory": "Payment History",
+      "notes": "Notes"
+    },
+    "fields": {
+      "invoiceDate": "Invoice Date",
+      "dueDate": "Due Date",
+      "agreement": "Agreement",
+      "created": "Created",
+      "company": "Company",
+      "taxId": "TAX ID",
+      "address": "Address",
+      "director": "Director",
+      "fullName": "Full Name",
+      "country": "Country",
+      "passport": "Passport",
+      "bank": "Bank",
+      "accountHolder": "Account Holder",
+      "accountNumber": "Account Number"
+    },
+    "table": {
+      "items": {
+        "number": "№",
+        "description": "Description",
+        "quantity": "Qty",
+        "price": "Price",
+        "total": "Total"
+      },
+      "receipts": {
+        "receiptNumber": "Receipt Number",
+        "date": "Date",
+        "amount": "Amount",
+        "method": "Method",
+        "status": "Status"
+      }
+    },
+    "summary": {
+      "subtotal": "Subtotal",
+      "tax": "Tax",
+      "total": "Total"
+    },
+    "confirm": {
+      "deleteTitle": "Delete invoice?",
+      "deleteDescription": "This action cannot be undone"
+    },
+    "messages": {
+      "loadError": "Error loading invoice",
+      "deleted": "Invoice successfully deleted",
+      "deleteError": "Error deleting invoice",
+      "uuidNotFound": "Invoice UUID not found",
+      "linkCopied": "Link copied to clipboard",
+      "linkCopyError": "Error copying link",
+      "generatingPDF": "Generating PDF...",
+      "pdfDownloaded": "PDF successfully downloaded",
+      "pdfDownloadError": "Error downloading PDF"
+    }
+  },
+
+  "financialDocuments": {
+    "title": "Financial Documents",
+    "search": "Search...",
+    "tabs": {
+      "invoices": "Invoices",
+      "receipts": "Receipts"
+    },
+    "stats": {
+      "totalInvoices": "Total Invoices",
+      "paidInvoices": "Paid",
+      "totalAmount": "Total Amount",
+      "amountReceived": "Amount Received"
+    },
+    "filters": {
+      "status": "Status",
+      "all": "All"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "partiallyPaid": "Partially Paid",
+      "paid": "Paid",
+      "overdue": "Overdue",
+      "cancelled": "Cancelled",
+      "pending": "Pending",
+      "verified": "Verified",
+      "rejected": "Rejected"
+    },
+    "paymentMethods": {
+      "bankTransfer": "Bank Transfer",
+      "cash": "Cash",
+      "crypto": "Crypto",
+      "barter": "Barter"
+    },
+    "buttons": {
+      "createInvoice": "Create Invoice",
+      "createReceipt": "Create Receipt"
+    },
+    "table": {
+      "invoices": {
+        "number": "Number",
+        "status": "Status",
+        "agreement": "Agreement",
+        "amount": "Amount",
+        "paid": "Paid",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "receipts": {
+        "number": "Number",
+        "status": "Status",
+        "invoice": "Invoice",
+        "amount": "Amount",
+        "paymentMethod": "Payment Method",
+        "date": "Date",
+        "actions": "Actions"
+      }
+    },
+    "actions": {
+      "view": "View",
+      "downloadPDF": "Download PDF"
+    },
+    "messages": {
+      "invoicesLoadError": "Error loading invoices",
+      "receiptsLoadError": "Error loading receipts",
+      "pdfDownloaded": "PDF downloaded",
+      "pdfDownloadError": "Error downloading PDF",
+      "invoiceDeleted": "Invoice deleted",
+      "invoiceDeleteError": "Error deleting invoice",
+      "receiptDeleted": "Receipt deleted",
+      "receiptDeleteError": "Error deleting receipt"
+    }
+  },
+
+  "createInvoiceModal": {
+    "title": "Create Invoice",
+    "steps": {
+      "basic": "Basic",
+      "parties": "Parties",
+      "items": "Items",
+      "bank": "Bank"
+    },
+    "sections": {
+      "from": "From",
+      "to": "To",
+      "director": "Director",
+      "bankDetails": "Bank Details for Payment",
+      "summary": "Summary Information"
+    },
+    "fields": {
+      "agreement": "Agreement",
+      "invoiceDate": "Invoice Date",
+      "dueDate": "Due Date (optional)",
+      "notes": "Notes",
+      "type": "Type",
+      "companyName": "Company Name *",
+      "taxId": "TAX ID *",
+      "companyAddress": "Company Address",
+      "directorName": "Director Name *",
+      "passportCountry": "Passport Country",
+      "directorPassport": "Director Passport",
+      "fullName": "Full Name *",
+      "country": "Country *",
+      "passportNumber": "Passport Number *",
+      "tax": "Tax (if any)",
+      "bankName": "Bank Name",
+      "accountHolder": "Account Holder Name",
+      "accountNumber": "Account Number"
+    },
+    "partyTypes": {
+      "company": "Company",
+      "individual": "Individual"
+    },
+    "items": {
+      "position": "Position {{number}}",
+      "quantity": "Qty",
+      "price": "Price",
+      "total": "Total"
+    },
+    "totals": {
+      "subtotal": "Subtotal",
+      "total": "Total"
+    },
+    "summary": {
+      "itemsCount": "Items Count",
+      "totalAmount": "Total Amount"
+    },
+    "buttons": {
+      "addItem": "Add Item",
+      "back": "Back",
+      "next": "Next",
+      "create": "Create Invoice"
+    },
+    "placeholders": {
+      "selectAgreement": "Select agreement (optional)",
+      "notes": "Additional invoice information",
+      "itemDescription": "Service or product description *"
+    },
+    "validation": {
+      "selectAgreement": "Select agreement",
+      "specifyDate": "Specify date",
+      "specifyName": "Specify name",
+      "specifyTaxId": "Specify TAX ID",
+      "specifyFullName": "Specify full name",
+      "specifyCountry": "Specify country",
+      "specifyPassport": "Specify passport",
+      "addAtLeastOneItem": "Add at least one item with description and price"
+    },
+    "messages": {
+      "agreementsLoadError": "Error loading agreements",
+      "agreementDataLoaded": "Agreement data loaded. You can edit them",
+      "agreementDataLoadError": "Error loading agreement data",
+      "created": "Invoice successfully created",
+      "createError": "Error creating invoice"
+    }
+  },
+
+  "createReceiptModal": {
+    "title": "Create Payment Receipt",
+    "remaining": "remaining",
+    "selectAll": "Select All",
+    "steps": {
+      "basic": "Basic",
+      "files": "Files"
+    },
+    "sections": {
+      "selectItems": "Select Items for Payment",
+      "summary": "Summary Information"
+    },
+    "fields": {
+      "agreement": "Agreement",
+      "invoice": "Invoice",
+      "paymentDate": "Payment Date",
+      "paymentAmount": "Payment Amount",
+      "paymentMethod": "Payment Method",
+      "notes": "Notes"
+    },
+    "paymentMethods": {
+      "bankTransfer": "Bank Transfer",
+      "cash": "Cash",
+      "crypto": "Cryptocurrency",
+      "barter": "Barter"
+    },
+    "invoiceInfo": {
+      "title": "Invoice Information",
+      "totalAmount": "Total Amount",
+      "alreadyPaid": "Already Paid",
+      "remainingToPay": "Remaining to Pay"
+    },
+    "fileUpload": {
+      "title": "Upload Payment Confirmations",
+      "description": "Upload screenshots or photos of payment receipts. This is optional, but will help with payment verification.",
+      "uploadButton": "Upload Payment Confirmations",
+      "uploadedMore": "Files uploaded: {{count}}. Upload more"
+    },
+    "summary": {
+      "paymentAmount": "Payment Amount",
+      "paymentMethod": "Payment Method",
+      "itemsPaid": "Items Paid",
+      "filesAttached": "Files Attached"
+    },
+    "buttons": {
+      "back": "Back",
+      "next": "Next",
+      "create": "Create Receipt"
+    },
+    "placeholders": {
+      "selectAgreement": "Select agreement",
+      "selectInvoice": "Select invoice",
+      "selectMethod": "Select method",
+      "notes": "Additional payment information"
+    },
+    "validation": {
+      "selectAgreement": "Select agreement",
+      "selectInvoice": "Select invoice",
+      "specifyDate": "Specify date",
+      "specifyAmount": "Specify amount",
+      "amountExceedsRemaining": "Amount exceeds remaining balance",
+      "selectPaymentMethod": "Select payment method",
+      "selectAtLeastOneItem": "Select at least one item for payment"
+    },
+    "messages": {
+      "agreementsLoadError": "Error loading agreements",
+      "invoiceLoadError": "Error loading invoice",
+      "invoicesLoadError": "Error loading invoices",
+      "createdButFilesNotUploaded": "Receipt created, but not all files uploaded",
+      "created": "Receipt successfully created",
+      "createError": "Error creating receipt"
+    }
+  },
+
+  "editInvoiceModal": {
+    "title": "Edit Invoice",
+    "buttons": {
+      "save": "Save Changes"
+    },
+    "messages": {
+      "agreementDataLoaded": "Agreement data loaded",
+      "updated": "Invoice successfully updated",
+      "updateError": "Error updating invoice"
+    }
+  },
+
+  "editReceiptModal": {
+    "title": "Edit Receipt",
+    "sections": {
+      "paidItems": "Paid Items"
+    },
+    "buttons": {
+      "save": "Save Changes"
+    },
+    "placeholders": {
+      "receiptNotes": "Additional receipt information"
+    },
+    "messages": {
+      "invoiceItemsLoadError": "Error loading invoice items",
+      "updated": "Receipt successfully updated",
+      "updateError": "Error updating receipt"
+    }
+  },
+
+  "receiptsList": {
+    "table": {
+      "number": "Number",
+      "status": "Status",
+      "invoice": "Invoice",
+      "amountPaid": "Amount Paid",
+      "paymentMethod": "Payment Method",
+      "files": "Files",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "verified": "Verified",
+      "rejected": "Rejected"
+    },
+    "actions": {
+      "view": "View",
+      "copyLink": "Copy Link",
+      "downloadPDF": "Download PDF"
+    },
+    "pagination": {
+      "total": "Total: {{total}}"
+    },
+    "mobile": {
+      "loading": "Loading...",
+      "noReceipts": "No receipts found",
+      "method": "Method",
+      "invoice": "Invoice",
+      "filesCount": "{{count}} file(s)",
+      "open": "Open"
+    },
+    "confirm": {
+      "deleteTitle": "Delete receipt?",
+      "deleteDescription": "This action cannot be undone. Amount will be deducted from invoice."
+    },
+    "messages": {
+      "deleted": "Receipt successfully deleted",
+      "deleteError": "Error deleting receipt",
+      "linkCopied": "Link copied to clipboard",
+      "linkCopyError": "Error copying link",
+      "generatingPDF": "Generating PDF...",
+      "pdfDownloaded": "PDF successfully downloaded",
+      "pdfDownloadError": "Error downloading PDF"
+    }
+  },
+
+  "requestsList": {
+    "title": "Requests",
+    "client": "Client",
+    "agent": "Agent",
+    "notAssigned": "Not Assigned",
+    "screenshots": "Screenshots",
+    "chat": "Chat",
+    "request": "Request",
+    "screenshot": "Screenshot {{number}}",
+    "upload": "Upload",
+    "uploadDescription": "Upload screenshots of WhatsApp conversation with client (up to 10)",
+    "table": {
+      "requestNumber": "Request Number",
+      "client": "Client",
+      "agent": "Agent",
+      "status": "Status",
+      "firstMessage": "First Message",
+      "lastMessage": "Last Message",
+      "views": "Views",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "statuses": {
+      "new": "New",
+      "inProgress": "In Progress",
+      "rejected": "Rejected",
+      "completed": "Completed",
+      "dealCreated": "Deal Created"
+    },
+    "tooltips": {
+      "createAgreement": "Create Agreement",
+      "chatHistory": "Chat History",
+      "manageRequest": "Manage Request"
+    },
+    "buttons": {
+      "createRequest": "Create Request",
+      "botManagement": "Bot Management"
+    },
+    "placeholders": {
+      "search": "Search by number, name, phone",
+      "allStatuses": "All Statuses",
+      "clientName": "For example: John Doe",
+      "phone": "For example: +7 900 123 45 67",
+      "selectAgentGroup": "Select agent group",
+      "note": "Additional request information"
+    },
+    "pagination": {
+      "total": "Total: {{total}}"
+    },
+    "modals": {
+      "createRequest": "Create Request",
+      "createWhatsAppRequest": "Create WhatsApp Request"
+    },
+    "form": {
+      "clientName": "Client Name",
+      "whatsappPhone": "WhatsApp Phone Number",
+      "agentGroup": "Agent Group",
+      "note": "Note",
+      "screenshots": "Conversation Screenshots"
+    },
+    "validation": {
+      "enterClientName": "Enter client name",
+      "enterPhone": "Enter phone number"
+    },
+    "confirm": {
+      "deleteTitle": "Are you sure?",
+      "deleteDescription": "This action cannot be undone"
+    },
+    "messages": {
+      "loadError": "Error loading requests",
+      "deleted": "Request deleted",
+      "deleteError": "Error deleting request",
+      "telegramInfo": "Creating Telegram request available through Telegram bot",
+      "screenshotUploaded": "Screenshot uploaded",
+      "screenshotUploadError": "Error uploading screenshot",
+      "uploadAtLeastOneScreenshot": "Upload at least one conversation screenshot",
+      "whatsappRequestCreated": "WhatsApp request successfully created!",
+      "createError": "Error creating request"
+    },
+    "successModal": {
+      "title": "Request Created",
+      "requestNumber": "Request Number",
+      "viewScreenshots": "View Screenshots",
+      "manageRequest": "Manage Request"
+    }
+  },
+
+  "properties": {
+    "title": "Properties",
+    "list": "Properties List",
+    "add": "Add Property",
+    "edit": "Edit Property",
+    "createSuccess": "Property successfully created",
+    "updateSuccess": "Property successfully updated",
+    "deleteSuccess": "Property successfully deleted",
+    "confirmDelete": "Are you sure you want to delete this property?",
+    "search": "Search by name or number",
+    "searchButton": "Search",
+    "noProperties": "No properties",
+    "loadingProperties": "Loading properties...",
+    
+    "photo": "Photo",
+    "propertyNumber": "Property Number",
+    "propertyName": "Property Name",
+    "name": "Name",
+    "dealType": "Deal Type",
+    "propertyType": "Property Type",
+    "type": "Type",
+    "region": "Region",
+    "address": "Address",
+    "googleMapsLink": "Google Maps Link",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "complexName": "Complex Name",
+    "complexNamePlaceholder": "For example: Laguna Village",
+    "complexInfo": "Important Complex Information",
+    "complexInfoText": "Complex name is used for grouping properties. Make sure name is specified exactly same for all properties in same complex.",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "price": "Price",
+    "noOwnerInfo": "Owner information missing",
+    "salePrice": "Sale Price",
+    "rentPrice": "Rent Price",
+    "indoorArea": "Indoor Area",
+    "outdoorArea": "Outdoor Area",
+    "plotSize": "Plot Size",
+    "floors": "Number of Floors",
+    "floor": "Floor",
+    "constructionYear": "Construction Year",
+    "constructionMonth": "Construction Month",
+    "furnitureStatus": "Furniture Status",
+    "parkingSpaces": "Parking Spaces",
+    "status": "Status",
+    "creator": "Creator",
+    "createdAt": "Creation Date",
+    "updatedAt": "Update Date",
+    "ownerName": "Owner Name",
+    "ownerPhone": "Owner Phone",
+    "ownerEmail": "Owner Email",
+    "ownerTelegram": "Owner Telegram",
+    "ownerInstagram": "Owner Instagram",
+    "ownerNotes": "Owner Notes",
+    "ownerInfo": "Owner Information",
+    "ownership": "Ownership Type",
+    "buildingOwnership": "Building Ownership",
+    "landOwnership": "Land Ownership",
+    "minimumNights": "Minimum Nights",
+    "petsAllowed": "Pets Allowed",
+    "icsCalendarUrl": "ICS Calendar URL",
+    "videoUrl": "Video URL",
+    "coordinatesDetected": "Coordinates detected",
+    "coordinatesError": "Failed to detect coordinates",
+    "autoDetectCoordinates": "Auto-detect Coordinates",
+    "description": "Description",
+    "sale": "Sale",
+    "rent": "Rent",
+    "published": "Published",
+    "draft": "Draft",
+    "source": "Source",
+    "addedBy": "Added By",
+    "prices": "Prices",
+
+    "form": {
+      "viewMode": "View Property",
+      "editMode": "Edit Property",
+      "createMode": "Create Property",
+      "createWithAI": "Create with AI",
+      "editButton": "Edit",
+      "saveButton": "Save",
+      "createButton": "Create",
+      "cancelButton": "Cancel",
+      
+      "propertyNameLabel": "Property Name",
+      "propertyNameTooltip": "This name will be used in all languages. For example: 'Laguna Village' or 'Sea View Villa'",
+      "propertyNameExtra": "Property name is same for all languages",
+      "propertyNamePlaceholder": "For example: Laguna Village",
+      
+      "videoUrlLabel": "Video URL (YouTube, Vimeo)",
+      "videoUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+      
+      "addressPlaceholder": "Exact property address",
+      "googleMapsPlaceholder": "https://maps.google.com/...",
+      "googleMapsWarning": "Coordinates detection required",
+      
+      "floorPlaceholder": "1, 2, 3 or 1-2",
+      "constructionMonthPlaceholder": "Month",
+      
+      "months": {
+        "january": "January",
+        "february": "February",
+        "march": "March",
+        "april": "April",
+        "may": "May",
+        "june": "June",
+        "july": "July",
+        "august": "August",
+        "september": "September",
+        "october": "October",
+        "november": "November",
+        "december": "December"
+      },
+      
+      "furnitureStatuses": {
+        "fullyFurnished": "Fully Furnished",
+        "partiallyFurnished": "Partially Furnished",
+        "unfurnished": "Unfurnished",
+        "builtIn": "Built-in Furniture",
+        "empty": "Empty"
+      },
+      
+      "petsOptions": {
+        "yes": "Allowed",
+        "no": "Not Allowed",
+        "negotiable": "Negotiable",
+        "custom": "Special Conditions"
+      },
+      
+      "statusTooltip": "Status change available only for super-admin",
+      
+      "ownerNotesPlaceholder": "Additional owner notes"
+    },
+
+    "messages": {
+      "noEditPermission": "You don't have permission to edit this property",
+      "propertyNameRequired": "Property name must be filled in basic information",
+      "descriptionRequired": "For publishing property, description must be filled in at least one language. Use AI generator or fill manually.",
+      "fillRequiredFields": "Please fill all required fields",
+      "coordinatesWarning": "Enter Google Maps link",
+      "coordinatesDetected": "Coordinates detected",
+      "coordinatesError": "Error detecting coordinates",
+      "beachDistanceCalculated": "Beach distance: {{distance}} ({{beach}})",
+      "aiFillingForm": "Filling form with AI data...",
+      "aiFormFilled": "Form successfully filled with AI data!",
+      "aiCoordinatesDetecting": "Auto-detecting coordinates...",
+      "aiMonthlyPrices": "AI detected monthly prices for {{count}} months",
+      "aiBlockedDates": "AI detected {{count}} blocked dates",
+      "aiGoogleDrivePhotos": "AI found Google Drive photos link",
+      "savedMonthlyPrices": "Saved {{count}} monthly prices",
+      "savedBlockedDates": "Saved {{count}} blocked dates",
+      "googleDrivePhotosLoading": "Loading photos from Google Drive...",
+      "aiFillError": "Error filling form",
+      "aiDescriptionsGenerated": "Descriptions successfully generated! Don't forget to save changes.",
+      "aiFeaturesFound": "Found and added {{count}} features from photos"
+    },
+
+    "ai": {
+      "modalTitle": "AI Filled Form",
+      "modalDescription": "Artificial intelligence automatically filled form fields based on your description.",
+      "modalWarning": "Please check correctness of all data before saving property!",
+      "modalCheckTitle": "Pay special attention to:",
+      "modalCheckPrices": "Prices (seasonal and monthly) - {{info}}",
+      "modalCheckCoordinates": "Coordinates on map",
+      "modalCheckFeatures": "Property features",
+      "modalCheckOwner": "Owner information",
+      "modalCheckCalendar": "Calendar occupancy ({{count}} dates)",
+      "modalCheckPhotos": "Photos from Google Drive (will be uploaded on save)",
+      "modalPricesNotSet": "not specified",
+      "modalPricesSet": "{{count}} months",
+      "modalOkButton": "Understood",
+      
+      "generatorAlert": "AI Description Generation",
+      "generatorAlertDescription": "After creating property you can automatically generate descriptions in 5 languages using artificial intelligence."
+    },
+
+    "distance": {
+      "title": "Beach Distance",
+      "label": "Distance (in meters)",
+      "tooltip": "Will be calculated automatically when coordinates specified",
+      "placeholder": "For example: 500",
+      "autoCalculateAlert": "Auto Calculation",
+      "autoCalculateDescription": "Beach distance will be automatically calculated when saving property based on specified coordinates",
+      "categories": {
+        "onBeach": "On Beach",
+        "nearBeach": "Near Beach (up to 500m)",
+        "closeToBeach": "Close to Beach (up to 1km)",
+        "within2km": "Within 2km",
+        "within5km": "Within 5km",
+        "farFromBeach": "Far from Beach"
+      }
+    },
+
+    "rental": {
+      "includedTitle": "Included in Rental Price",
+      "includedLabel": "What's Included in Price",
+      "includedTooltip": "For example: Pool and lawn 2 times per week, internet, cable TV",
+      "includedPlaceholder": "Included: pool and lawn 2 times per week, internet, cable TV, electricity and water"
+    },
+
+    "salePrice": {
+      "title": "Sale Price"
+    },
+
+    "constantRentPrice": {
+      "title": "Constant Rent Price",
+      "yearPriceLabel": "Yearly Price"
+    },
+
+    "dealTypes": {
+      "sale": "Sale",
+      "rent": "Rent",
+      "both": "Sale and Rent"
+    },
+
+    "propertyTypes": {
+      "villa": "Villa",
+      "apartment": "Apartment",
+      "condo": "Condominium",
+      "penthouse": "Penthouse",
+      "house": "House",
+      "land": "Land"
+    },
+
+    "regions": {
+      "bangtao": "Bangtao",
+      "kamala": "Kamala",
+      "surin": "Surin",
+      "layan": "Layan",
+      "rawai": "Rawai",
+      "patong": "Patong",
+      "kata": "Kata",
+      "karon": "Karon",
+      "naiharn": "Nai Harn",
+      "maikhao": "Mai Khao",
+      "yamu": "Yamu",
+      "paklok": "Paklok"
+    },
+
+    "statuses": {
+      "draft": "Draft",
+      "published": "Published",
+      "hidden": "Hidden",
+      "archived": "Archived"
+    },
+
+    "furnitureStatuses": {
+      "furnished": "Furnished",
+      "unfurnished": "Unfurnished",
+      "partially": "Partially Furnished"
+    },
+
+    "ownershipTypes": {
+      "freehold": "Freehold",
+      "leasehold": "Leasehold",
+      "company": "Company"
+    },
+
+    "filters": {
+      "search": "Search by name or number",
+      "byStatus": "By Status",
+      "byType": "By Type",
+      "byDealType": "By Deal Type",
+      "byRegion": "By Region",
+      "clearAll": "Clear All"
+    },
+
+    "visibility": {
+      "publishSuccess": "Property published",
+      "hideSuccess": "Property hidden",
+      "showOnSite": "Show on Site",
+      "hideFromSite": "Hide from Site",
+      "changeVisibility": "Change Visibility"
+    },
+
+    "tabs": {
+      "basic": "Basic Information",
+      "owner": "Owner",
+      "translations": "Description",
+      "features": "Features",
+      "pricing": "Pricing",
+      "media": "Media"
+    },
+
+    "translations": {
+      "title": "Translations and Descriptions",
+      "namePlaceholder": "Enter property name",
+      "descriptionPlaceholder": "Enter full property description...",
+      "languageRequired": "At least one language must be filled"
+    },
+
+    "renovation": {
+      "title": "Renovation",
+      "type": "Renovation Type",
+      "date": "Renovation Date",
+      "noRenovation": "No Renovation",
+      "types": {
+        "full": "Full Renovation",
+        "partial": "Partial Renovation"
+      }
+    },
+
+    "features": {
+      "title": "Property Features",
+      "propertyFeatures": "Property Features",
+      "outdoorFeatures": "Outdoor Features",
+      "rentalFeatures": "Rental Terms",
+      "locationFeatures": "Location",
+      "views": "Views",
+      
+      "mediaRoom": "Media Room",
+      "privateGym": "Private Gym",
+      "privateLift": "Private Lift",
+      "privateSauna": "Private Sauna",
+      "jacuzzi": "Jacuzzi",
+      "cornerUnit": "Corner Unit",
+      "maidsQuarters": "Maid's Quarters",
+      "duplex": "Duplex",
+      "triplex": "Triplex",
+      "balcony": "Balcony",
+      "westernKitchen": "Western Kitchen",
+      "thaiKitchen": "Thai Kitchen",
+      "openKitchen": "Open Kitchen",
+      "closedKitchen": "Closed Kitchen",
+      "bathtub": "Bathtub",
+      "shower": "Shower",
+      "separateShower": "Separate Shower",
+      "smartHome": "Smart Home",
+      "privatePool": "Private Pool",
+      "sharedPool": "Shared Pool",
+      "infinityPool": "Infinity Pool",
+      "kidPool": "Kids Pool",
+      "securitySystem": "Security System",
+      "cctv": "CCTV",
+      "alarmSystem": "Alarm System",
+      "airConditioning": "Air Conditioning",
+      "centralAC": "Central AC",
+      "heating": "Heating",
+      "floorHeating": "Floor Heating",
+      "fireplace": "Fireplace",
+      "solarPanels": "Solar Panels",
+      "waterHeater": "Water Heater",
+      "solarWaterHeater": "Solar Water Heater",
+      "highCeiling": "High Ceilings",
+      "largeWindows": "Large Windows",
+      "floorToFloorWindows": "Floor-to-Ceiling Windows",
+      "walkinCloset": "Walk-in Closet",
+      "builtinWardrobe": "Built-in Wardrobe",
+      "study": "Study",
+      "library": "Library",
+      "winecellar": "Wine Cellar",
+      "elevator": "Elevator",
+      "homeElevator": "Home Elevator",
+      "furnished": "Furnished",
+      "partiallyFurnished": "Partially Furnished",
+      "fullyEquipped": "Fully Equipped",
+      "euroRenovation": "Euro Renovation",
+      "designerRenovation": "Designer Renovation",
+      "modernDesign": "Modern Design",
+      "traditionalStyle": "Traditional Style",
+      "minimalist": "Minimalist",
+      "luxury": "Luxury Class",
+      "penthouseLevel": "Penthouse Level",
+      "groundFloor": "Ground Floor",
+      "topFloor": "Top Floor",
+      "multiLevel": "Multi-Level",
+      "studio": "Studio",
+      "openPlan": "Open Plan",
+      "separateEntrance": "Separate Entrance",
+      "privateEntrance": "Private Entrance",
+      "soundproofing": "Soundproofing",
+      "waterFiltration": "Water Filtration",
+      "airPurifier": "Air Purifier",
+      "intercom": "Intercom",
+      "videoIntercom": "Video Intercom",
+      "safebox": "Safe Box",
+      "washer": "Washing Machine",
+      "dryer": "Dryer",
+      "dishwasher": "Dishwasher",
+      "refrigerator": "Refrigerator",
+      "microwave": "Microwave",
+      "oven": "Oven",
+      "stove": "Stove",
+      "gasStove": "Gas Stove",
+      "electricStove": "Electric Stove",
+      "inductionStove": "Induction Stove",
+      "coffeemaker": "Coffee Maker",
+      "waterDispenser": "Water Dispenser",
+      "tv": "TV",
+      "smartTV": "Smart TV",
+      "wifi": "WiFi",
+      "highSpeedInternet": "High-Speed Internet",
+      "fiberOptic": "Fiber Optic",
+      "telephone": "Telephone",
+      "satelliteTV": "Satellite TV",
+      "surround": "Surround Sound",
+      "homeTheater": "Home Theater",
+      "musicSystem": "Music System",
+      "piano": "Piano",
+      "gameRoom": "Game Room",
+      "billiardRoom": "Billiard Room",
+      "kidsRoom": "Kids Room",
+      "nursery": "Nursery",
+      "guestRoom": "Guest Room",
+      "serviceRoom": "Service Room",
+      "utilityRoom": "Utility Room",
+      "pantry": "Pantry",
+      "wetRoom": "Wet Room",
+      "powderRoom": "Powder Room",
+      "ensuiteБathroom": "Ensuite Bathroom",
+      "sharedBathroom": "Shared Bathroom",
+      "outdoorBathroom": "Outdoor Bathroom",
+      "steamRoom": "Steam Room",
+      "hammam": "Hammam",
+      "massage": "Massage Room",
+      "yogaRoom": "Yoga Room",
+      "meditationRoom": "Meditation Room",
+      "artStudio": "Art Studio",
+      "workshop": "Workshop",
+      "petFriendly": "Pet Friendly",
+      "childFriendly": "Child Friendly",
+      "wheelchair": "Wheelchair Accessible",
+      "disabledAccess": "Disabled Access",
+      "ramp": "Ramp",
+      "emergencyExit": "Emergency Exit",
+      "fireExtinguisher": "Fire Extinguisher",
+      "firstAidKit": "First Aid Kit",
+      "smokeDetector": "Smoke Detector",
+      "carbonMonoxide": "Carbon Monoxide Detector",
+      "generator": "Generator",
+      "ups": "UPS",
+      "waterTank": "Water Tank",
+      "waterPump": "Water Pump",
+      "septicTank": "Septic Tank",
+      "sewageSystem": "Sewage System",
+      "drainageSystem": "Drainage System",
+      "irrigationSystem": "Irrigation System",
+      "rainwaterCollection": "Rainwater Collection",
+      "eco": "Eco-Friendly",
+      "energyEfficient": "Energy Efficient",
+      "sustainable": "Sustainable",
+      "greenBuilding": "Green Building",
+      "leed": "LEED Certified",
+      "newConstruction": "New Construction",
+      "underConstruction": "Under Construction",
+      "readyToMove": "Ready to Move",
+      "offPlan": "Off Plan",
+      "resale": "Resale",
+      
+      "garden": "Garden",
+      "privateGarden": "Private Garden",
+      "landscaped": "Landscaped",
+      "tropicalGarden": "Tropical Garden",
+      "japaneseGarden": "Japanese Garden",
+      "vegetableGarden": "Vegetable Garden",
+      "fruitTrees": "Fruit Trees",
+      "flowerGarden": "Flower Garden",
+      "terrace": "Terrace",
+      "rooftop": "Rooftop",
+      "rooftopTerrace": "Rooftop Terrace",
+      "skyGarden": "Sky Garden",
+      "bbqArea": "BBQ Area",
+      "outdoorKitchen": "Outdoor Kitchen",
+      "outdoorShower": "Outdoor Shower",
+      "beachShower": "Beach Shower",
+      "garage": "Garage",
+      "carport": "Carport",
+      "coveredParking": "Covered Parking",
+      "openParking": "Open Parking",
+      "secureParking": "Secure Parking",
+      "guestParking": "Guest Parking",
+      "electricCarCharger": "Electric Car Charger",
+      "bikestorage": "Bike Storage",
+      "poolBar": "Pool Bar",
+      "summerKitchen": "Summer Kitchen",
+      "outdoorDining": "Outdoor Dining",
+      "lounge": "Lounge Area",
+      "sunbeds": "Sun Beds",
+      "sunshade": "Sunshade",
+      "pergola": "Pergola",
+      "gazebo": "Gazebo",
+      "pavilion": "Pavilion",
+      "fountain": "Fountain",
+      "pond": "Pond",
+      "koiPond": "Koi Pond",
+      "waterfall": "Waterfall",
+      "streambed": "Stream",
+      "playground": "Playground",
+      "swingSet": "Swing Set",
+      "slide": "Slide",
+      "sandbox": "Sandbox",
+      "trampoline": "Trampoline",
+      "petArea": "Pet Area",
+      "dogRun": "Dog Run",
+      "petShower": "Pet Shower",
+      "storageRoom": "Storage Room",
+      "shed": "Shed",
+      "greenhouse": "Greenhouse",
+      "laundryRoom": "Laundry Room",
+      "dryingArea": "Drying Area",
+      "outdoorGym": "Outdoor Gym",
+      "sportsArea": "Sports Area",
+      "tennisCourt": "Tennis Court",
+      "basketballCourt": "Basketball Court",
+      "footballField": "Football Field",
+      "volleyball": "Volleyball Court",
+      "badminton": "Badminton Court",
+      "puttingGreen": "Putting Green",
+      "bocce": "Bocce Court",
+      "skatepark": "Skatepark",
+      "joggingTrack": "Jogging Track",
+      "walkingPath": "Walking Path",
+      "cyclingPath": "Cycling Path",
+      "fishingPier": "Fishing Pier",
+      "boatDock": "Boat Dock",
+      "marina": "Marina",
+      "beachAccess": "Beach Access",
+      "privateBeach": "Private Beach",
+      "beachCabana": "Beach Cabana",
+      "fence": "Fence",
+      "wall": "Wall",
+      "gate": "Gate",
+      "electricGate": "Electric Gate",
+      "securityGate": "Security Gate",
+      "driveway": "Driveway",
+      "pavedDriveway": "Paved Driveway",
+      "gravelDriveway": "Gravel Driveway",
+      "streetLighting": "Street Lighting",
+      "gardenLighting": "Garden Lighting",
+      "securityLighting": "Security Lighting",
+      "decorativeLighting": "Decorative Lighting",
+      "sprinklerSystem": "Sprinkler System",
+      "automaticSprinklers": "Automatic Sprinklers",
+      "drip": "Drip Irrigation",
+      "well": "Well",
+      "borehole": "Borehole",
+      
+      "maidService": "Maid Service",
+      "dailyCleaning": "Daily Cleaning",
+      "weeklyCleaning": "Weekly Cleaning",
+      "chefService": "Chef Service",
+      "privateChef": "Private Chef",
+      "cateringService": "Catering Service",
+      "airportTransfer": "Airport Transfer",
+      "carRental": "Car Rental",
+      "driverService": "Driver Service",
+      "breakfastIncluded": "Breakfast Included",
+      "halfBoard": "Half Board",
+      "fullBoard": "Full Board",
+      "allInclusive": "All Inclusive",
+      "cleaning": "Cleaning",
+      "linenChange": "Linen Change",
+      "towelChange": "Towel Change",
+      "laundryService": "Laundry Service",
+      "dryClean": "Dry Cleaning",
+      "ironing": "Ironing",
+      "utilitiesIncluded": "Utilities Included",
+      "electricityIncluded": "Electricity Included",
+      "waterIncluded": "Water Included",
+      "gasIncluded": "Gas Included",
+      "wifiIncluded": "WiFi Included",
+      "internetIncluded": "Internet Included",
+      "cableTv": "Cable TV",
+      "streamingServices": "Streaming Services",
+      "conciergeService": "Concierge Service",
+      "24hConcierge": "24h Concierge",
+      "securityGuard": "Security Guard",
+      "24hSecurity": "24h Security",
+      "management": "Management",
+      "propertyManagement": "Property Management",
+      "maintenance": "Maintenance",
+      "repairService": "Repair Service",
+      "gardenMaintenance": "Garden Maintenance",
+      "poolMaintenance": "Pool Maintenance",
+      "pestControl": "Pest Control",
+      "wasteDisposal": "Waste Disposal",
+      "recycling": "Recycling",
+      "petCare": "Pet Care",
+      "petSitting": "Pet Sitting",
+      "dogWalking": "Dog Walking",
+      "babysitting": "Babysitting",
+      "childcare": "Childcare",
+      "eldercare": "Elder Care",
+      "medicalService": "Medical Service",
+      "nurseOnCall": "Nurse On Call",
+      "doctorOnCall": "Doctor On Call",
+      "ambulance": "Ambulance",
+      "pharmacy": "Pharmacy",
+      "grocery": "Grocery Delivery",
+      "shopping": "Shopping",
+      "delivery": "Delivery",
+      "courierService": "Courier Service",
+      "mailHandling": "Mail Handling",
+      "packageReceiving": "Package Receiving",
+      "valetParking": "Valet Parking",
+      "carWash": "Car Wash",
+      "carService": "Car Service",
+      "bicycleRental": "Bicycle Rental",
+      "scooterRental": "Scooter Rental",
+      "boatRental": "Boat Rental",
+      "kayakRental": "Kayak Rental",
+      "snorkeling": "Snorkeling Equipment",
+      "divingEquipment": "Diving Equipment",
+      "fishing": "Fishing",
+      "tourBooking": "Tour Booking",
+      "ticketBooking": "Ticket Booking",
+      "restaurantReservation": "Restaurant Reservation",
+      "spaBooking": "Spa Booking",
+      "massageService": "Massage Service",
+      "beautyService": "Beauty Service",
+      "hairSalon": "Hair Salon",
+      "nailSalon": "Nail Salon",
+      "personalTrainer": "Personal Trainer",
+      "yogaInstructor": "Yoga Instructor",
+      "pilatesInstructor": "Pilates Instructor",
+      "tennisCoach": "Tennis Coach",
+      "golfCoach": "Golf Coach",
+      "swimInstructor": "Swim Instructor",
+      "surfingLessons": "Surfing Lessons",
+      "kitesurfing": "Kitesurfing",
+      "wakeboarding": "Wakeboarding",
+      "jetski": "Jet Ski",
+      "parasailing": "Parasailing",
+      "bananaBoat": "Banana Boat",
+      "speedboat": "Speed Boat",
+      "yachtCharter": "Yacht Charter",
+      "helicopterService": "Helicopter Service",
+      "privatePlane": "Private Plane",
+      "limousineService": "Limousine Service",
+      "eventPlanning": "Event Planning",
+      "partyPlanning": "Party Planning",
+      "weddingPlanning": "Wedding Planning",
+      "catering": "Catering",
+      "florist": "Florist",
+      "photographer": "Photographer",
+      "videographer": "Videographer",
+      "musician": "Musicians",
+      "dj": "DJ",
+      "entertainer": "Entertainers",
+      "translation": "Translation Service",
+      "interpreter": "Interpreter",
+      "legalService": "Legal Service",
+      "lawyer": "Lawyer",
+      "notary": "Notary",
+      "accounting": "Accounting",
+      "taxService": "Tax Service",
+      "insurance": "Insurance",
+      "visaAssistance": "Visa Assistance",
+      "immigration": "Immigration Service",
+      "relocation": "Relocation Service",
+      "storage": "Storage",
+      "furnitureRental": "Furniture Rental",
+      "applianceRental": "Appliance Rental",
+      "shortTermRental": "Short-Term Rental",
+      "longTermRental": "Long-Term Rental",
+      "monthlyRental": "Monthly Rental",
+      "weeklyRental": "Weekly Rental",
+      "dailyRental": "Daily Rental",
+      "flexibleCheckIn": "Flexible Check-In",
+      "lateCheckOut": "Late Check-Out",
+      "earlyCheckIn": "Early Check-In",
+      "depositRequired": "Deposit Required",
+      "noDeposit": "No Deposit",
+      "creditCardRequired": "Credit Card Required",
+      "cashPayment": "Cash Payment",
+      "bankTransfer": "Bank Transfer",
+      "onlinePayment": "Online Payment",
+      "installmentPlan": "Installment Plan",
+      "discountAvailable": "Discount Available",
+      "seasonalDiscount": "Seasonal Discount",
+      "longStayDiscount": "Long Stay Discount",
+      "earlyBooking": "Early Booking",
+      "lastMinute": "Last Minute",
+      "noSmoking": "No Smoking",
+      "smokingAllowed": "Smoking Allowed",
+      "noPets": "No Pets",
+      "noParties": "No Parties",
+      "quietHours": "Quiet Hours",
+      "noiseCurfew": "Noise Curfew",
+      "minimumAge": "Minimum Age",
+      "adultsOnly": "Adults Only",
+      "familyFriendly": "Family Friendly",
+      "kidfriendly": "Kid Friendly",
+      "infantFriendly": "Infant Friendly",
+      "teenagerFriendly": "Teenager Friendly",
+      "studentDiscount": "Student Discount",
+      "seniorDiscount": "Senior Discount",
+      "militaryDiscount": "Military Discount",
+      "corporateRate": "Corporate Rate",
+      "groupRate": "Group Rate",
+      
+      "beachFront": "Beach Front",
+      "secondLine": "Second Line",
+      "walkToBeach": "Walk to Beach",
+      "beachDistance": "Beach Distance",
+      "oceanView": "Ocean View",
+      "seaView": "Sea View",
+      "bayView": "Bay View",
+      "beachView": "Beach View",
+      "nearSchool": "Near School",
+      "nearInternationalSchool": "Near International School",
+      "nearKindergarten": "Near Kindergarten",
+      "nearUniversity": "Near University",
+      "nearHospital": "Near Hospital",
+      "nearClinic": "Near Clinic",
+      "nearPharmacy": "Near Pharmacy",
+      "nearSupermarket": "Near Supermarket",
+      "nearConvenience": "Near Convenience Store",
+      "nearMarket": "Near Market",
+      "nearMall": "Near Mall",
+      "nearShops": "Near Shops",
+      "nearRestaurant": "Near Restaurants",
+      "nearCafe": "Near Cafe",
+      "nearBar": "Near Bars",
+      "nearNightlife": "Near Nightlife",
+      "nearGolfCourse": "Near Golf Course",
+      "nearMarina": "Near Marina",
+      "nearYachtClub": "Near Yacht Club",
+      "nearAirport": "Near Airport",
+      "nearBusStop": "Near Bus Stop",
+      "nearBusTerminal": "Near Bus Terminal",
+      "nearTaxiStand": "Near Taxi Stand",
+      "nearMetro": "Near Metro",
+      "nearTrain": "Near Train Station",
+      "nearHighway": "Near Highway",
+      "nearMainRoad": "Near Main Road",
+      "nearBank": "Near Bank",
+      "nearAtm": "Near ATM",
+      "nearPostOffice": "Near Post Office",
+      "nearPolice": "Near Police Station",
+      "nearFireStation": "Near Fire Station",
+      "nearEmbassy": "Near Embassy",
+      "nearGovernment": "Near Government Office",
+      "nearTemple": "Near Temple",
+      "nearMosque": "Near Mosque",
+      "nearChurch": "Near Church",
+      "nearSynagogue": "Near Synagogue",
+      "nearPark": "Near Park",
+      "nearPlayground": "Near Playground",
+      "nearGarden": "Near Garden",
+      "nearForest": "Near Forest",
+      "nearMountain": "Near Mountains",
+      "nearLake": "Near Lake",
+      "nearRiver": "Near River",
+      "nearWaterfall": "Near Waterfall",
+      "nearNationalPark": "Near National Park",
+      "nearNatureReserve": "Near Nature Reserve",
+      "nearZoo": "Near Zoo",
+      "nearAquarium": "Near Aquarium",
+      "nearMuseum": "Near Museum",
+      "nearGallery": "Near Gallery",
+      "nearTheater": "Near Theater",
+      "nearCinema": "Near Cinema",
+      "nearConcertHall": "Near Concert Hall",
+      "nearStadium": "Near Stadium",
+      "nearSportsCenter": "Near Sports Center",
+      "nearGym": "Near Gym",
+      "nearFitness": "Near Fitness Center",
+      "nearYoga": "Near Yoga Studio",
+      "nearSpa": "Near Spa",
+      "nearWellness": "Near Wellness Center",
+      "nearSalon": "Near Beauty Salon",
+      "nearVet": "Near Veterinarian",
+      "nearPetShop": "Near Pet Shop",
+      "nearLibrary": "Near Library",
+      "nearBookstore": "Near Bookstore",
+      "nearTouristAttraction": "Near Tourist Attraction",
+      "nearLandmark": "Near Landmark",
+      "nearViewpoint": "Near Viewpoint",
+      "nearDiveSite": "Near Dive Site",
+      "nearSurfSpot": "Near Surf Spot",
+      "nearSnorkeling": "Near Snorkeling Site",
+      "nearHiking": "Near Hiking Trails",
+      "nearCycling": "Near Cycling Paths",
+      "nearJogging": "Near Jogging Paths",
+      "nearTennisCourt": "Near Tennis Court",
+      "nearBasketball": "Near Basketball Court",
+      "nearFootball": "Near Football Field",
+      "nearVolleyball": "Near Volleyball Court",
+      "nearSkatepark": "Near Skatepark",
+      "quietArea": "Quiet Area",
+      "peacefulLocation": "Peaceful Location",
+      "residentialArea": "Residential Area",
+      "commercialArea": "Commercial Area",
+      "businessDistrict": "Business District",
+      "touristArea": "Tourist Area",
+      "localArea": "Local Area",
+      "expatArea": "Expat Area",
+      "internationalCommunity": "International Community",
+      "gatedCommunity": "Gated Community",
+      "secureComplex": "Secure Complex",
+      "privateCommunity": "Private Community",
+      "luxuryDevelopment": "Luxury Development",
+      "newDevelopment": "New Development",
+      "establishedArea": "Established Area",
+      "upAndComing": "Up and Coming Area",
+      "trendyArea": "Trendy Area",
+      "historicDistrict": "Historic District",
+      "culturalQuarter": "Cultural Quarter",
+      "artDistrict": "Art District",
+      "entertainmentDistrict": "Entertainment District",
+      "financialDistrict": "Financial District",
+      "shoppingDistrict": "Shopping District",
+      "cityCentre": "City Centre",
+      "cityCenter": "City Center",
+      "downtown": "Downtown",
+      "midtown": "Midtown",
+      "uptown": "Uptown",
+      "suburb": "Suburb",
+      "outskirts": "Outskirts",
+      "countryside": "Countryside",
+      "rural": "Rural",
+      "urban": "Urban",
+      "metropolitan": "Metropolitan",
+      "coastal": "Coastal",
+      "inland": "Inland",
+      "hillside": "Hillside",
+      "hilltop": "Hilltop",
+      "valley": "Valley",
+      "plateau": "Plateau",
+      "peninsula": "Peninsula",
+      "island": "Island",
+      "mainland": "Mainland",
+      "waterfront": "Waterfront",
+      "riverside": "Riverside",
+      "lakeside": "Lakeside",
+      "mountainside": "Mountainside",
+      "forestEdge": "Forest Edge",
+      "parkside": "Parkside",
+      "greenBelt": "Green Belt",
+      "openSpace": "Open Space",
+      "lowDensity": "Low Density",
+      "highDensity": "High Density",
+      "walkable": "Walkable",
+      "bikeFriendly": "Bike Friendly",
+      "publicTransport": "Public Transport",
+      "transitOriented": "Transit Oriented",
+      "carDependent": "Car Dependent",
+      "carFree": "Car Free",
+      "pedestrianZone": "Pedestrian Zone",
+      "lowTraffic": "Low Traffic",
+      "noThroughTraffic": "No Through Traffic",
+      "deadEnd": "Dead End",
+      "culDeSac": "Cul-de-Sac",
+      "mainStreet": "Main Street",
+      "sideStreet": "Side Street",
+      "privateStreet": "Private Street",
+      "pavedRoad": "Paved Road",
+      "dirtRoad": "Dirt Road",
+      "streetParking": "Street Parking",
+      "wellLit": "Well Lit",
+      "darkAtNight": "Dark at Night",
+      "safeArea": "Safe Area",
+      "lowCrime": "Low Crime",
+      "neighborhood": "Neighborhood",
+      "communitySpirit": "Community Spirit",
+      "familyOriented": "Family Oriented",
+      "professionalArea": "Professional Area",
+      "studentArea": "Student Area",
+      "retirementCommunity": "Retirement Community",
+      "mixedUse": "Mixed Use",
+      "liveworkPlay": "Live-Work-Play",
+      "masterPlanned": "Master Planned",
+      "smartCity": "Smart City",
+      "ecoVillage": "Eco Village",
+      "sustainableCommunity": "Sustainable Community",
+      
+      "sunsetView": "Sunset View",
+      "sunriseView": "Sunrise View",
+      "mountainView": "Mountain View",
+      "hillView": "Hill View",
+      "volcanoView": "Volcano View",
+      "poolView": "Pool View",
+      "gardenView": "Garden View",
+      "parkView": "Park View",
+      "forestView": "Forest View",
+      "lakeView": "Lake View",
+      "riverView": "River View",
+      "waterfallView": "Waterfall View",
+      "pondView": "Pond View",
+      "cityView": "City View",
+      "skylineView": "Skyline View",
+      "panoramicView": "Panoramic View",
+      "unobstructedView": "Unobstructed View",
+      "180View": "180° View",
+      "360View": "360° View",
+      "rooftopView": "Rooftop View",
+      "balconyView": "Balcony View",
+      "terraceView": "Terrace View",
+      "windowView": "Window View",
+      "floorToFloorView": "Floor-to-Ceiling View",
+      "elevatedView": "Elevated View",
+      "groundLevelView": "Ground Level View",
+      "partialSeaView": "Partial Sea View",
+      "glimpseOfSea": "Glimpse of Sea",
+      "distantSeaView": "Distant Sea View",
+      "obstructedView": "Obstructed View",
+      "limitedView": "Limited View",
+      "noView": "No View",
+      "interiorView": "Interior View",
+      "courtyardView": "Courtyard View",
+      "atriumView": "Atrium View",
+      "lobbyView": "Lobby View",
+      "corridorView": "Corridor View",
+      "parkingView": "Parking View",
+      "streetView": "Street View",
+      "roadView": "Road View",
+      "neighborView": "Neighbor View",
+      "wallView": "Wall View",
+      "buildingView": "Building View",
+      "roofView": "Roof View",
+      "antennaView": "Antenna View",
+      "towerView": "Tower View",
+      "bridgeView": "Bridge View",
+      "monumentView": "Monument View",
+      "templeView": "Temple View",
+      "palaceView": "Palace View",
+      "castleView": "Castle View",
+      "stadiumView": "Stadium View",
+      "airportView": "Airport View",
+      "portView": "Port View",
+      "marinaView": "Marina View",
+      "yachtView": "Yacht View",
+      "boatView": "Boat View",
+      "shipView": "Ship View",
+      "islandView": "Island View",
+      "horizonView": "Horizon View",
+      "skylightView": "Skylight View",
+      "clearView": "Clear View",
+      "scenicView": "Scenic View",
+      "spectacularView": "Spectacular View",
+      "breathtakingView": "Breathtaking View",
+      "stunningView": "Stunning View",
+      "magnificentView": "Magnificent View",
+      "beautifulView": "Beautiful View",
+      "niceView": "Nice View",
+      "pleasantView": "Pleasant View",
+      "averageView": "Average View",
+      "poorView": "Poor View",
+      "privateView": "Private View",
+      "sharedView": "Shared View",
+      "facingNorth": "North Facing",
+      "facingSouth": "South Facing",
+      "facingEast": "East Facing",
+      "facingWest": "West Facing",
+      "northeastView": "Northeast View",
+      "northwestView": "Northwest View",
+      "southeastView": "Southeast View",
+      "southwestView": "Southwest View"
+    },
+
+    "pricingOptions": {
+      "seasonal": "Seasonal Pricing",
+      "constant": "Constant Price",
+      "constantPrice": "Yearly Rental Price"
+    },
+
+    "pricing": {
+      "title": "Prices",
+      "addPeriod": "Add Period",
+      "seasonType": "Season Type",
+      "period": "Period",
+      "seasonalPricing": "Seasonal Pricing",
+      "pricePerNight": "Price",
+      "noPricing": "No prices specified",
+      "sourcePricePerNight": "Source Price",
+      "minimumNights": "Minimum Nights",
+      "periodAdded": "Period added",
+      "periodDeleted": "Period deleted",
+      "periodUpdated": "Period updated",
+      "salePrice": "Sale Price",
+      "rentalPrices": "Rental Prices",
+      "seasonalDisclaimer": "Important Seasonal Pricing Information",
+      "seasonalDisclaimerDescription": "Price is specified per night (day) in specified period, unless 'For entire period' option is selected",
+      
+      "pricingType": "Pricing Type",
+      "perNight": "Per Night",
+      "perNightOption": "Price per night",
+      "perNightHint": "Price specified per each night in period",
+      "perPeriodOption": "Price for entire period",
+      "perPeriodHint": "Price specified for entire period as a whole",
+      "forWholePeriod": "For Entire Period",
+      "totalPeriodPrice": "Period Price",
+      "seasonTypes": {
+        "high": "High Season",
+        "low": "Low Season",
+        "peak": "Peak Season",
+        "mid": "Mid Season",
+        "holiday": "Holiday",
+        "custom": "Custom"
+      }
+    },
+
+    "commission": {
+      "title": "Commissions",
+      "saleCommission": "Sale Commission",
+      "rentCommission": "Rent Commission",
+      "type": "Commission Type",
+      "value": "Commission Value",
+      "types": {
+        "percentage": "Percentage",
+        "title": "Specify commission type and value",
+        "fixed": "Fixed Amount",
+        "monthlyRent": "Commission equals monthly rent"
+      }
+    },
+
+    "media": {
+      "title": "Media",
+      "photos": "Photos",
+      "floorPlan": "Floor Plan",
+      "vrTour": "VR Tour",
+      "video": "Video",
+      "uploadPhotos": "Upload Photos",
+      "uploadFloorPlan": "Upload Floor Plan",
+      "uploadVideo": "Upload Video",
+      "deletePhoto": "Delete Photo",
+      "deleteFloorPlan": "Delete Floor Plan",
+      "deleteVideo": "Delete Video",
+      "setAsPrimary": "Set as Primary",
+      "primaryPhoto": "Primary Photo",
+      "photoCategory": "Photo Category",
+      "selectCategory": "Select Category",
+      "categories": {
+        "general": "General",
+        "bedroom": "Bedroom",
+        "bathroom": "Bathroom",
+        "kitchen": "Kitchen",
+        "living": "Living Room",
+        "exterior": "Exterior",
+        "pool": "Pool",
+        "view": "View"
+      }
+    },
+
+    "calendar": {
+      "title": "Occupancy Calendar",
+      "button": "Calendar",
+      "blocked": "Blocked",
+      "booked": "Booked",
+      "available": "Available",
+      "today": "Today",
+      "blockedDay": "Occupied",
+      "noSync": "No calendar sync",
+      "noSyncDescription": "Occupancy calendar not configured for this property",
+      "syncCalendar": "Sync Calendar",
+      "blockDates": "Block Dates",
+      "unblockDates": "Unblock Dates"
+    }
+  },
+
+  "vr": {
+    "title": "360° Virtual Tour",
+    "editor": {
+      "title": "360° Virtual Tours",
+      "panoramasCount": "{{count}} panoramas",
+      "newPanorama": "New VR Panorama",
+      "locationType": "Location Type",
+      "locationNumber": "Room Number",
+      "selectLocation": "Select location...",
+      "uploadImages": "Upload 6 images",
+      "uploadHint": "Each panorama requires 6 images: front, back, left, right, top and bottom. Maximum 50MB per image.",
+      "uploading": "Uploading...",
+      "create": "Create Panorama",
+      "imagesCount": "{{count}} images",
+      "deleteConfirm": "Delete this VR panorama?"
+    },
+    
+    "locations": {
+      "bedroom": "Bedroom",
+      "bathroom": "Bathroom",
+      "living_room": "Living Room",
+      "kitchen": "Kitchen",
+      "pool": "Pool",
+      "terrace": "Terrace",
+      "wardrobe": "Wardrobe",
+      "gym": "Gym",
+      "sauna": "Sauna",
+      "balcony": "Balcony",
+      "dining_room": "Dining Room",
+      "office": "Office",
+      "laundry": "Laundry",
+      "garage": "Garage",
+      "entrance": "Entrance"
+    },
+    
+    "directions": {
+      "front": "Front",
+      "back": "Back",
+      "left": "Left",
+      "right": "Right",
+      "top": "Top",
+      "bottom": "Bottom"
+    },
+    
+    "errors": {
+      "loadFailed": "Failed to load VR panoramas",
+      "invalidFileType": "Only image files allowed",
+      "fileTooLarge": "File size must not exceed 50MB",
+      "fillAllFields": "Fill all required fields and upload all 6 images",
+      "createFailed": "Failed to create VR panorama",
+      "deleteFailed": "Failed to delete VR panorama"
+    },
+    
+    "success": {
+      "created": "VR panorama successfully created",
+      "deleted": "VR panorama successfully deleted"
+    },
+    
+    "confirm": {
+      "delete": "Are you sure you want to delete this VR panorama?"
+    }
+  },
+
+  "users": {
+    "title": "Users",
+    "list": "User List",
+    "add": "Add User",
+    "edit": "Edit User",
+    "createSuccess": "User successfully created",
+    "updateSuccess": "User successfully updated",
+    "deleteSuccess": "User successfully deleted",
+    "confirmDelete": "Are you sure you want to delete this user?",
+    "onlyAdminCanCreate": "Only superadmin can create users",
+    "search": "Search by username",
+    "noRoles": "No roles",
+    "noUsers": "No users",
+    
+    "username": "Username",
+    "fullName": "Full Name",
+    "email": "Email",
+    "password": "Password",
+    "newPassword": "New Password (leave empty to keep current)",
+    "confirmPassword": "Confirm Password",
+    "roles": "Roles",
+    "selectRoles": "Select Roles",
+    "isActive": "Active",
+    "active": "Active",
+    "inactive": "Inactive",
+    "status": "Status",
+    "lastLogin": "Last Login",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
+  },
+
+  "roles": {
+    "title": "Roles",
+    "list": "Roles List",
+    "add": "Add Role",
+    "edit": "Edit Role",
+    "createSuccess": "Role successfully created",
+    "updateSuccess": "Role successfully updated",
+    "deleteSuccess": "Role successfully deleted",
+    "confirmDelete": "Are you sure you want to delete this role?",
+    "cannotDeleteWithUsers": "Cannot delete role with assigned users",
+    "noRoles": "No roles",
+    
+    "roleName": "Role Name",
+    "description": "Description",
+    "permissions": "Permissions",
+    "usersCount": "Users",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    
+    "modules": {
+      "properties": "Properties",
+      "users": "Users",
+      "roles": "Roles",
+      "settings": "Settings"
+    },
+    
+    "permissionsList": {
+      "properties.create": "Create Properties",
+      "properties.read": "View Properties",
+      "properties.update": "Edit Properties",
+      "properties.delete": "Delete Properties",
+      "properties.visibility": "Manage Visibility",
+      "users.create": "Create Users",
+      "users.read": "View Users",
+      "users.update": "Edit Users",
+      "users.delete": "Delete Users",
+      "roles.create": "Create Roles",
+      "roles.read": "View Roles",
+      "roles.update": "Edit Roles",
+      "roles.delete": "Delete Roles"
+    }
+  },
+
+  "notifications": {
+    "title": "Notifications",
+    "markAsRead": "Mark as Read",
+    "markAllAsRead": "Mark All as Read",
+    "noNotifications": "No Notifications",
+    "new": "New",
+    "viewAll": "View All"
+  },
+
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "profile": "Profile",
+    "security": "Security",
+    "appearance": "Appearance",
+    "language": "Language",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "saveSuccess": "Settings Saved"
+  }
+}

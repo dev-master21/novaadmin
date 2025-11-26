@@ -1,0 +1,418 @@
+/* frontend/src/modules/Properties/components/CalendarModal.css */
+
+/* Контейнер календаря в модальном окне */
+.modal-calendar-container {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.modal-calendar {
+  user-select: none;
+  width: 100%;
+  background: #141414;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Заголовок с днями недели */
+.modal-calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #303030;
+}
+
+.modal-calendar-weekday {
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #999;
+  padding: 8px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Тело календаря */
+.modal-calendar-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.modal-calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+/* Ячейка дня */
+.modal-calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #1f1f1f;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  cursor: default;
+  transition: all 0.2s ease;
+  min-height: 50px;
+  overflow: hidden;
+}
+
+.modal-calendar-day:hover {
+  border-color: #434343;
+  transform: scale(1.02);
+  z-index: 1;
+}
+
+/* Номер дня */
+.modal-day-number {
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 2;
+  position: relative;
+  color: #fff;
+}
+
+/* Дни не из текущего месяца */
+.modal-calendar-day.other-month {
+  opacity: 0.3;
+}
+
+.modal-calendar-day.other-month .modal-day-number {
+  color: #666;
+}
+
+/* Сегодняшний день */
+.modal-calendar-day.today {
+  border: 2px solid #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.modal-calendar-day.today .modal-day-number {
+  color: #1890ff;
+  font-weight: 700;
+}
+
+/* Полностью занятый день (без check-in/check-out) */
+.modal-calendar-day.blocked:not(.check-in):not(.check-out):not(.both-checks) {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  border-color: #dc2626;
+}
+
+.modal-calendar-day.blocked:not(.check-in):not(.check-out):not(.both-checks) .modal-day-number {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Check-in (ЗАЕЗД с 16:00) - градиентный треугольник в ПРАВОМ НИЖНЕМ углу */
+.modal-calendar-day.check-in:not(.both-checks)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 50%, #7f1d1d 50%, #991b1b 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  z-index: 1;
+}
+
+.modal-calendar-day.check-in:not(.both-checks)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #dc2626;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Check-out (ВЫЕЗД до 12:00) - градиентный треугольник в ЛЕВОМ ВЕРХНЕМ углу */
+.modal-calendar-day.check-out:not(.both-checks)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, transparent 50%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  z-index: 1;
+}
+
+.modal-calendar-day.check-out:not(.both-checks)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #dc2626;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Check-in И Check-out в один день - диагональное разделение с градиентами */
+.modal-calendar-day.both-checks {
+  border: 2px solid #dc2626;
+}
+
+.modal-calendar-day.both-checks::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, transparent 50%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  z-index: 1;
+}
+
+.modal-calendar-day.both-checks::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 50%, #8b2020 50%, #a52a2a 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  z-index: 1;
+}
+
+/* Убираем рамку для одиночных треугольников, так как она теперь на ::after */
+.modal-calendar-day.check-in:not(.both-checks),
+.modal-calendar-day.check-out:not(.both-checks) {
+  border-color: #2a2a2a;
+}
+
+/* Легенда */
+.modal-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  padding: 16px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.modal-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #d9d9d9;
+}
+
+.modal-legend-square {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid #303030;
+  position: relative;
+  flex-shrink: 0;
+  background: #1f1f1f;
+  overflow: hidden;
+}
+
+.today-square {
+  border: 2px solid #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.blocked-square {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  border-color: #dc2626;
+}
+
+/* Заезд - градиентный треугольник справа снизу */
+.checkin-square {
+  border: none;
+  overflow: visible;
+}
+
+.checkin-square::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 50%, #7f1d1d 50%, #991b1b 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.checkin-square::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #dc2626;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+/* Выезд - градиентный треугольник слева сверху */
+.checkout-square {
+  border: none;
+  overflow: visible;
+}
+
+.checkout-square::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, transparent 50%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.checkout-square::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #dc2626;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  pointer-events: none;
+}
+
+/* Заезд + Выезд - диагональное разделение с градиентами */
+.both-square {
+  border: 2px solid #dc2626;
+}
+
+.both-square::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, transparent 50%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.both-square::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 50%, #8b2020 50%, #a52a2a 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .calendar-modal .ant-modal {
+    max-width: calc(100vw - 32px) !important;
+    margin: 16px;
+  }
+
+  .modal-calendar {
+    padding: 8px;
+  }
+
+  .modal-calendar-weekday {
+    font-size: 11px;
+    padding: 6px 2px;
+  }
+
+  .modal-calendar-day {
+    min-height: 42px;
+    border-radius: 3px;
+  }
+
+  .modal-day-number {
+    font-size: 13px;
+  }
+
+  .modal-calendar-legend {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .modal-legend-item {
+    font-size: 12px;
+  }
+
+  .modal-legend-square {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-calendar-day {
+    min-height: 38px;
+  }
+
+  .modal-day-number {
+    font-size: 12px;
+  }
+
+  .modal-calendar-weekday {
+    font-size: 10px;
+  }
+
+  .modal-calendar-legend {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .modal-legend-square {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Планшеты */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .modal-calendar-container {
+    max-width: 650px;
+  }
+
+  .modal-calendar-day {
+    min-height: 48px;
+  }
+}
+
+/* Десктопная версия */
+@media (min-width: 1025px) {
+  .modal-calendar-container {
+    max-width: 700px;
+  }
+
+  .modal-calendar-day {
+    min-height: 55px;
+  }
+
+  .modal-day-number {
+    font-size: 16px;
+  }
+
+  .modal-calendar-weekday {
+    font-size: 14px;
+  }
+}

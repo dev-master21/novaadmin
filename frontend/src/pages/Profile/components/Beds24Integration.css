@@ -1,0 +1,270 @@
+/* frontend/src/pages/Profile/components/Beds24Integration.css */
+
+/* ТЁМНАЯ ТЕМА */
+
+.beds24-integration {
+  background: transparent !important;
+}
+
+/* Cards */
+.beds24-integration .ant-card,
+.beds24-property-selector .ant-card {
+  background: #1f1f1f !important;
+  border: 1px solid #434343 !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+}
+
+.beds24-integration .ant-card-head,
+.beds24-property-selector .ant-card-head {
+  background: #141414 !important;
+  border-bottom: 1px solid #434343 !important;
+  color: #ffffff !important;
+}
+
+.beds24-integration .ant-card-body,
+.beds24-property-selector .ant-card-body {
+  background: #1f1f1f !important;
+  padding: 20px !important;
+}
+
+/* Linked properties */
+.beds24-property-selector .linked-property-card {
+  background: #111d2c !important;
+  border: 1px solid #177ddc !important;
+}
+
+.beds24-property-selector .linked-property-card .ant-card-body {
+  background: #111d2c !important;
+  padding: 16px !important;
+}
+
+/* ✅ ИСПРАВЛЕНО: Изображения должны отображаться */
+.beds24-property-selector .ant-image,
+.beds24-property-selector .ant-image-img {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.beds24-property-selector .ant-image-mask {
+  display: none !important;
+}
+
+/* Preview card */
+.beds24-property-selector .preview-card {
+  background: #141414 !important;
+  border: 1px solid #434343 !important;
+}
+
+.beds24-property-selector .preview-card .ant-card-body {
+  background: #141414 !important;
+  padding: 12px !important;
+}
+
+/* Select column */
+.beds24-property-selector .select-column {
+  background: #141414 !important;
+  padding: 16px !important;
+  border-radius: 6px !important;
+  border: 1px solid #434343 !important;
+}
+
+/* Select */
+.beds24-property-selector .ant-select-selector {
+  background: #0c0c0c !important;
+  border: 1px solid #434343 !important;
+  color: #ffffff !important;
+}
+
+.beds24-property-selector .ant-select-selection-item,
+.beds24-property-selector .ant-select-selection-placeholder {
+  color: #ffffff !important;
+}
+
+.beds24-property-selector .ant-select-arrow {
+  color: #ffffff !important;
+}
+
+.beds24-property-selector .ant-select-dropdown {
+  background: #1f1f1f !important;
+  border: 1px solid #434343 !important;
+}
+
+.beds24-property-selector .ant-select-item {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+.beds24-property-selector .ant-select-item-option-selected {
+  background: #111d2c !important;
+  color: #177ddc !important;
+}
+
+.beds24-property-selector .ant-select-item:hover {
+  background: #262626 !important;
+}
+
+/* Typography */
+.beds24-integration .ant-typography,
+.beds24-property-selector .ant-typography {
+  color: inherit !important;
+}
+
+/* Alert */
+.beds24-integration .ant-alert {
+  background: #1f1f1f !important;
+  border: 1px solid #434343 !important;
+}
+
+.beds24-integration .ant-alert-info {
+  background: #111d2c !important;
+  border-color: #177ddc !important;
+}
+
+.beds24-integration .ant-alert-success {
+  background: #162312 !important;
+  border-color: #49aa19 !important;
+}
+
+/* Input */
+.beds24-integration .ant-input,
+.beds24-integration .ant-input-password,
+.beds24-integration .ant-input-affix-wrapper {
+  background: #141414 !important;
+  border: 1px solid #434343 !important;
+  color: #ffffff !important;
+}
+
+.beds24-integration .ant-input::placeholder {
+  color: #8c8c8c !important;
+}
+
+.beds24-integration .ant-input-password-icon {
+  color: #ffffff !important;
+}
+
+/* Form */
+.beds24-integration .ant-form-item-label > label {
+  color: #ffffff !important;
+}
+
+.beds24-integration .ant-form-item-extra {
+  color: #8c8c8c !important;
+}
+
+/* Steps */
+.beds24-integration .ant-steps-item-title {
+  color: #ffffff !important;
+}
+
+.beds24-integration .ant-steps-item-process .ant-steps-item-icon {
+  background: #177ddc !important;
+  border-color: #177ddc !important;
+}
+
+.beds24-integration .ant-steps-item-finish .ant-steps-item-icon {
+  background: #49aa19 !important;
+  border-color: #49aa19 !important;
+}
+
+/* Tags */
+.beds24-property-selector .ant-tag {
+  background: #141414 !important;
+  border-color: #434343 !important;
+  color: #ffffff !important;
+}
+
+.beds24-property-selector .ant-tag-blue {
+  background: #111d2c !important;
+  border-color: #177ddc !important;
+  color: #177ddc !important;
+}
+
+.beds24-property-selector .ant-tag-green {
+  background: #162312 !important;
+  border-color: #49aa19 !important;
+  color: #49aa19 !important;
+}
+
+/* Progress */
+.beds24-integration .ant-progress-text {
+  color: #ffffff !important;
+}
+
+/* Divider */
+.beds24-integration .ant-divider,
+.beds24-property-selector .ant-divider {
+  border-color: #434343 !important;
+}
+
+/* Empty */
+.beds24-property-selector .ant-empty-description {
+  color: #8c8c8c !important;
+}
+
+/* Modal */
+.ant-modal-content {
+  background: #1f1f1f !important;
+}
+
+.ant-modal-header {
+  background: #141414 !important;
+  border-bottom: 1px solid #434343 !important;
+}
+
+.ant-modal-title {
+  color: #ffffff !important;
+}
+
+.ant-modal-close {
+  color: #ffffff !important;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 992px) {
+  .beds24-integration .ant-card-body,
+  .beds24-property-selector .ant-card-body {
+    padding: 16px !important;
+  }
+  
+  .beds24-property-selector .select-column {
+    padding: 12px !important;
+    margin-bottom: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .beds24-integration .ant-card-body,
+  .beds24-property-selector .ant-card-body {
+    padding: 12px !important;
+  }
+  
+  .beds24-property-selector .linked-property-card .ant-card-body {
+    padding: 12px !important;
+  }
+  
+  .beds24-property-selector .select-column {
+    padding: 10px !important;
+  }
+  
+  /* Скрываем текст на мобильных */
+  .unlink-text {
+    display: none;
+  }
+  
+  .beds24-integration .ant-steps-item-title {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .beds24-integration .ant-card-body,
+  .beds24-property-selector .ant-card-body {
+    padding: 10px !important;
+  }
+  
+  .beds24-property-selector .preview-card .ant-card-body {
+    padding: 8px !important;
+  }
+}

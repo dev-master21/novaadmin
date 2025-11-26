@@ -1,0 +1,211 @@
+/* frontend/src/modules/Agreements/Templates/CreateTemplate.css */
+
+/* Темная тема для страницы создания шаблона */
+.create-template-container {
+  padding: 24px;
+  background: #141414;
+  min-height: 100vh;
+}
+
+.template-header-card {
+  background: #1f1f1f;
+  border-color: #303030;
+}
+
+.template-header-card .ant-card-head {
+  background: #1f1f1f;
+  border-bottom: 1px solid #303030;
+}
+
+.template-header-card .ant-card-head-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.template-header-card .ant-card-body {
+  background: #1f1f1f;
+}
+
+.template-editor-hint {
+  padding: 12px 16px;
+  background: #112849;
+  border: 1px solid #15395b;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.template-editor-hint p {
+  margin: 0;
+  font-size: 14px;
+  color: #91d5ff;
+}
+
+.variables-section {
+  margin-top: 16px;
+}
+
+.variables-description {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 16px;
+}
+
+.variable-card {
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+  transition: all 0.3s;
+  cursor: help;
+}
+
+.variable-card:hover {
+  border-color: #177ddc !important;
+  box-shadow: 0 2px 8px rgba(23, 125, 220, 0.3);
+}
+
+.variable-card .ant-card-body {
+  padding: 12px;
+}
+
+.variable-code {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #91d5ff;
+  background: #112849;
+  padding: 4px 8px;
+  border-radius: 3px;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.variable-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 4px;
+}
+
+.variable-example {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  font-style: italic;
+}
+
+/* Form элементы в темной теме */
+.create-template-container .ant-form-item-label > label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-template-container .ant-input,
+.create-template-container .ant-select-selector {
+  background: #141414;
+  border-color: #434343;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.create-template-container .ant-input:hover,
+.create-template-container .ant-select-selector:hover {
+  border-color: #177ddc;
+}
+
+.create-template-container .ant-input:focus,
+.create-template-container .ant-input-focused,
+.create-template-container .ant-select-focused .ant-select-selector {
+  border-color: #177ddc;
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+}
+
+.create-template-container .ant-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Select dropdown в темной теме */
+.ant-select-dropdown {
+  background: #1f1f1f;
+}
+
+.ant-select-item {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.ant-select-item:hover {
+  background: #303030;
+}
+
+.ant-select-item-option-selected {
+  background: #111b26;
+  color: #1890ff;
+}
+
+/* Divider */
+.create-template-container .ant-divider-horizontal.ant-divider-with-text {
+  border-color: #303030;
+}
+
+.create-template-container .ant-divider-inner-text {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .create-template-container {
+    padding: 12px;
+  }
+
+  .template-header-card .ant-card-head-title {
+    font-size: 14px;
+  }
+
+  .template-header-card .ant-card-head-title .anticon {
+    font-size: 16px;
+  }
+
+  .template-header-card .ant-card-extra {
+    margin-left: 0;
+  }
+
+  .template-editor-hint {
+    padding: 8px 12px;
+  }
+
+  .template-editor-hint p {
+    font-size: 12px;
+  }
+
+  .variables-description {
+    font-size: 13px;
+  }
+
+  .variable-card {
+    margin-bottom: 8px;
+  }
+
+  .variable-card .ant-card-body {
+    padding: 10px;
+  }
+
+  .variable-code {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .variable-label {
+    font-size: 12px;
+  }
+
+  .variable-example {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .create-template-container {
+    padding: 8px;
+  }
+
+  .template-header-card .ant-card-body {
+    padding: 12px;
+  }
+
+  .variable-card .ant-card-body {
+    padding: 8px;
+  }
+}

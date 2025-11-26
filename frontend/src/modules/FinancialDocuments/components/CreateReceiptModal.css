@@ -1,0 +1,55 @@
+/* frontend/src/modules/FinancialDocuments/components/CreateReceiptModal.css */
+.create-receipt-modal .ant-steps {
+  margin-bottom: 24px;
+}
+
+.create-receipt-modal .ant-steps-item-title {
+  font-size: 13px !important;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .create-receipt-modal .ant-modal {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    top: 0 !important;
+  }
+
+  .create-receipt-modal .ant-modal-content {
+    border-radius: 0 !important;
+    min-height: 100vh;
+  }
+
+  .create-receipt-modal .ant-steps {
+    margin-bottom: 16px;
+  }
+
+  .create-receipt-modal .ant-steps-item-title {
+    display: none !important;
+  }
+
+  .create-receipt-modal .ant-steps-item-icon {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+  }
+}
+
+/* Адаптация для маленьких экранов */
+@media (max-width: 480px) {
+  .create-receipt-modal .ant-form-item-label > label {
+    font-size: 13px;
+  }
+
+  .create-receipt-modal .ant-input,
+  .create-receipt-modal .ant-input-number,
+  .create-receipt-modal .ant-select-selector,
+  .create-receipt-modal .ant-picker {
+    font-size: 14px !important;
+  }
+
+  .create-receipt-modal .ant-checkbox-wrapper {
+    font-size: 13px;
+  }
+}

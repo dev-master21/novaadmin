@@ -1,0 +1,880 @@
+/* frontend/src/modules/Properties/PropertySearch.css */
+
+.property-search-container {
+  padding: 24px;
+}
+
+/* Переключатель режима поиска */
+.search-mode-toggle {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* ========================================
+   AI SEARCH CARD - ТЕМНАЯ ТЕМА
+======================================== */
+.ai-search-card {
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+  color: #ffffff !important;
+}
+
+.ai-search-card .ant-card-body {
+  background: #1f1f1f !important;
+}
+
+/* AI Header */
+.ai-header {
+  margin-bottom: 24px;
+}
+
+.ai-mode-switch {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.ai-mode-switch .ant-btn-group {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+
+.ai-mode-switch .ant-btn {
+  background: #2a2a2a !important;
+  border-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+.ai-mode-switch .ant-btn-primary {
+  background: #1890ff !important;
+  border-color: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.ai-mode-switch .ant-btn:hover {
+  background: #404040 !important;
+  border-color: #505050 !important;
+  color: #ffffff !important;
+}
+
+.ai-info {
+  text-align: center;
+  padding: 20px;
+  background: rgba(24, 144, 255, 0.1) !important;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.ai-info h3 {
+  color: #ffffff !important;
+  font-size: 24px;
+  margin: 16px 0 8px;
+}
+
+.ai-info p {
+  color: rgba(255, 255, 255, 0.8) !important;
+  margin: 0;
+  font-size: 14px;
+}
+
+.conversation-controls {
+  text-align: center;
+  padding: 12px;
+  background: rgba(24, 144, 255, 0.05) !important;
+  border-radius: 6px;
+}
+
+/* ========================================
+   CHAT HISTORY - ИСТОРИЯ СООБЩЕНИЙ
+======================================== */
+.chat-history {
+  min-height: 400px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 16px;
+  background: #141414 !important;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #303030 !important;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chat-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-message.user-message {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  flex-shrink: 0;
+}
+
+.message-content {
+  flex: 1;
+  max-width: 80%;
+}
+
+.user-message .message-content {
+  margin-left: auto;
+}
+
+.message-text {
+  padding: 12px 16px;
+  border-radius: 12px;
+  line-height: 1.6;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.user-message .message-text {
+  background: #1890ff !important;
+  color: #ffffff !important;
+  border-radius: 12px 12px 0 12px;
+}
+
+.assistant-message .message-text {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  border-radius: 12px 12px 12px 0;
+  border: 1px solid #404040 !important;
+}
+
+.message-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5) !important;
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.user-message .message-time {
+  text-align: right;
+}
+
+/* Скроллбар для чата */
+.chat-history::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-history::-webkit-scrollbar-track {
+  background: #1a1a1a !important;
+  border-radius: 3px;
+}
+
+.chat-history::-webkit-scrollbar-thumb {
+  background: #404040 !important;
+  border-radius: 3px;
+}
+
+.chat-history::-webkit-scrollbar-thumb:hover {
+  background: #505050 !important;
+}
+
+/* ========================================
+   CHAT INPUT - ПОЛЕ ВВОДА
+======================================== */
+.chat-input-container {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.chat-input {
+  flex: 1;
+}
+
+.chat-input textarea {
+  background: #2a2a2a !important;
+  border-color: #404040 !important;
+  color: #ffffff !important;
+  font-size: 14px;
+  resize: none;
+}
+
+.chat-input textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.chat-input textarea:focus,
+.chat-input textarea:hover {
+  background: #2a2a2a !important;
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+.send-button {
+  height: auto !important;
+  min-height: 64px;
+}
+
+/* ========================================
+   INTERPRETATION CARD
+======================================== */
+.interpretation-card {
+  background: rgba(24, 144, 255, 0.1) !important;
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+  margin-top: 16px;
+}
+
+.interpretation-card .ant-card-head {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(24, 144, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.interpretation-card .ant-card-head-title {
+  color: #ffffff !important;
+}
+
+.interpretation-card .ant-card-body {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+.interpretation-card p {
+  color: rgba(255, 255, 255, 0.9) !important;
+  margin: 0;
+}
+
+/* ========================================
+   MANUAL SEARCH CARD
+======================================== */
+.manual-search-card {
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.manual-search-card .ant-card-body {
+  background: #1f1f1f !important;
+}
+
+.manual-search-card .ant-collapse {
+  background: transparent !important;
+  border: none !important;
+}
+
+.manual-search-card .ant-collapse-item {
+  background: #2a2a2a !important;
+  border: 1px solid #404040 !important;
+  margin-bottom: 12px !important;
+  border-radius: 8px !important;
+}
+
+.manual-search-card .ant-collapse-header {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  font-weight: 500;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+}
+
+.manual-search-card .ant-collapse-content {
+  background: #1f1f1f !important;
+  border-top: 1px solid #404040 !important;
+  color: #ffffff !important;
+}
+
+.manual-search-card .ant-collapse-content-box {
+  padding: 16px !important;
+}
+
+.manual-search-card label {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* Inputs и Selects в мануальном поиске */
+.manual-search-card .ant-input,
+.manual-search-card .ant-input-number,
+.manual-search-card .ant-picker {
+  background: #141414 !important;
+  border-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+.manual-search-card .ant-input::placeholder,
+.manual-search-card .ant-input-number-input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.manual-search-card .ant-input:focus,
+.manual-search-card .ant-input:hover,
+.manual-search-card .ant-input-number:focus,
+.manual-search-card .ant-input-number:hover,
+.manual-search-card .ant-picker:focus,
+.manual-search-card .ant-picker:hover {
+  background: #141414 !important;
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+.manual-search-card .ant-select-selector {
+  background: #141414 !important;
+  border-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+.manual-search-card .ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.manual-search-card .ant-select-focused .ant-select-selector,
+.manual-search-card .ant-select-selector:hover {
+  background: #141414 !important;
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+.manual-search-card .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Checkbox */
+.manual-search-card .ant-checkbox-wrapper {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.manual-search-card .ant-checkbox-inner {
+  background: #141414 !important;
+  border-color: #404040 !important;
+}
+
+.manual-search-card .ant-checkbox-checked .ant-checkbox-inner {
+  background: #1890ff !important;
+  border-color: #1890ff !important;
+}
+
+/* Date tolerance info */
+.date-tolerance-info {
+  padding: 8px 12px;
+  background: rgba(24, 144, 255, 0.1) !important;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+}
+
+/* ========================================
+   CONVERSATIONS LIST CARD
+======================================== */
+.conversations-list-card {
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.conversations-list-card .ant-card-head {
+  background: #2a2a2a !important;
+  border-bottom: 1px solid #404040 !important;
+  color: #ffffff !important;
+}
+
+.conversations-list-card .ant-card-head-title {
+  color: #ffffff !important;
+}
+
+.conversations-list-card .ant-card-body {
+  background: #1f1f1f !important;
+}
+
+.conversations-list-card .ant-list-item {
+  background: #2a2a2a !important;
+  border: 1px solid #404040 !important;
+  border-radius: 8px;
+  padding: 16px !important;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.conversations-list-card .ant-list-item:hover {
+  background: #333333 !important;
+  border-color: #505050 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.conversations-list-card .ant-list-item-meta-title {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+.conversations-list-card .ant-list-item-meta-description {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.conversations-list-card .ant-list-item-action {
+  margin-left: 16px;
+}
+
+/* AI Mode Selector */
+.ai-mode-selector .ant-select-selector {
+  background: #2a2a2a !important;
+  border-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+.ai-mode-selector .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* ========================================
+   BUTTONS - ОБЩИЕ СТИЛИ КНОПОК
+======================================== */
+.property-search-container .ant-btn-default {
+  background: #2a2a2a !important;
+  border-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+.property-search-container .ant-btn-default:hover {
+  background: #404040 !important;
+  border-color: #505050 !important;
+  color: #ffffff !important;
+}
+
+.property-search-container .ant-btn-default:disabled {
+  background: #1a1a1a !important;
+  border-color: #303030 !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.property-search-container .ant-btn-primary {
+  background: #1890ff !important;
+  border-color: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.property-search-container .ant-btn-primary:hover {
+  background: #40a9ff !important;
+  border-color: #40a9ff !important;
+}
+
+.property-search-container .ant-btn-link {
+  color: #1890ff !important;
+}
+
+.property-search-container .ant-btn-link:hover {
+  color: #40a9ff !important;
+}
+
+.property-search-container .ant-btn-link.ant-btn-dangerous {
+  color: #ff4d4f !important;
+}
+
+.property-search-container .ant-btn-link.ant-btn-dangerous:hover {
+  color: #ff7875 !important;
+}
+
+/* ========================================
+   TABS
+======================================== */
+.property-search-container .ant-tabs-nav {
+  background: #2a2a2a !important;
+  padding: 8px 16px;
+  border-radius: 8px 8px 0 0;
+}
+
+.property-search-container .ant-tabs-tab {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.property-search-container .ant-tabs-tab-active {
+  color: #1890ff !important;
+}
+
+.property-search-container .ant-tabs-tab:hover {
+  color: #40a9ff !important;
+}
+
+.property-search-container .ant-tabs-ink-bar {
+  background: #1890ff !important;
+}
+
+.property-search-container .ant-tabs-content {
+  background: #1f1f1f !important;
+  padding: 24px;
+  border-radius: 0 0 8px 8px;
+}
+
+/* ========================================
+   TAGS
+======================================== */
+.property-search-container .ant-tag {
+  background: rgba(24, 144, 255, 0.15) !important;
+  border: 1px solid rgba(24, 144, 255, 0.4) !important;
+  color: #40a9ff !important;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.property-search-container .ant-tag-blue {
+  background: rgba(24, 144, 255, 0.15) !important;
+  border-color: rgba(24, 144, 255, 0.4) !important;
+  color: #40a9ff !important;
+}
+
+.property-search-container .ant-tag-green {
+  background: rgba(82, 196, 26, 0.15) !important;
+  border-color: rgba(82, 196, 26, 0.4) !important;
+  color: #73d13d !important;
+}
+
+/* ========================================
+   BADGES
+======================================== */
+.property-search-container .ant-badge-count {
+  background: #1890ff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 1px #1f1f1f !important;
+}
+
+/* ========================================
+   EMPTY STATE
+======================================== */
+.property-search-container .ant-empty {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.property-search-container .ant-empty-description {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* ========================================
+   DIVIDER
+======================================== */
+.property-search-container .ant-divider {
+  border-color: #404040 !important;
+}
+
+/* ========================================
+   SPIN (LOADER)
+======================================== */
+.property-search-container .ant-spin-dot-item {
+  background-color: #1890ff !important;
+}
+
+/* ========================================
+   DROPDOWN (для Select)
+======================================== */
+.ant-select-dropdown {
+  background: #2a2a2a !important;
+  border: 1px solid #404040 !important;
+}
+
+.ant-select-item {
+  color: #ffffff !important;
+}
+
+.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: #404040 !important;
+}
+
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background: rgba(24, 144, 255, 0.2) !important;
+  color: #40a9ff !important;
+}
+
+/* ========================================
+   DATE PICKER DROPDOWN
+======================================== */
+.ant-picker-dropdown {
+  background: #2a2a2a !important;
+}
+
+.ant-picker-panel-container {
+  background: #2a2a2a !important;
+  border: 1px solid #404040 !important;
+}
+
+.ant-picker-header {
+  color: #ffffff !important;
+  border-bottom: 1px solid #404040 !important;
+}
+
+.ant-picker-header button {
+  color: #ffffff !important;
+}
+
+.ant-picker-header button:hover {
+  color: #40a9ff !important;
+}
+
+.ant-picker-content th,
+.ant-picker-content td {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ant-picker-cell:hover:not(.ant-picker-cell-selected) .ant-picker-cell-inner {
+  background: #404040 !important;
+}
+
+.ant-picker-cell-selected .ant-picker-cell-inner {
+  background: #1890ff !important;
+}
+
+.ant-picker-cell-in-view.ant-picker-cell-in-range::before {
+  background: rgba(24, 144, 255, 0.2) !important;
+}
+
+.ant-picker-cell-disabled {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ========================================
+   AVATAR
+======================================== */
+.property-search-container .ant-avatar {
+  background: #1890ff !important;
+  color: #ffffff !important;
+}
+
+/* ========================================
+   MODAL OVERRIDES
+======================================== */
+.ant-modal-content {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+.ant-modal-header {
+  background: #2a2a2a !important;
+  border-bottom: 1px solid #404040 !important;
+}
+
+.ant-modal-title {
+  color: #ffffff !important;
+}
+
+.ant-modal-body {
+  background: #1f1f1f !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ant-modal-footer {
+  background: #2a2a2a !important;
+  border-top: 1px solid #404040 !important;
+}
+
+/* ========================================
+   TOOLTIP
+======================================== */
+.ant-tooltip-inner {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+}
+
+.ant-tooltip-arrow-content {
+  background: #2a2a2a !important;
+}
+
+/* ========================================
+   АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ
+======================================== */
+@media (max-width: 768px) {
+  .property-search-container {
+    padding: 12px;
+  }
+
+  .search-mode-toggle {
+    margin-bottom: 16px;
+  }
+
+  .ai-info h3 {
+    font-size: 20px;
+  }
+
+  .ai-info p {
+    font-size: 13px;
+  }
+
+  .chat-history {
+    min-height: 300px;
+    max-height: 400px;
+    padding: 12px;
+  }
+
+  .chat-messages {
+    gap: 12px;
+  }
+
+  .message-content {
+    max-width: 85%;
+  }
+
+  .message-text {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .chat-input-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .send-button {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .manual-search-card .ant-collapse-header {
+    padding: 10px 12px !important;
+    font-size: 14px;
+  }
+
+  .manual-search-card .ant-collapse-content-box {
+    padding: 12px !important;
+  }
+
+  .conversations-list-card .ant-list-item {
+    padding: 12px !important;
+  }
+
+  .conversations-list-card .ant-list-item-action {
+    margin-left: 0;
+    margin-top: 12px;
+  }
+
+  .property-search-container .ant-tabs-content {
+    padding: 16px 12px;
+  }
+}
+
+/* ========================================
+   SCROLL TO TOP BUTTON (если добавим)
+======================================== */
+.scroll-to-top {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #1890ff !important;
+  border: none;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.scroll-to-top:hover {
+  background: #40a9ff !important;
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ========================================
+   АНИМАЦИИ
+======================================== */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.property-search-container .ant-card {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* ========================================
+   PRINT STYLES (если понадобится)
+======================================== */
+@media print {
+  .property-search-container {
+    background: white !important;
+    color: black !important;
+  }
+
+  .chat-history,
+  .chat-input-container,
+  .search-mode-toggle,
+  .conversation-controls {
+    display: none;
+  }
+}
+/* Стили для модального окна с низкой уверенностью AI */
+.low-confidence-modal .ant-modal-content {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+.low-confidence-modal .ant-modal-header {
+  background: #1f1f1f !important;
+  border-bottom: 1px solid #434343 !important;
+}
+
+.low-confidence-modal .ant-modal-title {
+  color: #ffffff !important;
+}
+
+.low-confidence-modal .ant-modal-body {
+  background: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+.low-confidence-modal .ant-modal-footer {
+  background: #1f1f1f !important;
+  border-top: 1px solid #434343 !important;
+}
+
+.low-confidence-modal .ant-modal-close {
+  color: #ffffff !important;
+}
+
+.low-confidence-modal .ant-modal-close:hover {
+  color: #1890ff !important;
+}
+
+.low-confidence-modal .ant-btn {
+  background: #1890ff !important;
+  border-color: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.low-confidence-modal .ant-btn:hover {
+  background: #40a9ff !important;
+  border-color: #40a9ff !important;
+}
+
+/* Иконка предупреждения */
+.low-confidence-modal .anticon-exclamation-circle {
+  color: #faad14 !important;
+}
+
+/* Текст внутри модального окна */
+.low-confidence-modal p {
+  color: #ffffff !important;
+}
+
+.low-confidence-modal strong {
+  color: #faad14 !important;
+}

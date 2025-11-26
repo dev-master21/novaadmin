@@ -1,0 +1,633 @@
+/* frontend/src/modules/Agreements/components/AIAgreementEditor.css */
+
+/* ========== ОСНОВНЫЕ КОНТЕЙНЕРЫ ========== */
+.ai-agreement-editor {
+  width: 100%;
+  height: 100%;
+}
+
+.ai-editor-card {
+  background: #141414 !important;
+  border: 1px solid #303030 !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-editor-card .ant-card-head {
+  background: #1f1f1f !important;
+  border-bottom: 1px solid #303030 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ai-editor-card .ant-card-head-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ai-editor-card .ant-card-body {
+  background: #141414 !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px !important;
+}
+
+/* ========== ЧАТ ========== */
+.ai-editor-chat {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+  border-radius: 4px;
+  padding: 16px;
+  min-height: 400px;
+  max-height: 500px;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ai-editor-message {
+  display: flex;
+  gap: 12px;
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-editor-message.user-message {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  flex-shrink: 0;
+}
+
+.message-content {
+  flex: 1;
+  max-width: 70%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-message .message-content {
+  align-items: flex-end;
+}
+
+.message-text {
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85) !important;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.user-message .message-text {
+  background: #1890ff !important;
+  border-color: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.message-changes-summary {
+  margin-top: 4px;
+}
+
+.message-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45) !important;
+  padding: 0 4px;
+}
+
+/* ========== ПОЛЕ ВВОДА ========== */
+.ai-editor-input {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  background: #1f1f1f !important;
+  padding: 12px;
+  border: 1px solid #303030 !important;
+  border-radius: 4px;
+}
+
+.chat-textarea {
+  flex: 1;
+  background: #141414 !important;
+  border: 1px solid #303030 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-radius: 4px !important;
+}
+
+.chat-textarea:hover,
+.chat-textarea:focus {
+  background: #1f1f1f !important;
+  border-color: #1890ff !important;
+}
+
+.chat-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.send-button {
+  height: 40px;
+  padding: 0 24px;
+  background: #1890ff !important;
+  border-color: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.send-button:hover {
+  background: #40a9ff !important;
+  border-color: #40a9ff !important;
+}
+
+.conversation-info {
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* ========== МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ========== */
+.ai-changes-confirm-modal .ant-modal-content {
+  background: #141414 !important;
+  border: 1px solid #303030 !important;
+}
+
+.ai-changes-confirm-modal .ant-modal-header {
+  background: #1f1f1f !important;
+  border-bottom: 1px solid #303030 !important;
+}
+
+.ai-changes-confirm-modal .ant-modal-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ai-changes-confirm-modal .ant-modal-body {
+  background: #141414 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  max-height: calc(100vh - 200px) !important;
+  overflow-y: auto !important;
+}
+
+.ai-changes-confirm-modal .ant-modal-footer {
+  background: #1f1f1f !important;
+  border-top: 1px solid #303030 !important;
+}
+
+/* ========== КОНТЕЙНЕР ИЗМЕНЕНИЙ ========== */
+.changes-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #141414 !important;
+}
+
+.changes-preview-container * {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ========== КАРТОЧКИ В МОДАЛКЕ ========== */
+.changes-preview-container .ant-card {
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.changes-preview-container .ant-card-head {
+  background: #262626 !important;
+  border-bottom: 1px solid #303030 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.changes-preview-container .ant-card-head-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.changes-preview-container .ant-card-body {
+  background: #1f1f1f !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ========== КАРТОЧКИ ИЗМЕНЕНИЙ ========== */
+.changes-card,
+.conflicts-card {
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.section-change-card,
+.conflict-card {
+  background: #141414 !important;
+  border: 1px solid #303030 !important;
+  transition: all 0.3s ease;
+}
+
+.section-change-card:hover,
+.conflict-card:hover {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 10px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* ========== ТЕКСТОВЫЕ БЛОКИ ========== */
+.clause-text-block {
+  margin-bottom: 12px;
+}
+
+.clause-text-block:last-child {
+  margin-bottom: 0;
+}
+
+.clause-text-block .ant-typography {
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin-bottom: 0 !important;
+}
+
+.clause-text-block p {
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin-bottom: 0 !important;
+}
+
+.clause-reason-block {
+  padding-top: 8px;
+  border-top: 1px dashed #303030 !important;
+  background: transparent !important;
+}
+
+.clause-reason-block * {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* ========== БЛОКИ С ЦВЕТНЫМИ ФОНАМИ ========== */
+.clause-text-block [style*="background"] {
+  border: 1px solid #303030 !important;
+}
+
+.clause-text-block [style*="background:#e6f7ff"],
+.clause-text-block [style*="background: #e6f7ff"] {
+  background: #111b26 !important;
+  border-color: #15395b !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.clause-text-block [style*="background:#f6ffed"],
+.clause-text-block [style*="background: #f6ffed"] {
+  background: #162312 !important;
+  border-color: #274916 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.clause-text-block [style*="background:#fffbe6"],
+.clause-text-block [style*="background: #fffbe6"] {
+  background: #2b2111 !important;
+  border-color: #594214 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.clause-text-block [style*="background:#f0f5ff"],
+.clause-text-block [style*="background: #f0f5ff"] {
+  background: #111b26 !important;
+  border-color: #15395b !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ========== КОНФЛИКТЫ ========== */
+.conflicts-card {
+  border: 2px solid #fa8c16 !important;
+  background: #1f1f1f !important;
+}
+
+.conflicts-card .ant-card-head {
+  background: #2b2111 !important;
+  border-bottom: 2px solid #fa8c16 !important;
+}
+
+.conflict-card {
+  background: #2b2111 !important;
+  border: 1px solid #594214 !important;
+}
+
+/* ========== ОПИСАНИЯ ========== */
+.changes-preview-container .ant-descriptions {
+  background: #1f1f1f !important;
+}
+
+.changes-preview-container .ant-descriptions-item-label {
+  background: #262626 !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.changes-preview-container .ant-descriptions-item-content {
+  background: #1f1f1f !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.changes-preview-container .ant-typography {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ========== МОДАЛЬНОЕ ОКНО ИСТОРИИ ========== */
+.ai-history-modal .ant-modal-content {
+  background: #141414 !important;
+  border: 1px solid #303030 !important;
+}
+
+.ai-history-modal .ant-modal-header {
+  background: #1f1f1f !important;
+  border-bottom: 1px solid #303030 !important;
+}
+
+.ai-history-modal .ant-modal-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ai-history-modal .ant-modal-body {
+  background: #141414 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.ai-history-modal .ant-modal-footer {
+  background: #1f1f1f !important;
+  border-top: 1px solid #303030 !important;
+}
+
+.history-item {
+  border-bottom: 1px solid #303030 !important;
+  padding: 12px 0 !important;
+}
+
+.history-item:last-child {
+  border-bottom: none !important;
+}
+
+.history-item .ant-card {
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.history-item .ant-card-head {
+  background: #262626 !important;
+  border-bottom: 1px solid #303030 !important;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.history-item .ant-card-head-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.history-item .ant-card-body {
+  background: #1f1f1f !important;
+  padding: 12px !important;
+}
+
+.history-item .ant-typography {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.history-item .ant-typography-secondary {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ========== ALERT СТИЛИ ========== */
+.ai-editor-card .ant-alert,
+.changes-preview-container .ant-alert {
+  background: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.ai-editor-card .ant-alert-info,
+.changes-preview-container .ant-alert-info {
+  background: #111b26 !important;
+  border-color: #15395b !important;
+}
+
+.ai-editor-card .ant-alert-success,
+.changes-preview-container .ant-alert-success {
+  background: #162312 !important;
+  border-color: #274916 !important;
+}
+
+.ai-editor-card .ant-alert-warning,
+.changes-preview-container .ant-alert-warning {
+  background: #2b2111 !important;
+  border-color: #594214 !important;
+}
+
+.ai-editor-card .ant-alert-message,
+.changes-preview-container .ant-alert-message {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ai-editor-card .ant-alert-description,
+.changes-preview-container .ant-alert-description {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* ========== ТЕГИ ========== */
+.ai-editor-card .ant-tag,
+.changes-preview-container .ant-tag {
+  background: #1f1f1f !important;
+  border-color: #303030 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ai-editor-card .ant-tag-blue,
+.changes-preview-container .ant-tag-blue {
+  background: #111b26 !important;
+  border-color: #15395b !important;
+  color: #40a9ff !important;
+}
+
+.ai-editor-card .ant-tag-success,
+.changes-preview-container .ant-tag-success {
+  background: #162312 !important;
+  border-color: #274916 !important;
+  color: #52c41a !important;
+}
+
+.ai-editor-card .ant-tag-processing,
+.changes-preview-container .ant-tag-processing {
+  background: #111b26 !important;
+  border-color: #15395b !important;
+  color: #40a9ff !important;
+}
+
+.ai-editor-card .ant-tag-warning,
+.changes-preview-container .ant-tag-warning {
+  background: #2b2111 !important;
+  border-color: #594214 !important;
+  color: #fa8c16 !important;
+}
+
+.ai-editor-card .ant-tag-error,
+.changes-preview-container .ant-tag-error {
+  background: #2a1215 !important;
+  border-color: #58181c !important;
+  color: #ff4d4f !important;
+}
+
+/* ========== EMPTY ========== */
+.ai-editor-chat .ant-empty {
+  margin: auto;
+}
+
+.ai-editor-chat .ant-empty-description {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ========== DIVIDER ========== */
+.changes-preview-container .ant-divider,
+.ai-editor-card .ant-divider {
+  border-color: #303030 !important;
+}
+
+/* ========== BUTTONS ========== */
+.ai-editor-card .ant-btn-default,
+.changes-preview-container .ant-btn-default {
+  background: #1f1f1f !important;
+  border-color: #303030 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ai-editor-card .ant-btn-default:hover,
+.changes-preview-container .ant-btn-default:hover {
+  background: #262626 !important;
+  border-color: #40a9ff !important;
+  color: #40a9ff !important;
+}
+
+/* ========== LIST ========== */
+.ai-history-modal .ant-list-item {
+  border-bottom-color: #303030 !important;
+}
+
+/* ========== SPACE ========== */
+.changes-preview-container .ant-space-item {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ========== PARAGRAPH & TEXT ========== */
+.changes-preview-container p,
+.changes-preview-container span,
+.changes-preview-container div {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.changes-preview-container .ant-typography-secondary {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .ai-editor-chat {
+    min-height: 300px;
+    max-height: 400px;
+    padding: 12px;
+  }
+
+  .message-content {
+    max-width: 85%;
+  }
+
+  .message-text {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .ai-editor-input {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px;
+  }
+
+  .send-button {
+    width: 100%;
+  }
+
+  .changes-preview-container .ant-card {
+    margin-bottom: 12px;
+  }
+
+  .section-change-card,
+  .conflict-card {
+    padding: 12px;
+  }
+
+  .clause-text-block {
+    font-size: 13px;
+  }
+
+  .ai-changes-confirm-modal .ant-modal {
+    margin: 10px !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  .ai-changes-confirm-modal .ant-modal-body {
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .message-content {
+    max-width: 90%;
+  }
+
+  .message-text {
+    font-size: 13px;
+  }
+
+  .clause-text-block {
+    font-size: 12px;
+  }
+}
+
+/* ========== SCROLLBAR ========== */
+.ai-editor-chat::-webkit-scrollbar,
+.ai-changes-confirm-modal .ant-modal-body::-webkit-scrollbar,
+.ai-history-modal .ant-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-editor-chat::-webkit-scrollbar-track,
+.ai-changes-confirm-modal .ant-modal-body::-webkit-scrollbar-track,
+.ai-history-modal .ant-modal-body::-webkit-scrollbar-track {
+  background: #1f1f1f;
+  border-radius: 3px;
+}
+
+.ai-editor-chat::-webkit-scrollbar-thumb,
+.ai-changes-confirm-modal .ant-modal-body::-webkit-scrollbar-thumb,
+.ai-history-modal .ant-modal-body::-webkit-scrollbar-thumb {
+  background: #303030;
+  border-radius: 3px;
+}
+
+.ai-editor-chat::-webkit-scrollbar-thumb:hover,
+.ai-changes-confirm-modal .ant-modal-body::-webkit-scrollbar-thumb:hover,
+.ai-history-modal .ant-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #434343;
+}
+
+/* ========== FORCE DARK THEME ========== */
+.changes-preview-container *:not(.anticon) {
+  background-color: inherit !important;
+}
+
+.changes-preview-container .ant-typography strong {
+  color: rgba(255, 255, 255, 0.95) !important;
+}

@@ -1,0 +1,881 @@
+/* frontend/src/modules/Agreements/Public/SignAgreement.css */
+
+/* ========== Base Styles ========== */
+.sign-page {
+  min-height: 100vh;
+  transition: all 0.3s ease;
+}
+
+.sign-page.light {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.sign-page.dark {
+  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+}
+
+/* ========== Header ========== */
+.sign-header {
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sign-header-content {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-image {
+  height: 40px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.theme-toggle .ant-switch {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.theme-toggle .ant-switch-checked {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ========== Container ========== */
+.sign-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.sign-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ========== Glass Card Effect ========== */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.sign-page.dark .glass-card {
+  background: rgba(45, 55, 72, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(31, 38, 135, 0.2);
+}
+
+/* ========== Status Card ========== */
+.status-card {
+  text-align: center;
+}
+
+.status-badge {
+  margin-bottom: 20px;
+}
+
+.badge-success,
+.badge-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.badge-success {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+}
+
+.badge-pending {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.agreement-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 16px 0;
+  color: #2d3748;
+}
+
+.sign-page.dark .agreement-title {
+  color: #f7fafc;
+}
+
+.signer-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 20px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 16px;
+}
+
+.info-icon {
+  font-size: 32px;
+  color: #667eea;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.info-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.sign-page.dark .info-value {
+  color: #f7fafc;
+}
+
+.info-role {
+  font-size: 14px;
+  color: #667eea;
+  font-weight: 500;
+}
+
+/* ========== Details Card ========== */
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #2d3748;
+}
+
+.sign-page.dark .card-title {
+  color: #f7fafc;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.detail-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  transform: translateX(4px);
+}
+
+.detail-icon {
+  font-size: 24px;
+  color: #667eea;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.detail-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.sign-page.dark .detail-value {
+  color: #e2e8f0;
+}
+
+.detail-sub {
+  font-size: 14px;
+  font-weight: 400;
+  color: #718096;
+}
+
+.utilities-section {
+  padding: 16px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 12px;
+}
+
+/* ========== Mobile Actions Card ========== */
+.mobile-actions-card {
+  display: none;
+}
+
+.mobile-action-button {
+  height: 56px !important;
+  border-radius: 16px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  background: rgba(102, 126, 234, 0.1) !important;
+  border: 2px solid #667eea !important;
+  color: #667eea !important;
+}
+
+.sign-page.dark .mobile-action-button {
+  background: rgba(102, 126, 234, 0.2) !important;
+  color: #a5b4fc !important;
+  border-color: #a5b4fc !important;
+}
+
+/* ========== Signatures Card ========== */
+.signatures-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.signature-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.signature-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  transform: translateX(4px);
+}
+
+.signature-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.signature-details {
+  flex: 1;
+}
+
+.signature-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.sign-page.dark .signature-name {
+  color: #f7fafc;
+}
+
+.signature-role {
+  font-size: 14px;
+  color: #718096;
+}
+
+.signature-status {
+  flex-shrink: 0;
+}
+
+/* ========== Actions Card ========== */
+.actions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-button {
+  height: 56px !important;
+  border-radius: 16px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+}
+
+.view-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+}
+
+.view-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4) !important;
+}
+
+.download-button {
+  background: rgba(102, 126, 234, 0.1) !important;
+  border: 2px solid #667eea !important;
+  color: #667eea !important;
+}
+
+.download-button:hover {
+  background: rgba(102, 126, 234, 0.2) !important;
+  transform: translateY(-2px);
+}
+
+.sign-page.dark .download-button {
+  background: rgba(102, 126, 234, 0.2) !important;
+  color: #a5b4fc !important;
+  border-color: #a5b4fc !important;
+}
+
+/* ========== Signature Card ========== */
+.signature-canvas-wrapper {
+  position: relative;
+  margin: 20px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 3px dashed #cbd5e0;
+  background: #ffffff;
+}
+
+.sign-page.dark .signature-canvas-wrapper {
+  background: #2a2a2a;
+  border-color: #4a5568;
+}
+
+.signature-canvas {
+  width: 100% !important;
+  height: 200px !important;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.canvas-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #cbd5e0;
+  font-size: 14px;
+  pointer-events: none;
+  text-align: center;
+  user-select: none;
+}
+
+.clear-button {
+  margin-top: 12px;
+  border-radius: 8px !important;
+}
+
+.agreement-checkbox {
+  display: flex;
+  align-items: flex-start;
+  padding: 20px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.checkbox-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4a5568;
+  margin-left: 8px;
+}
+
+.sign-page.dark .checkbox-text {
+  color: #cbd5e0;
+}
+
+.sign-button {
+  height: 60px !important;
+  border-radius: 16px !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.sign-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4) !important;
+}
+
+.sign-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========== Signed Card ========== */
+.signed-card {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+}
+
+.signed-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.signed-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.signed-content h3 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.signed-content p {
+  font-size: 16px;
+  opacity: 0.9;
+  margin-bottom: 24px;
+}
+
+.signed-signature {
+  margin-top: 24px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+}
+
+.signed-signature img {
+  max-width: 300px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+/* ========== Footer ========== */
+.sign-footer {
+  text-align: center;
+  padding: 32px 20px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+/* ========== Loading & Error States ========== */
+.sign-loading,
+.sign-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px;
+  text-align: center;
+}
+
+.sign-loading {
+  color: white;
+}
+
+.sign-loading p {
+  margin-top: 20px;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sign-not-found {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  margin: 40px;
+  padding: 60px 40px;
+  max-width: 600px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+}
+
+.not-found-icon {
+  font-size: 80px;
+  margin-bottom: 24px;
+}
+
+.sign-not-found h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 12px;
+}
+
+.sign-not-found p {
+  font-size: 16px;
+  color: #718096;
+  line-height: 1.6;
+}
+
+/* ========== Modal Styles ========== */
+.agreement-modal .ant-modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.agreement-content {
+  padding: 20px;
+  line-height: 1.8;
+}
+
+/* ========== Mobile Drawer Styles ========== */
+.mobile-drawer .ant-drawer-body {
+  padding: 20px;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.drawer-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 12px;
+}
+
+.mobile-drawer.dark .drawer-item {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.drawer-item.full-width {
+  flex-direction: column;
+}
+
+.drawer-icon {
+  font-size: 24px;
+  color: #667eea;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.drawer-item-content {
+  flex: 1;
+}
+
+.drawer-label {
+  font-size: 12px;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.drawer-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.mobile-drawer.dark .drawer-value {
+  color: #e2e8f0;
+}
+
+.drawer-value.highlight {
+  font-size: 20px;
+  color: #667eea;
+}
+
+.drawer-sub {
+  font-size: 14px;
+  color: #718096;
+  margin-top: 4px;
+}
+
+.drawer-signatures-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.drawer-signature-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 12px;
+}
+
+.mobile-drawer.dark .drawer-signature-item {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.drawer-signature-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.drawer-signature-info {
+  flex: 1;
+}
+
+.drawer-signature-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.mobile-drawer.dark .drawer-signature-name {
+  color: #f7fafc;
+}
+
+.drawer-signature-role {
+  font-size: 14px;
+  color: #718096;
+  margin-bottom: 2px;
+}
+
+.drawer-signature-date {
+  font-size: 12px;
+  color: #a0aec0;
+}
+
+.drawer-signature-status {
+  flex-shrink: 0;
+}
+
+.status-badge-success,
+.status-badge-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge-success {
+  background: #48bb78;
+  color: white;
+}
+
+.status-badge-pending {
+  background: #cbd5e0;
+  color: #4a5568;
+}
+
+/* ========== Mobile Responsive ========== */
+@media (max-width: 768px) {
+  .sign-container {
+    padding: 20px 12px;
+  }
+
+  .glass-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .logo-image {
+    height: 32px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+  }
+
+  .agreement-title {
+    font-size: 22px;
+  }
+
+  .signer-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .info-value {
+    font-size: 16px;
+  }
+
+  .card-title {
+    font-size: 18px;
+  }
+
+  .details-card,
+  .signatures-card {
+    display: none;
+  }
+
+  .mobile-actions-card {
+    display: block;
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .detail-value {
+    font-size: 14px;
+  }
+
+  .signature-canvas {
+    height: 150px !important;
+  }
+
+  .action-button {
+    height: 48px !important;
+    font-size: 14px !important;
+  }
+
+  .sign-button {
+    height: 52px !important;
+    font-size: 16px !important;
+  }
+
+  .checkbox-text {
+    font-size: 13px;
+  }
+
+  .signed-icon {
+    font-size: 48px;
+  }
+
+  .signed-content h3 {
+    font-size: 20px;
+  }
+
+  .signature-item {
+    padding: 12px;
+  }
+
+  .signature-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .signature-name {
+    font-size: 14px;
+  }
+
+  .signature-role {
+    font-size: 12px;
+  }
+
+  /* Mobile Modal Full Screen */
+  .agreement-modal {
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .agreement-modal .ant-modal {
+    max-width: 100vw;
+    margin: 0;
+    top: 0;
+  }
+
+  .agreement-modal .ant-modal-content {
+    border-radius: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .sign-header {
+    padding: 16px;
+  }
+
+  .glass-card {
+    padding: 16px;
+  }
+
+  .agreement-title {
+    font-size: 20px;
+  }
+
+  .info-value {
+    font-size: 15px;
+  }
+
+  .detail-item {
+    padding: 12px;
+  }
+
+  .canvas-hint {
+    font-size: 12px;
+  }
+}
+
+/* ========== Animations ========== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.glass-card {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.glass-card:nth-child(1) { animation-delay: 0.1s; }
+.glass-card:nth-child(2) { animation-delay: 0.2s; }
+.glass-card:nth-child(3) { animation-delay: 0.3s; }
+.glass-card:nth-child(4) { animation-delay: 0.4s; }
+.glass-card:nth-child(5) { animation-delay: 0.5s; }

@@ -1,0 +1,151 @@
+.bot-settings-container {
+  padding: 24px;
+  background: #0a0e1a;
+  min-height: calc(100vh - 64px);
+}
+
+.bot-settings-header {
+  margin-bottom: 24px;
+}
+
+.bot-settings-header h1 {
+  color: #fff;
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Табы */
+.bot-settings-container .ant-tabs-nav {
+  margin-bottom: 24px;
+}
+
+.bot-settings-container .ant-tabs-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Карточки */
+.bot-settings-container .ant-card {
+  background: #141824;
+  border-color: #1e2530;
+}
+
+.bot-settings-container .ant-card-body {
+  padding: 24px;
+}
+
+/* Таблицы */
+.bot-settings-container .ant-table {
+  background: transparent;
+}
+
+.bot-settings-container .ant-table-thead > tr > th {
+  background: #1e2530;
+  color: #fff;
+  border-bottom: 1px solid #2a3441;
+}
+
+.bot-settings-container .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #1e2530;
+  color: #e0e0e0;
+}
+
+.bot-settings-container .ant-table-tbody > tr:hover > td {
+  background: #1a1f2e;
+}
+
+/* Кнопки */
+.bot-settings-container .ant-btn-primary {
+  background: #1890ff;
+  border-color: #1890ff;
+}
+
+.bot-settings-container .ant-btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* Статистика */
+.bot-settings-container .ant-statistic-title {
+  color: #8c8c8c;
+}
+
+.bot-settings-container .ant-statistic-content {
+  color: #fff;
+}
+
+/* Модалки */
+.bot-settings-container .ant-modal-content {
+  background: #141824;
+}
+
+.bot-settings-container .ant-modal-header {
+  background: #141824;
+  border-bottom-color: #1e2530;
+}
+
+.bot-settings-container .ant-modal-title {
+  color: #fff;
+}
+
+.bot-settings-container .ant-modal-footer {
+  border-top-color: #1e2530;
+}
+
+/* Формы */
+.bot-settings-container .ant-form-item-label > label {
+  color: #fff;
+}
+
+.bot-settings-container .ant-input,
+.bot-settings-container .ant-input-number,
+.bot-settings-container .ant-select-selector,
+.bot-settings-container .ant-picker {
+  background: #1e2530;
+  border-color: #2a3441;
+  color: #fff;
+}
+
+.bot-settings-container .ant-input:hover,
+.bot-settings-container .ant-input:focus,
+.bot-settings-container .ant-select-selector:hover {
+  border-color: #1890ff;
+}
+
+.bot-settings-container .ant-select-arrow,
+.bot-settings-container .ant-input-affix-wrapper-status-success {
+  color: #8c8c8c;
+}
+
+/* Code блоки */
+.bot-settings-container code {
+  background: #1e2530;
+  color: #1890ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 12px;
+}
+
+.bot-settings-container {
+  padding: 24px;
+}
+
+.bot-settings-header {
+  margin-bottom: 24px;
+}
+
+.bot-settings-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ant-steps {
+  margin-bottom: 24px;
+}
