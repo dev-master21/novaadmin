@@ -25,7 +25,9 @@ const uploadReceiptFiles = multer({
 
 const router = Router();
 
-// HTML endpoints для Puppeteer (БЕЗ авторизации, но с internal key) - ДОЛЖНЫ БЫТЬ ДО authenticate
+// ========== ПУБЛИЧНЫЕ РОУТЫ (БЕЗ АВТОРИЗАЦИИ) - ДОЛЖНЫ БЫТЬ ПЕРВЫМИ! ==========
+
+// HTML endpoints для Puppeteer (БЕЗ авторизации, но с internal key)
 router.get('/invoices/:id/html', (req, res) => {
   financialDocumentsController.getInvoiceHTML(req as AuthRequest, res);
 });
@@ -34,7 +36,25 @@ router.get('/receipts/:id/html', (req, res) => {
   financialDocumentsController.getReceiptHTML(req as AuthRequest, res);
 });
 
-// Все остальные роуты требуют авторизации
+// Публичные эндпоинты для верификации (БЕЗ авторизации)
+router.get('/public/invoice/:uuid', (req, res) => {
+  financialDocumentsController.getInvoiceByUuid(req as AuthRequest, res);
+});
+
+router.get('/public/receipt/:uuid', (req, res) => {
+  financialDocumentsController.getReceiptByUuid(req as AuthRequest, res);
+});
+
+router.get('/public/invoice/:uuid/pdf', (req, res) => {
+  financialDocumentsController.downloadInvoicePDFByUuid(req as AuthRequest, res);
+});
+
+router.get('/public/receipt/:uuid/pdf', (req, res) => {
+  financialDocumentsController.downloadReceiptPDFByUuid(req as AuthRequest, res);
+});
+
+// ========== ЗАЩИЩЕННЫЕ РОУТЫ (С АВТОРИЗАЦИЕЙ) ==========
+// Все роуты ниже этой строки требуют авторизации
 router.use(authenticate);
 
 // ========== INVOICES ==========
@@ -153,22 +173,5 @@ router.get('/receipts/:id/pdf',
     financialDocumentsController.downloadReceiptPDF(req as AuthRequest, res);
   }
 );
-
-// Публичные эндпоинты для верификации (БЕЗ авторизации)
-router.get('/public/invoice/:uuid', (req, res) => {
-  financialDocumentsController.getInvoiceByUuid(req as AuthRequest, res);
-});
-
-router.get('/public/receipt/:uuid', (req, res) => {
-  financialDocumentsController.getReceiptByUuid(req as AuthRequest, res);
-});
-
-router.get('/public/invoice/:uuid/pdf', (req, res) => {
-  financialDocumentsController.downloadInvoicePDFByUuid(req as AuthRequest, res);
-});
-
-router.get('/public/receipt/:uuid/pdf', (req, res) => {
-  financialDocumentsController.downloadReceiptPDFByUuid(req as AuthRequest, res);
-});
 
 export default router;

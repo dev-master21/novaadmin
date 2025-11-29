@@ -377,20 +377,21 @@
   border: none;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   animation: slideUp 0.6s ease-out 0.5s both;
-  background: white;
+  background: white !important;
   height: 100%;
 }
 
 .party-card .ant-card-head {
-  border-bottom: 2px solid #f3f4f6;
+  border-bottom: 2px solid #f3f4f6 !important;
   padding: 14px 20px;
   min-height: unset;
+  background: white !important;
 }
 
 .party-card .ant-card-head-title {
   font-size: 15px;
   font-weight: 700;
-  color: #1f2937;
+  color: #1f2937 !important;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -398,11 +399,12 @@
 
 .party-card .ant-card-body {
   padding: 16px 20px;
+  background: white !important;
 }
 
 .party-card .ant-descriptions-item-label {
   font-weight: 600;
-  color: #6b7280;
+  color: #6b7280 !important;
   font-size: 12px;
   padding: 6px 0;
 }
@@ -411,6 +413,14 @@
   color: #1f2937 !important;
   font-size: 13px;
   padding: 6px 0;
+}
+
+.party-card .ant-descriptions-view {
+  background: white !important;
+}
+
+.party-card .ant-descriptions-row {
+  border-bottom: 1px solid #f3f4f6;
 }
 
 /* Desktop/Mobile Toggle */

@@ -16,8 +16,28 @@ const app = express();
 app.use(helmet());
 
 // CORS
+const allowedOrigins = [
+  'https://owner.novaestate.company',
+  'https://agreement.novaestate.company',
+  'https://admin.novaestate.company',
+  'https://novaestate.company',
+  'http://owner.novaestate.company',
+  'http://agreement.novaestate.company',
+  'http://admin.novaestate.company',
+  'http://novaestate.company'
+];
+
 app.use(cors({
-  origin: config.cors.origin,
+  origin: (origin, callback) => {
+    // Разрешаем запросы без Origin (например, Postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS Denied'));
+    }
+  },
   credentials: true
 }));
 

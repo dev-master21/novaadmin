@@ -1,5 +1,6 @@
 // frontend/src/api/financialDocuments.api.ts
 import api from '@/utils/request';
+import publicApi from './publicAxios';
 
 export interface Invoice {
   id: number;
@@ -254,19 +255,19 @@ export const financialDocumentsApi = {
     },
 // Публичные эндпоинты для верификации
   getInvoiceByUuid: (uuid: string) =>
-    api.get<{ success: boolean; data: Invoice }>(`/financial-documents/public/invoice/${uuid}`),
+    publicApi.get<{ success: boolean; data: Invoice }>(`/financial-documents/public/invoice/${uuid}`),
 
   getReceiptByUuid: (uuid: string) =>
-    api.get<{ success: boolean; data: Receipt }>(`/financial-documents/public/receipt/${uuid}`),
+    publicApi.get<{ success: boolean; data: Receipt }>(`/financial-documents/public/receipt/${uuid}`),
 
   downloadInvoicePDFByUuid: (uuid: string) => {
-    return api.get(`/financial-documents/public/invoice/${uuid}/pdf`, {
+    return publicApi.get(`/financial-documents/public/invoice/${uuid}/pdf`, {
       responseType: 'blob'
     });
   },
 
   downloadReceiptPDFByUuid: (uuid: string) => {
-    return api.get(`/financial-documents/public/receipt/${uuid}/pdf`, {
+    return publicApi.get(`/financial-documents/public/receipt/${uuid}/pdf`, {
       responseType: 'blob'
     });
   }

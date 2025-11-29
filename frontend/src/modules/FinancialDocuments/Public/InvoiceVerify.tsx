@@ -25,7 +25,8 @@ import {
   UserOutlined,
   CalendarOutlined,
   FileProtectOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 import { financialDocumentsApi, Invoice } from '@/api/financialDocuments.api';
 import './InvoiceVerify.css';
@@ -76,6 +77,18 @@ const InvoiceVerify = () => {
       message.error({ content: 'Error downloading PDF', key: 'pdf' });
     }
   };
+
+  const copyAccountNumber = (accountNumber: string) => {
+      // Удаляем все символы кроме цифр
+      const numbersOnly = accountNumber.replace(/\D/g, '');
+
+      // Копируем в буфер обмена
+      navigator.clipboard.writeText(numbersOnly).then(() => {
+        message.success('Account number copied to clipboard!');
+      }).catch(() => {
+        message.error('Failed to copy account number');
+      });
+    };
 
   const handleDownloadReceipt = async (receiptUuid: string, receiptNumber: string) => {
     try {
@@ -455,7 +468,23 @@ const InvoiceVerify = () => {
               )}
               {invoice.bank_account_number && (
                 <Descriptions.Item label="Account Number" span={2}>
-                  <Text strong className="account-number">{invoice.bank_account_number}</Text>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Text strong className="account-number">{invoice.bank_account_number}</Text>
+                    <Button
+                      type="text"
+                      icon={<CopyOutlined />}
+                      size="small"
+                      onClick={() => copyAccountNumber(invoice.bank_account_number!)}
+                      style={{ 
+                        color: '#3b82f6',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '4px 8px',
+                        height: 'auto'
+                      }}
+                      title="Copy"
+                    />
+                  </div>
                 </Descriptions.Item>
               )}
             </Descriptions>
