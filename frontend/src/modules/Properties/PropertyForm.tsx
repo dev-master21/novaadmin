@@ -64,7 +64,8 @@ import {
   IconChevronUp,
   IconClipboard,
   IconMapPinFilled,
-  IconAlertTriangle
+  IconAlertTriangle,
+  IconUpload // ✅ НОВОЕ
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -89,6 +90,47 @@ import TranslationsEditor from './components/TranslationsEditor';
 import AIPropertyCreationModal from './components/AIPropertyCreationModal';
 import OwnerAccessModal from './components/OwnerAccessModal';
 
+// ✅ НОВОЕ: Интерфейсы для временных данных
+interface TempPhoto {
+  file: File;
+  category: string;
+  preview: string;
+}
+
+interface TempVideo {
+  file: File;
+  title?: string;
+  description?: string;
+  preview: string;
+}
+
+interface TempVRPanorama {
+  location_type: string;
+  location_number: number;
+  files: {
+    front: File;
+    back: File;
+    left: File;
+    right: File;
+    top: File;
+    bottom: File;
+  };
+  previews: {
+    front: string;
+    back: string;
+    left: string;
+    right: string;
+    top: string;
+    bottom: string;
+  };
+}
+
+interface TempBlockedDate {
+  start_date: string;
+  end_date: string;
+  reason?: string;
+}
+
 interface PropertyFormProps {
   viewMode?: boolean;
 }
@@ -100,8 +142,8 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
   const theme = useMantineTheme();
   const [depositType, setDepositType] = useState<'one_month' | 'two_months' | 'custom'>('one_month');
   const [depositAmount, setDepositAmount] = useState<number>(0);
-  const { colorScheme } = useMantineColorScheme(); // ✅ ДОБАВИТЬ ЭТУ СТРОКУ
-  const isDark = colorScheme === 'dark'; // ✅ ДОБАВИТЬ ЭТУ СТРОКУ
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === 'dark';
 
   const { canEditProperty, canViewPropertyOwner, canChangePropertyStatus } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -119,6 +161,24 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
     blockedDates?: any[];
     photosFromGoogleDrive?: string | null;
   }>({});
+
+  // ✅ НОВОЕ: Состояния для временных медиа-данных
+  const [tempPhotos, setTempPhotos] = useState<TempPhoto[]>([]);
+  const [tempVideos, setTempVideos] = useState<TempVideo[]>([]);
+  const [tempFloorPlan, setTempFloorPlan] = useState<File | null>(null);
+  const [tempVRPanoramas, setTempVRPanoramas] = useState<TempVRPanorama[]>([]);
+  const [tempBlockedDates, setTempBlockedDates] = useState<TempBlockedDate[]>([]);
+
+
+  // ✅ НОВОЕ: Состояния для прогресса загрузки медиа
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({
+    current: 0,
+    total: 0,
+    currentType: '',
+    currentItem: '',
+    percentage: 0
+  });
 
   const [showAllPropertyFeatures, setShowAllPropertyFeatures] = useState(false);
   const [showAllOutdoorFeatures, setShowAllOutdoorFeatures] = useState(false);
@@ -346,6 +406,224 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
   };
 
   const progress = calculateProgress();
+
+  // ✅ НОВОЕ: Функция загрузки всех медиа после создания объекта
+  const uploadAllMedia = async (propertyId: number) => {
+    setIsUploadingMedia(true);
+    
+    // Подсчёт общего количества элементов для загрузки
+    const totalItems = 
+      tempPhotos.length + 
+      tempVideos.length + 
+      (tempFloorPlan ? 1 : 0) + 
+      tempVRPanoramas.length +
+      tempBlockedDates.length;
+
+    if (totalItems === 0) {
+      setIsUploadingMedia(false);
+      return;
+    }
+
+    setUploadProgress({
+      current: 0,
+      total: totalItems,
+      currentType: '',
+      currentItem: '',
+      percentage: 0
+    });
+
+    let currentItem = 0;
+
+    try {
+// Загрузка фотографий
+      if (tempPhotos.length > 0) {
+        setUploadProgress(prev => ({
+          ...prev,
+          currentType: t('properties.media.photos') || 'Фотографии'
+        }));
+
+        for (let i = 0; i < tempPhotos.length; i++) {
+          const photo = tempPhotos[i];
+          currentItem++;
+          
+          setUploadProgress(prev => ({
+            ...prev,
+            current: currentItem,
+            currentItem: `${i + 1}/${tempPhotos.length}`,
+            percentage: Math.round((currentItem / totalItems) * 100)
+          }));
+
+          const formData = new FormData();
+          formData.append('photos', photo.file);
+          formData.append('category', photo.category);
+
+          await propertiesApi.uploadPhotos(propertyId, formData);
+        }
+
+        notifications.show({
+          title: t('common.success'),
+          message: t('properties.messages.photosUploaded', { count: tempPhotos.length }),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
+      }
+
+// Загрузка видео
+      if (tempVideos.length > 0) {
+        setUploadProgress(prev => ({
+          ...prev,
+          currentType: t('properties.media.videos') || 'Видео'
+        }));
+
+        for (let i = 0; i < tempVideos.length; i++) {
+          const video = tempVideos[i];
+          currentItem++;
+          
+          setUploadProgress(prev => ({
+            ...prev,
+            current: currentItem,
+            currentItem: `${i + 1}/${tempVideos.length}`,
+            percentage: Math.round((currentItem / totalItems) * 100)
+          }));
+
+          // API uploadVideo сам создаёт FormData внутри, передаём только файл
+          await propertiesApi.uploadVideo(propertyId, video.file);
+        }
+        notifications.show({
+          title: t('common.success'),
+          message: t('properties.messages.videosUploaded', { count: tempVideos.length }),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
+      }
+
+      // Загрузка планировки
+      if (tempFloorPlan) {
+        currentItem++;
+        setUploadProgress(prev => ({
+          ...prev,
+          current: currentItem,
+          currentType: t('properties.media.floorPlan') || 'Планировка',
+          currentItem: '1/1',
+          percentage: Math.round((currentItem / totalItems) * 100)
+        }));
+
+        const formData = new FormData();
+        formData.append('floorPlan', tempFloorPlan);
+
+        await propertiesApi.uploadFloorPlan(propertyId, formData);
+
+        notifications.show({
+          title: t('common.success'),
+          message: t('properties.messages.floorPlanUploaded'),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
+      }
+
+      // Загрузка VR панорам
+      if (tempVRPanoramas.length > 0) {
+        setUploadProgress(prev => ({
+          ...prev,
+          currentType: t('properties.media.vrPanoramas') || 'VR Панорамы'
+        }));
+
+        for (let i = 0; i < tempVRPanoramas.length; i++) {
+          const panorama = tempVRPanoramas[i];
+          currentItem++;
+          
+          setUploadProgress(prev => ({
+            ...prev,
+            current: currentItem,
+            currentItem: `${i + 1}/${tempVRPanoramas.length}`,
+            percentage: Math.round((currentItem / totalItems) * 100)
+          }));
+
+          const formData = new FormData();
+          formData.append('location_type', panorama.location_type);
+          formData.append('location_number', String(panorama.location_number));
+          
+          Object.entries(panorama.files).forEach(([direction, file]) => {
+            formData.append(direction, file);
+          });
+
+          await propertiesApi.createVRPanorama(propertyId, formData);
+        }
+
+        notifications.show({
+          title: t('common.success'),
+          message: t('properties.messages.vrPanoramasUploaded', { count: tempVRPanoramas.length }),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
+      }
+
+// Загрузка заблокированных дат
+      if (tempBlockedDates.length > 0) {
+        setUploadProgress(prev => ({
+          ...prev,
+          currentType: t('properties.calendar.blockedDates') || 'Заблокированные даты'
+        }));
+
+        for (let i = 0; i < tempBlockedDates.length; i++) {
+          const blockedDate = tempBlockedDates[i];
+          currentItem++;
+          
+          setUploadProgress(prev => ({
+            ...prev,
+            current: currentItem,
+            currentItem: `${i + 1}/${tempBlockedDates.length}`,
+            percentage: Math.round((currentItem / totalItems) * 100)
+          }));
+
+          await propertiesApi.addBlockedPeriod(propertyId, {
+            start_date: blockedDate.start_date,
+            end_date: blockedDate.end_date,
+            reason: blockedDate.reason || ''
+          });
+        }
+
+        notifications.show({
+          title: t('common.success'),
+          message: t('properties.messages.blockedDatesAdded', { count: tempBlockedDates.length }),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
+      }
+
+      // Очистка временных данных
+      setTempPhotos([]);
+      setTempVideos([]);
+      setTempFloorPlan(null);
+      setTempVRPanoramas([]);
+      setTempBlockedDates([]);
+
+      notifications.show({
+        title: t('common.success'),
+        message: t('properties.messages.allMediaUploaded'),
+        color: 'green',
+        icon: <IconCheck size={18} />
+      });
+
+    } catch (error: any) {
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('properties.messages.mediaUploadError'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
+      throw error;
+    } finally {
+      setIsUploadingMedia(false);
+      setUploadProgress({
+        current: 0,
+        total: 0,
+        currentType: '',
+        currentItem: '',
+        percentage: 0
+      });
+    }
+  };
 
   useEffect(() => {
     if (isEdit) {
@@ -623,7 +901,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
     });
   };
 
-  // ✅ НОВОЕ: Функция вставки из буфера обмена
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -655,7 +932,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
     }
   };
 
-  // ✅ ОБНОВЛЕНО: handleAutoDetectCoordinates с определением адреса
   const handleAutoDetectCoordinates = async (linkOverride?: string) => {
     const link = linkOverride || form.values.google_maps_link;
 
@@ -689,7 +965,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
       form.setFieldValue('latitude', coords.lat);
       form.setFieldValue('longitude', coords.lng);
 
-      // ✅ НОВОЕ: Автоматически заполняем адрес если он получен и если адрес пустой
       if (address && !form.values.address) {
         form.setFieldValue('address', address);
       }
@@ -741,7 +1016,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
     }
   };
 
-  // ✅ ОБНОВЛЕНО: handleGoogleMapsLinkChange с автоматическим определением
   const handleGoogleMapsLinkChange = async (value: string) => {
     form.setFieldValue('google_maps_link', value);
     setGoogleMapsLink(value);
@@ -750,7 +1024,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
       setHasCoordinatesForCurrentLink(false);
     }
 
-    // ✅ НОВОЕ: Автоматическое определение координат если ссылка содержит "maps"
     if (value && isGoogleMapsLink(value)) {
       setTimeout(() => {
         handleAutoDetectCoordinates(value);
@@ -762,6 +1035,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
     openComplexInfo();
   };
 
+  // ✅ ОБНОВЛЕНО: handleSubmit с загрузкой медиа после создания
   const handleSubmit = async (values: typeof form.values) => {
     if (!values.property_name) {
       notifications.show({
@@ -840,7 +1114,10 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
         });
         loadProperty();
       } else {
+        // ✅ НОВОЕ: Создание объекта и загрузка медиа
         const { data } = await propertiesApi.create(formData);
+        const newPropertyId = data.data.propertyId;
+
         notifications.show({
           title: t('common.success'),
           message: t('properties.createSuccess'),
@@ -872,9 +1149,25 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
           });
         }
         
+        // ✅ НОВОЕ: Загрузка всех временных медиа
+        const hasMediaToUpload = 
+          tempPhotos.length > 0 || 
+          tempVideos.length > 0 || 
+          tempFloorPlan !== null || 
+          tempVRPanoramas.length > 0 ||
+          tempBlockedDates.length > 0;
+
+        if (hasMediaToUpload) {
+          try {
+            await uploadAllMedia(newPropertyId);
+          } catch (error) {
+            console.error('Media upload error:', error);
+          }
+        }
+        
         setAiTempData({});
         
-        navigate(`/properties/edit/${data.data.propertyId}`);
+        navigate(`/properties/edit/${newPropertyId}`);
       }
     } catch (error: any) {
       console.error('Submit error:', error);
@@ -1144,6 +1437,61 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
     </Paper>
   );
 
+  // ✅ НОВОЕ: Компонент прогресс-индикатора загрузки медиа
+  const MediaUploadProgress = () => {
+    if (!isUploadingMedia) return null;
+
+    return (
+      <Modal
+        opened={isUploadingMedia}
+        onClose={() => {}}
+        title={t('properties.media.uploadingTitle') || 'Загрузка медиа'}
+        size="lg"
+        centered
+        withCloseButton={false}
+        closeOnClickOutside={false}
+        closeOnEscape={false}
+      >
+        <Stack gap="md">
+          <Alert icon={<IconUpload size={18} />} color="blue">
+            <Text size="sm">
+              {t('properties.media.uploadingDescription') || 'Пожалуйста, подождите. Идёт загрузка медиа-файлов на сервер...'}
+            </Text>
+          </Alert>
+
+          <Stack gap="xs">
+            <Group justify="space-between">
+              <Text fw={500}>{uploadProgress.currentType}</Text>
+              <Text size="sm" c="dimmed">
+                {uploadProgress.current}/{uploadProgress.total} ({uploadProgress.percentage}%)
+              </Text>
+            </Group>
+            
+            {uploadProgress.currentItem && (
+              <Text size="sm" c="dimmed">
+                {t('properties.media.currentItem') || 'Текущий элемент'}: {uploadProgress.currentItem}
+              </Text>
+            )}
+
+            <Progress 
+              value={uploadProgress.percentage} 
+              size="xl" 
+              radius="md" 
+              animated 
+              color="blue"
+            />
+          </Stack>
+
+          <Alert icon={<IconInfoCircle size={18} />} color="orange">
+            <Text size="sm">
+              {t('properties.media.uploadingWarning') || 'Не закрывайте эту страницу до завершения загрузки'}
+            </Text>
+          </Alert>
+        </Stack>
+      </Modal>
+    );
+  };
+
   const renderFeaturesGroup = (
     features: string[],
     selectedFeatures: string[],
@@ -1202,7 +1550,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
 
   const renderStepContent = () => {
     if (steps[activeStep].key === 'basic') {
-      // ✅ НОВОЕ: Определяем тип недвижимости для условной логики
       const propertyType = form.values.property_type;
       const isLand = propertyType === 'land';
       const isBuilding = ['condo', 'apartment', 'penthouse'].includes(propertyType);
@@ -1218,7 +1565,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
               </Accordion.Control>
               <Accordion.Panel>
                 <Grid gutter="md">
-                  {/* Название объекта */}
                   <Grid.Col span={12}>
                     <TextInput
                       label={
@@ -1238,7 +1584,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     />
                   </Grid.Col>
 
-                  {/* Название комплекса */}
                   <Grid.Col span={12}>
                     <TextInput
                       label={
@@ -1265,7 +1610,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     />
                   </Grid.Col>
 
-                  {/* Разделитель */}
                   <Grid.Col span={12}>
                     <Divider my="xs" label={t('properties.form.mainDetails') || 'Основные детали'} labelPosition="center" />
                   </Grid.Col>
@@ -1369,7 +1713,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     />
                   </Grid.Col>
 
-                  {/* ✅ УСЛОВИЕ: Поля владения только для продажи */}
                   {(dealType === 'sale' || dealType === 'both') && !isLand && (
                     <>
                       <Grid.Col span={{ base: 12, sm: 6 }}>
@@ -1408,7 +1751,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </>
                   )}
 
-                  {/* ✅ НОВОЕ: Тип владения землей только для земли или для продажи */}
                   {(dealType === 'sale' || dealType === 'both') && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <Select
@@ -1431,7 +1773,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
               </Accordion.Panel>
             </Accordion.Item>
 
-            {/* Локация - без изменений */}
+            {/* Локация */}
             <Accordion.Item value="location">
               <Accordion.Control icon={<IconMapPin size={20} />}>
                 <Text fw={500}>{t('properties.form.locationInfo') || 'Местоположение'}</Text>
@@ -1573,14 +1915,13 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
               </Accordion.Panel>
             </Accordion.Item>
 
-            {/* ✅ ОБНОВЛЕНО: Детали объекта с условной логикой */}
+            {/* Детали объекта */}
             <Accordion.Item value="details">
               <Accordion.Control icon={<IconClipboardText size={20} />}>
                 <Text fw={500}>{t('properties.form.propertyDetails') || 'Детали объекта'}</Text>
               </Accordion.Control>
               <Accordion.Panel>
                 <Grid gutter="md">
-                  {/* ✅ УСЛОВИЕ: Спальни только не для земли */}
                   {!isLand && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <NumberInput
@@ -1597,7 +1938,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ УСЛОВИЕ: Ванные только не для земли */}
                   {!isLand && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <NumberInput
@@ -1614,7 +1954,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ УСЛОВИЕ: Внутренняя площадь только не для земли */}
                   {!isLand && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <NumberInput
@@ -1631,7 +1970,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ УСЛОВИЕ: Внешняя площадь только не для земли */}
                   {!isLand && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <NumberInput
@@ -1648,7 +1986,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ ВСЕГДА: Размер участка */}
                   <Grid.Col span={{ base: 12, sm: 6 }}>
                     <NumberInput
                       label={<Text size="sm" fw={500}>{t('properties.plotSize')}</Text>}
@@ -1663,7 +2000,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     />
                   </Grid.Col>
 
-                  {/* ✅ УСЛОВИЕ: Этажность только для вилл, домов, кондо, апартаментов, пентхаусов */}
                   {(isHouse || isBuilding) && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <NumberInput
@@ -1679,7 +2015,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ УСЛОВИЕ: Этаж только для кондо, апартаментов, пентхаусов */}
                   {isBuilding && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <TextInput
@@ -1694,7 +2029,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ УСЛОВИЕ: Год постройки только не для земли */}
                   {!isLand && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <NumberInput
@@ -1711,7 +2045,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ УСЛОВИЕ: Месяц постройки только не для земли */}
                   {!isLand && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <Select
@@ -1740,7 +2073,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ УСЛОВИЕ: Статус мебели только не для земли */}
                   {!isLand && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <Select
@@ -1762,7 +2094,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ УСЛОВИЕ: Парковочные места только не для земли */}
                   {!isLand && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <NumberInput
@@ -1778,7 +2109,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ УСЛОВИЕ: Животные только не для земли */}
                   {!isLand && (
                     <Grid.Col span={{ base: 12, sm: 6 }}>
                       <Select
@@ -1799,7 +2129,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     </Grid.Col>
                   )}
 
-                  {/* ✅ ВСЕГДА: Статус */}
                   <Grid.Col span={{ base: 12, sm: 6 }}>
                     <Select
                       label={
@@ -1822,7 +2151,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                     />
                   </Grid.Col>
 
-                  {/* ✅ ВСЕГДА: Видео URL */}
                   <Grid.Col span={12}>
                     <TextInput
                       label={<Text size="sm" fw={500}>{t('properties.form.videoUrlLabel')}</Text>}
@@ -1842,7 +2170,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
       );
     }
 
-
+    // ✅ ОБНОВЛЕНО: Шаг Media с колбэками onChange
     if (steps[activeStep].key === 'media') {
       return (
         <Stack gap="md">
@@ -1852,6 +2180,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
             bedrooms={form.values.bedrooms || 1}
             onUpdate={isEdit ? loadProperty : () => {}}
             viewMode={isViewMode}
+            onChange={(photos) => setTempPhotos(photos)}
           />
     
           <VideoUploader
@@ -1859,6 +2188,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
             videos={propertyData?.videos || []}
             onUpdate={isEdit ? loadProperty : () => {}}
             viewMode={isViewMode}
+            onChange={(videos) => setTempVideos(videos)}
           />
     
           <FloorPlanUploader
@@ -1866,12 +2196,14 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
             floorPlanUrl={propertyData?.floor_plan_url}
             onUpdate={isEdit ? loadProperty : () => {}}
             viewMode={isViewMode}
+            onChange={(file) => setTempFloorPlan(file)}
           />
     
           <VRPanoramaUploader
             propertyId={Number(id) || 0}
             onUpdate={isEdit ? loadProperty : () => {}}
             viewMode={isViewMode}
+            onChange={(panoramas) => setTempVRPanoramas(panoramas)}
           />
         </Stack>
       );
@@ -2178,6 +2510,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
       );
     }
 
+    // ✅ ОБНОВЛЕНО: Шаг Calendar с колбэком onChange
     if (steps[activeStep].key === 'calendar') {
       return (
         <CalendarManager 
@@ -2188,6 +2521,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
               ? undefined
               : (aiTempData.blockedDates || [])
           }
+          onChange={(dates: any) => setTempBlockedDates(dates as TempBlockedDate[])}
         />
       );
     }
@@ -2345,6 +2679,9 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
 
   return (
     <Box ref={targetRef}>
+      {/* ✅ НОВОЕ: Модальное окно прогресса загрузки медиа */}
+      <MediaUploadProgress />
+
       <Card shadow="sm" padding={0} radius="md" withBorder>
         <Paper p="lg" withBorder style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
           <Stack gap="md">
@@ -2403,7 +2740,8 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
             {!isViewMode && <ProgressIndicator />}
           </Stack>
         </Paper>
-<Box p={isMobile ? 'md' : 'lg'}>
+
+        <Box p={isMobile ? 'md' : 'lg'}>
           {isMobile ? (
             <Stack gap="md">
               <Grid gutter="md">
@@ -2412,8 +2750,6 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                   const isActive = activeStep === index;
                   const isCompleted = activeStep > index;
                   
-                  // Определяем ширину карточки
-                  // Все карточки по 50%, кроме последней (Переводы) - 100%
                   const span = index === steps.length - 1 ? 12 : 6;
                   
                   return (
@@ -2558,7 +2894,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                       <Button
                         leftSection={<IconDeviceFloppy size={18} />}
                         onClick={handleSaveClick}
-                        loading={loading || fillingFromAI}
+                        loading={loading || fillingFromAI || isUploadingMedia}
                         size="md"
                       >
                         {isEdit ? t('common.save') : t('common.create')}
@@ -2603,7 +2939,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                   leftSection={<IconDeviceFloppy size={18} />}
                   size="lg"
                   onClick={handleSaveClick}
-                  loading={loading || fillingFromAI}
+                  loading={loading || fillingFromAI || isUploadingMedia}
                   radius="xl"
                 >
                   {isEdit ? t('common.save') : t('common.create')}

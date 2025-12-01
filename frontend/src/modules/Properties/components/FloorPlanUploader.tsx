@@ -1,5 +1,5 @@
 // frontend/src/modules/Properties/components/FloorPlanUploader.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   Stack,
@@ -14,7 +14,9 @@ import {
   Box,
   ActionIcon,
   Tooltip,
-  Modal
+  Modal,
+  Badge,
+  Alert
 } from '@mantine/core';
 import {
   IconUpload,
@@ -23,7 +25,8 @@ import {
   IconFileDescription,
   IconCheck,
   IconX,
-  IconZoomIn
+  IconZoomIn,
+  IconInfoCircle
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { notifications } from '@mantine/notifications';
@@ -35,13 +38,15 @@ interface FloorPlanUploaderProps {
   floorPlanUrl?: string;
   onUpdate: () => void;
   viewMode?: boolean;
+  onChange?: (file: File | null) => void; // ✅ НОВОЕ: Колбэк для передачи данных
 }
 
 const FloorPlanUploader = ({ 
   propertyId, 
   floorPlanUrl, 
   onUpdate,
-  viewMode = false 
+  viewMode = false,
+  onChange // ✅ НОВОЕ
 }: FloorPlanUploaderProps) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -49,8 +54,29 @@ const FloorPlanUploader = ({
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   
+  // ✅ НОВОЕ: Состояния для временной планировки
+  const [tempFloorPlan, setTempFloorPlan] = useState<File | null>(null);
+  const [tempPreview, setTempPreview] = useState<string | null>(null);
+  const isCreatingMode = propertyId === 0;
+  
   const [imageModalOpened, { open: openImageModal, close: closeImageModal }] = useDisclosure(false);
   const [deleteModalOpened, { open: openDeleteModal, close: closeDeleteModal }] = useDisclosure(false);
+
+  // ✅ НОВОЕ: Эффект для передачи данных через колбэк
+  useEffect(() => {
+    if (isCreatingMode && onChange) {
+      onChange(tempFloorPlan);
+    }
+  }, [tempFloorPlan, isCreatingMode, onChange]);
+
+  // ✅ НОВОЕ: Cleanup для preview URL
+  useEffect(() => {
+    return () => {
+      if (tempPreview) {
+        URL.revokeObjectURL(tempPreview);
+      }
+    };
+  }, [tempPreview]);
 
   const handleFileSelect = async (file: File | null) => {
     if (!file) return;
@@ -75,6 +101,27 @@ const FloorPlanUploader = ({
       return;
     }
 
+    // ✅ ИЗМЕНЕНО: Режим создания - сохраняем в память
+    if (isCreatingMode) {
+      // Очищаем предыдущий preview если он был
+      if (tempPreview) {
+        URL.revokeObjectURL(tempPreview);
+      }
+
+      const preview = URL.createObjectURL(file);
+      setTempFloorPlan(file);
+      setTempPreview(preview);
+
+      notifications.show({
+        title: t('common.success'),
+        message: t('floorPlanUploader.floorPlanAddedTemp'),
+        color: 'green',
+        icon: <IconCheck size={18} />
+      });
+      return;
+    }
+
+    // Режим редактирования - загружаем на сервер
     try {
       setUploading(true);
 
@@ -100,6 +147,22 @@ const FloorPlanUploader = ({
     } finally {
       setUploading(false);
     }
+  };
+
+  // ✅ НОВОЕ: Удаление временной планировки
+  const handleRemoveTempFloorPlan = () => {
+    if (tempPreview) {
+      URL.revokeObjectURL(tempPreview);
+    }
+    setTempFloorPlan(null);
+    setTempPreview(null);
+
+    notifications.show({
+      title: t('common.success'),
+      message: t('floorPlanUploader.floorPlanRemoved'),
+      color: 'green',
+      icon: <IconCheck size={18} />
+    });
   };
 
   const handleDeleteConfirm = async () => {
@@ -176,6 +239,9 @@ const FloorPlanUploader = ({
     }
   };
 
+  // ✅ ИЗМЕНЕНО: Проверка наличия планировки для обоих режимов
+  const hasFloorPlan = floorPlanUrl || tempFloorPlan;
+
   return (
     <Stack gap="lg">
       <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -191,7 +257,7 @@ const FloorPlanUploader = ({
                   {t('properties.floorPlan')}
                 </Text>
                 <Text size="sm" c="dimmed">
-                  {floorPlanUrl 
+                  {hasFloorPlan
                     ? t('floorPlanUploader.floorPlanExists') 
                     : t('floorPlanUploader.noFloorPlan')
                   }
@@ -211,8 +277,8 @@ const FloorPlanUploader = ({
                     size={isMobile ? 'sm' : 'md'}
                   >
                     {isMobile 
-                      ? (floorPlanUrl ? t('common.change') : t('common.upload'))
-                      : (floorPlanUrl ? t('floorPlanUploader.changeFloorPlan') : t('floorPlanUploader.uploadFloorPlan'))
+                      ? (hasFloorPlan ? t('common.change') : t('common.upload'))
+                      : (hasFloorPlan ? t('floorPlanUploader.changeFloorPlan') : t('floorPlanUploader.uploadFloorPlan'))
                     }
                   </Button>
                 )}
@@ -220,8 +286,18 @@ const FloorPlanUploader = ({
             )}
           </Group>
 
+          {/* ✅ НОВОЕ: Alert о временном хранении */}
+          {isCreatingMode && tempFloorPlan && (
+            <Alert icon={<IconInfoCircle size={18} />} color="orange" variant="light">
+              <Text size="sm">
+                {t('floorPlanUploader.tempStorageInfo')}
+              </Text>
+            </Alert>
+          )}
+
           {/* Floor Plan Display */}
-          {floorPlanUrl ? (
+          {floorPlanUrl && !isCreatingMode ? (
+            // Отображение загруженной планировки
             <Stack gap="md">
               <Box pos="relative">
                 <Image
@@ -280,7 +356,72 @@ const FloorPlanUploader = ({
                 )}
               </Group>
             </Stack>
+          ) : tempFloorPlan && tempPreview ? (
+            // ✅ НОВОЕ: Отображение временной планировки
+            <Stack gap="md">
+              <Paper p="md" radius="md" withBorder style={{ borderColor: 'var(--mantine-color-orange-6)' }}>
+                <Stack gap="md">
+                  <Group justify="space-between" align="flex-start">
+                    <Group gap="xs">
+                      <Badge variant="filled" color="orange" size="lg">
+                        {t('floorPlanUploader.tempStorage')}
+                      </Badge>
+                      <Badge variant="light" color="teal" size="md">
+                        {(tempFloorPlan.size / 1024 / 1024).toFixed(2)} MB
+                      </Badge>
+                    </Group>
+                  </Group>
+
+                  <Box pos="relative">
+                    <Image
+                      src={tempPreview}
+                      alt={t('floorPlanUploader.floorPlanAlt')}
+                      radius="md"
+                      style={{ 
+                        maxHeight: isMobile ? 300 : 600,
+                        cursor: 'pointer',
+                        border: '2px dashed var(--mantine-color-orange-6)'
+                      }}
+                      onClick={openImageModal}
+                    />
+                    
+                    {/* View Full Size Button Overlay */}
+                    <Tooltip label={t('floorPlanUploader.viewFullSize')}>
+                      <ActionIcon
+                        variant="filled"
+                        color="dark"
+                        size="lg"
+                        onClick={openImageModal}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8
+                        }}
+                      >
+                        <IconZoomIn size={20} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Box>
+
+                  {/* Action Buttons */}
+                  {!viewMode && (
+                    <Group justify="center">
+                      <Button
+                        variant="light"
+                        color="red"
+                        leftSection={<IconTrash size={18} />}
+                        onClick={handleRemoveTempFloorPlan}
+                        size={isMobile ? 'sm' : 'md'}
+                      >
+                        {t('common.delete')}
+                      </Button>
+                    </Group>
+                  )}
+                </Stack>
+              </Paper>
+            </Stack>
           ) : (
+            // Empty state
             <Paper p="xl" radius="md" withBorder style={{ borderStyle: 'dashed' }}>
               <Center>
                 <Stack align="center" gap="md">
@@ -323,9 +464,9 @@ const FloorPlanUploader = ({
           body: { padding: 0 }
         }}
       >
-        {floorPlanUrl && (
+        {(floorPlanUrl || tempPreview) && (
           <Image
-            src={floorPlanUrl}
+            src={floorPlanUrl || tempPreview || ''}
             alt={t('floorPlanUploader.floorPlanAlt')}
             fit="contain"
           />

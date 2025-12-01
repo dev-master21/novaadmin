@@ -87,12 +87,14 @@ interface CalendarManagerProps {
     blocked_date: string;
     reason: string;
   }>;
+  onChange?: (dates: BlockedDate[]) => void; // ✅ НОВОЕ: Колбэк для передачи данных
 }
 
 const CalendarManager = ({ 
   propertyId, 
   viewMode = false,
-  initialBlockedDates = []
+  initialBlockedDates = [],
+  onChange // ✅ НОВОЕ
 }: CalendarManagerProps) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -148,6 +150,13 @@ const CalendarManager = ({
   const [selectedCalendarDates, setSelectedCalendarDates] = useState<string[]>([]);
   const [periodStart, setPeriodStart] = useState<string | null>(null);
   const [periodEnd, setPeriodEnd] = useState<string | null>(null);
+
+  // ✅ НОВОЕ: Эффект для передачи данных через колбэк
+  useEffect(() => {
+    if (isCreatingMode && onChange) {
+      onChange(tempBlockedDates);
+    }
+  }, [tempBlockedDates, isCreatingMode, onChange]);
 
   useEffect(() => {
     if (isCreatingMode && initialBlockedDates && initialBlockedDates.length > 0) {
@@ -973,7 +982,8 @@ const CalendarManager = ({
       </Box>
     );
   };
-// Компонент легенды
+
+  // Компонент легенды
   const CalendarLegend = () => (
     <Paper p="md" radius="md" withBorder>
       <Stack gap="sm">
@@ -1150,6 +1160,7 @@ const CalendarManager = ({
             </SimpleGrid>
           )}
 
+          {/* ✅ НОВОЕ: Alert о временном хранении */}
           {isCreatingMode && tempBlockedDates.length > 0 && (
             <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
               <Text size="sm">
@@ -1464,6 +1475,9 @@ const CalendarManager = ({
         </Card>
       )}
 
+      {/* Модальные окна - остальной код без изменений... */}
+      {/* Для экономии места не буду повторять все модальные окна, они идентичны оригиналу */}
+      
       {/* Модальное окно выбора типа добавления */}
       <Modal
         opened={addOccupancyModalOpened}
@@ -1541,7 +1555,6 @@ const CalendarManager = ({
           setHasConflict(false);
           setConflictDates([]);
           setReason('');
-          // НЕ сбрасываем выбранные даты и режим выбора
         }}
         title={selectionType === 'period' ? t('calendarManager.addOccupancyPeriod') : t('calendarManager.addOccupancyDays')}
         size={isMobile ? 'full' : 'lg'}
@@ -1627,7 +1640,6 @@ const CalendarManager = ({
                 setHasConflict(false);
                 setConflictDates([]);
                 setReason('');
-                // НЕ сбрасываем выбранные даты
               }}
             >
               {t('common.cancel')}
@@ -1652,6 +1664,7 @@ const CalendarManager = ({
           </Group>
         </Stack>
       </Modal>
+
 {/* Модальное окно добавления внешнего календаря */}
       <Modal
         opened={externalCalendarModalOpened}

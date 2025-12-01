@@ -66,12 +66,20 @@ interface Photo {
   is_primary: boolean;
 }
 
+// ✅ НОВОЕ: Интерфейс для временного фото
+interface TempPhoto {
+  file: File;
+  category: string;
+  preview: string;
+}
+
 interface PhotosUploaderProps {
   propertyId: number;
   photos: Photo[];
   bedrooms: number;
   onUpdate: () => void;
   viewMode?: boolean;
+  onChange?: (photos: TempPhoto[]) => void; // ✅ НОВОЕ: Колбэк для передачи данных
 }
 
 const CategoryIcons: { [key: string]: any } = {
@@ -85,7 +93,14 @@ const CategoryIcons: { [key: string]: any } = {
   view: IconEye
 };
 
-const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdate, viewMode = false }: PhotosUploaderProps) => {
+const PhotosUploader = ({ 
+  propertyId, 
+  photos, 
+  bedrooms: initialBedrooms, 
+  onUpdate, 
+  viewMode = false,
+  onChange // ✅ НОВОЕ
+}: PhotosUploaderProps) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -93,7 +108,7 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('general');
   const [localPhotos, setLocalPhotos] = useState<Photo[]>(photos);
-  const [tempPhotos, setTempPhotos] = useState<Array<{ file: File; category: string; preview: string }>>([]);
+  const [tempPhotos, setTempPhotos] = useState<TempPhoto[]>([]);
   const isCreatingMode = propertyId === 0;
   const [bedroomCount, setBedroomCount] = useState(initialBedrooms || 1);
   
@@ -115,6 +130,22 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
   const [selectedPhotos, setSelectedPhotos] = useState<Set<number>>(new Set());
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadingSelected, setDownloadingSelected] = useState(false);
+
+  // ✅ НОВОЕ: Эффект для передачи данных через колбэк
+  useEffect(() => {
+    if (isCreatingMode && onChange) {
+      onChange(tempPhotos);
+    }
+  }, [tempPhotos, isCreatingMode, onChange]);
+
+  // ✅ НОВОЕ: Cleanup для preview URLs
+  useEffect(() => {
+    return () => {
+      tempPhotos.forEach(photo => {
+        URL.revokeObjectURL(photo.preview);
+      });
+    };
+  }, []);
 
   useEffect(() => {
     setLocalPhotos(photos);
@@ -248,6 +279,7 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
       return;
     }
 
+    // ✅ ИЗМЕНЕНО: Режим создания - сохраняем в память
     if (isCreatingMode) {
       const newTempPhotos = await Promise.all(
         files.map(async (file) => {
@@ -276,6 +308,7 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
       return;
     }
 
+    // Режим редактирования - загружаем на сервер
     try {
       setUploading(true);
       setUploadProgress(0);
@@ -311,7 +344,10 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
     }
   };
 
+  // ✅ ИЗМЕНЕНО: Удаление временного фото с cleanup URL
   const handleDeleteTempPhoto = (index: number) => {
+    const photoToDelete = tempPhotos[index];
+    URL.revokeObjectURL(photoToDelete.preview);
     setTempPhotos(tempPhotos.filter((_, i) => i !== index));
     notifications.show({
       title: t('common.success'),
@@ -391,7 +427,8 @@ const PhotosUploader = ({ propertyId, photos, bedrooms: initialBedrooms, onUpdat
       setDeletingSelected(false);
     }
   };
-const handleSetPrimary = async (photoId: number) => {
+
+  const handleSetPrimary = async (photoId: number) => {
     const oldPhotos = [...localPhotos];
     setLocalPhotos(localPhotos.map(p => ({
       ...p,
@@ -730,7 +767,8 @@ const handleSetPrimary = async (photoId: number) => {
       setDownloadingAll(false);
     }
   };
-return (
+
+  return (
     <Stack gap="lg">
       {/* Selection and Download Panel */}
       {!isCreatingMode && localPhotos.length > 0 && (

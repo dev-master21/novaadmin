@@ -1,5 +1,5 @@
 // frontend/src/modules/Properties/components/VideoUploader.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   Stack,
@@ -48,32 +48,75 @@ interface Video {
   thumbnail_url?: string;
 }
 
+// ✅ НОВОЕ: Интерфейс для временного видео
+interface TempVideo {
+  file: File;
+  title?: string;
+  description?: string;
+  preview: string;
+}
+
 interface VideoUploaderProps {
   propertyId: number;
   videos?: Video[];
   onUpdate: () => void;
   viewMode?: boolean;
+  onChange?: (videos: TempVideo[]) => void; // ✅ НОВОЕ: Колбэк для передачи данных
 }
 
-const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: VideoUploaderProps) => {
+const VideoUploader = ({ 
+  propertyId, 
+  videos = [], 
+  onUpdate, 
+  viewMode = false,
+  onChange // ✅ НОВОЕ
+}: VideoUploaderProps) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
   
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
+  // ✅ НОВОЕ: Состояние для временных видео
+  const [tempVideos, setTempVideos] = useState<TempVideo[]>([]);
+  const isCreatingMode = propertyId === 0;
+
   const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   
+  // ✅ НОВОЕ: Состояния для редактирования временного видео
+  const [editingTempVideoIndex, setEditingTempVideoIndex] = useState<number | null>(null);
+  const [tempEditTitle, setTempEditTitle] = useState('');
+  const [tempEditDescription, setTempEditDescription] = useState('');
+  
   const [playerModalOpened, { open: openPlayerModal, close: closePlayerModal }] = useDisclosure(false);
   const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
+  
+  // ✅ НОВОЕ: Состояние для проигрывания временного видео
+  const [playingTempVideo, setPlayingTempVideo] = useState<TempVideo | null>(null);
   
   // Модальное окно для удаления
   const [deleteModalOpened, { open: openDeleteModal, close: closeDeleteModal }] = useDisclosure(false);
   const [deletingVideo, setDeletingVideo] = useState<Video | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // ✅ НОВОЕ: Эффект для передачи данных через колбэк
+  useEffect(() => {
+    if (isCreatingMode && onChange) {
+      onChange(tempVideos);
+    }
+  }, [tempVideos, isCreatingMode, onChange]);
+
+  // ✅ НОВОЕ: Cleanup для preview URLs
+  useEffect(() => {
+    return () => {
+      tempVideos.forEach(video => {
+        URL.revokeObjectURL(video.preview);
+      });
+    };
+  }, []);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -97,6 +140,28 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
       return;
     }
 
+    // ✅ ИЗМЕНЕНО: Режим создания - сохраняем в память
+    if (isCreatingMode) {
+      const newTempVideos: TempVideo[] = files.map(file => {
+        const preview = URL.createObjectURL(file);
+        return {
+          file,
+          preview
+        };
+      });
+
+      setTempVideos([...tempVideos, ...newTempVideos]);
+      
+      notifications.show({
+        title: t('common.success'),
+        message: t('videoUploader.videosAddedTemp', { count: files.length }),
+        color: 'green',
+        icon: <IconCheck size={18} />
+      });
+      return;
+    }
+
+    // Режим редактирования - загружаем на сервер
     try {
       setUploading(true);
       setUploadProgress(0);
@@ -128,6 +193,55 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
       setUploading(false);
       setUploadProgress(0);
     }
+  };
+
+  // ✅ НОВОЕ: Удаление временного видео
+  const handleRemoveTempVideo = (index: number) => {
+    const videoToDelete = tempVideos[index];
+    URL.revokeObjectURL(videoToDelete.preview);
+    setTempVideos(tempVideos.filter((_, i) => i !== index));
+    
+    notifications.show({
+      title: t('common.success'),
+      message: t('videoUploader.videoRemoved'),
+      color: 'green',
+      icon: <IconCheck size={18} />
+    });
+  };
+
+  // ✅ НОВОЕ: Редактирование временного видео
+  const handleEditTempVideo = (index: number) => {
+    const video = tempVideos[index];
+    setEditingTempVideoIndex(index);
+    setTempEditTitle(video.title || '');
+    setTempEditDescription(video.description || '');
+    openEditModal();
+  };
+
+  // ✅ НОВОЕ: Сохранение изменений временного видео
+  const handleSaveTempVideoEdit = () => {
+    if (editingTempVideoIndex === null) return;
+
+    const updatedVideos = [...tempVideos];
+    updatedVideos[editingTempVideoIndex] = {
+      ...updatedVideos[editingTempVideoIndex],
+      title: tempEditTitle,
+      description: tempEditDescription
+    };
+    
+    setTempVideos(updatedVideos);
+    
+    notifications.show({
+      title: t('common.success'),
+      message: t('common.saveSuccess'),
+      color: 'green',
+      icon: <IconCheck size={18} />
+    });
+    
+    closeEditModal();
+    setEditingTempVideoIndex(null);
+    setTempEditTitle('');
+    setTempEditDescription('');
   };
 
   const handleDeleteConfirm = async () => {
@@ -162,6 +276,7 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
     setEditingVideo(video);
     setEditTitle(video.title || '');
     setEditDescription(video.description || '');
+    setEditingTempVideoIndex(null);
     openEditModal();
   };
 
@@ -198,6 +313,14 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
 
   const handlePlayVideo = (video: Video) => {
     setPlayingVideo(video);
+    setPlayingTempVideo(null);
+    openPlayerModal();
+  };
+
+  // ✅ НОВОЕ: Воспроизведение временного видео
+  const handlePlayTempVideo = (video: TempVideo) => {
+    setPlayingTempVideo(video);
+    setPlayingVideo(null);
     openPlayerModal();
   };
 
@@ -205,6 +328,7 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
     closePlayerModal();
     setTimeout(() => {
       setPlayingVideo(null);
+      setPlayingTempVideo(null);
     }, 300);
   };
 
@@ -238,9 +362,9 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
                 <Text fw={600} size="lg">
                   {t('videoUploader.title')}
                 </Text>
-                {videos.length > 0 && (
+                {(videos.length > 0 || tempVideos.length > 0) && (
                   <Text size="sm" c="dimmed">
-                    {t('videoUploader.videoCount', { count: videos.length })}
+                    {t('videoUploader.videoCount', { count: videos.length + tempVideos.length })}
                   </Text>
                 )}
               </div>
@@ -284,7 +408,7 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
           )}
 
           {/* Info Alert */}
-          {!viewMode && videos.length === 0 && !uploading && (
+          {!viewMode && videos.length === 0 && tempVideos.length === 0 && !uploading && (
             <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
               <Text size="sm">
                 {t('videoUploader.supportedFormats')}
@@ -295,10 +419,19 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
             </Alert>
           )}
 
+          {/* ✅ НОВОЕ: Alert о временном хранении */}
+          {isCreatingMode && tempVideos.length > 0 && (
+            <Alert icon={<IconInfoCircle size={18} />} color="orange" variant="light">
+              <Text size="sm">
+                {t('videoUploader.tempStorageInfo', { count: tempVideos.length })}
+              </Text>
+            </Alert>
+          )}
+
           <Divider />
 
           {/* Empty State */}
-          {videos.length === 0 && !uploading && (
+          {videos.length === 0 && tempVideos.length === 0 && !uploading && (
             <Paper p="xl" radius="md" withBorder>
               <Center>
                 <Stack align="center" gap="md">
@@ -313,9 +446,129 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
             </Paper>
           )}
 
+          {/* ✅ НОВОЕ: Temporary Videos List */}
+          {isCreatingMode && tempVideos.length > 0 && (
+            <Stack gap="md">
+              <Text size="sm" fw={600} c="dimmed">
+                {t('videoUploader.tempVideos')} ({tempVideos.length})
+              </Text>
+              
+              {tempVideos.map((video, index) => (
+                <Paper key={index} p="md" radius="md" withBorder style={{ borderColor: 'var(--mantine-color-orange-6)' }}>
+                  <Group align="flex-start" wrap="nowrap" gap="md">
+                    {/* Video Thumbnail */}
+                    <Box
+                      pos="relative"
+                      style={{
+                        width: isMobile ? 100 : 160,
+                        height: isMobile ? 56 : 90,
+                        minWidth: isMobile ? 100 : 160,
+                        cursor: 'pointer',
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        border: '2px dashed var(--mantine-color-orange-6)'
+                      }}
+                      onClick={() => handlePlayTempVideo(video)}
+                    >
+                      <video
+                        src={video.preview}
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover'
+                        }}
+                      />
+                      
+                      {/* Play Button Overlay */}
+                      <Center
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          background: 'rgba(0, 0, 0, 0.7)',
+                          borderRadius: '50%',
+                          width: 40,
+                          height: 40,
+                          transition: 'all 0.3s',
+                          opacity: 0.8
+                        }}
+                        className="play-button-overlay"
+                      >
+                        <IconPlayerPlay 
+                          size={24}
+                          style={{ color: 'white' }}
+                        />
+                      </Center>
+                    </Box>
+
+                    {/* Video Info */}
+                    <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                      <Group gap="xs">
+                        <Text fw={600} size={isMobile ? 'sm' : 'md'} lineClamp={1}>
+                          {video.title || video.file.name}
+                        </Text>
+                        <Badge variant="filled" color="orange" size="sm">
+                          {t('videoUploader.tempStorage')}
+                        </Badge>
+                      </Group>
+                      
+                      {video.description && (
+                        <Text size="sm" c="dimmed" lineClamp={2}>
+                          {video.description}
+                        </Text>
+                      )}
+                      
+                      <Group gap="xs">
+                        <Badge variant="light" color="grape" size={isMobile ? 'sm' : 'md'}>
+                          {formatFileSize(video.file.size)}
+                        </Badge>
+                      </Group>
+                    </Stack>
+
+                    {/* Action Buttons */}
+                    {!viewMode && (
+                      <Group gap="xs" wrap="nowrap">
+                        <Tooltip label={t('videoUploader.edit')}>
+                          <ActionIcon
+                            variant="light"
+                            color="grape"
+                            size={isMobile ? 'md' : 'lg'}
+                            onClick={() => handleEditTempVideo(index)}
+                          >
+                            <IconEdit size={isMobile ? 16 : 18} />
+                          </ActionIcon>
+                        </Tooltip>
+
+                        <Tooltip label={t('common.delete')}>
+                          <ActionIcon
+                            variant="light"
+                            color="red"
+                            size={isMobile ? 'md' : 'lg'}
+                            onClick={() => handleRemoveTempVideo(index)}
+                          >
+                            <IconTrash size={isMobile ? 16 : 18} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Group>
+                    )}
+                  </Group>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+
           {/* Videos List */}
           {videos.length > 0 && (
             <Stack gap="md">
+              {tempVideos.length > 0 && (
+                <>
+                  <Text size="sm" fw={600} c="dimmed">
+                    {t('videoUploader.uploadedVideos')} ({videos.length})
+                  </Text>
+                </>
+              )}
+              
               {videos.map((video) => (
                 <Paper key={video.id} p="md" radius="md" withBorder>
                   <Group align="flex-start" wrap="nowrap" gap="md">
@@ -478,8 +731,11 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
         onClose={() => {
           closeEditModal();
           setEditingVideo(null);
+          setEditingTempVideoIndex(null);
           setEditTitle('');
           setEditDescription('');
+          setTempEditTitle('');
+          setTempEditDescription('');
         }}
         title={
           <Group gap="sm">
@@ -496,8 +752,14 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
           <TextInput
             label={t('videoUploader.titleLabel')}
             placeholder={t('videoUploader.titlePlaceholder')}
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.currentTarget.value)}
+            value={editingTempVideoIndex !== null ? tempEditTitle : editTitle}
+            onChange={(e) => {
+              if (editingTempVideoIndex !== null) {
+                setTempEditTitle(e.currentTarget.value);
+              } else {
+                setEditTitle(e.currentTarget.value);
+              }
+            }}
             styles={{
               input: { fontSize: '16px' }
             }}
@@ -506,8 +768,14 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
           <Textarea
             label={t('videoUploader.descriptionLabel')}
             placeholder={t('videoUploader.descriptionPlaceholder')}
-            value={editDescription}
-            onChange={(e) => setEditDescription(e.currentTarget.value)}
+            value={editingTempVideoIndex !== null ? tempEditDescription : editDescription}
+            onChange={(e) => {
+              if (editingTempVideoIndex !== null) {
+                setTempEditDescription(e.currentTarget.value);
+              } else {
+                setEditDescription(e.currentTarget.value);
+              }
+            }}
             minRows={4}
             maxRows={8}
             autosize
@@ -522,8 +790,11 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
               onClick={() => {
                 closeEditModal();
                 setEditingVideo(null);
+                setEditingTempVideoIndex(null);
                 setEditTitle('');
                 setEditDescription('');
+                setTempEditTitle('');
+                setTempEditDescription('');
               }}
             >
               {t('common.cancel')}
@@ -531,7 +802,7 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
             <Button
               variant="gradient"
               gradient={{ from: 'grape', to: 'pink', deg: 90 }}
-              onClick={handleSaveEdit}
+              onClick={editingTempVideoIndex !== null ? handleSaveTempVideoEdit : handleSaveEdit}
             >
               {t('common.save')}
             </Button>
@@ -543,14 +814,19 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
       <Modal
         opened={playerModalOpened}
         onClose={handleClosePlayer}
-        title={playingVideo?.title || t('videoUploader.playingVideo')}
+        title={
+          playingVideo?.title || 
+          playingTempVideo?.title || 
+          playingTempVideo?.file.name || 
+          t('videoUploader.playingVideo')
+        }
         size={isMobile ? 'full' : 'xl'}
         centered
         styles={{
           body: { padding: 0 }
         }}
       >
-        {playingVideo && (
+        {(playingVideo || playingTempVideo) && (
           <Stack gap={0}>
             <Box pos="relative" style={{ paddingTop: '56.25%' }}>
               <video
@@ -564,16 +840,20 @@ const VideoUploader = ({ propertyId, videos = [], onUpdate, viewMode = false }: 
                   height: '100%',
                   backgroundColor: '#000'
                 }}
-                src={`https://novaestate.company${playingVideo.video_url}`}
+                src={
+                  playingVideo 
+                    ? `https://novaestate.company${playingVideo.video_url}`
+                    : playingTempVideo?.preview
+                }
               >
                 {t('videoUploader.browserNotSupported')}
               </video>
             </Box>
             
-            {playingVideo.description && (
+            {((playingVideo && playingVideo.description) || (playingTempVideo && playingTempVideo.description)) && (
               <Box p="md">
                 <Text size="sm" c="dimmed">
-                  {playingVideo.description}
+                  {playingVideo?.description || playingTempVideo?.description}
                 </Text>
               </Box>
             )}
