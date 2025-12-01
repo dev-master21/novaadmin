@@ -1362,7 +1362,7 @@
 },
     "videoUploader": {
     "title": "Видео",
-    "uploadVideo": "Загрузить видео",
+    "upload": "Загрузить",
     "invalidFiles": "Некоторые файлы не являются видео: {{files}}",
     "videosUploaded": "Загружено {{count}} видео",
     "errorUploading": "Ошибка загрузки видео",
@@ -3110,10 +3110,15 @@
       "saveButton": "Сохранить",
       "createButton": "Создать",
       "cancelButton": "Отмена",
-      
+      "currentStep": "Текущий шаг",
+      "completed": "Завершено",
+      "tapToOpen": "Нажмите для перехода",
+      "pasteButton": "Вставить",
+      "googleMapsHint": "Вставьте ссылку Google Maps для автоматического определения координат и адреса",
+      "autoFilled": "Автозаполнено",
+      "mainDetails": "Основные детали",
       "propertyNameLabel": "Название объекта",
       "propertyNameTooltip": "Это название будет использоваться на всех языках. Например: 'Laguna Village' или 'Sea View Villa'",
-      "propertyNameExtra": "Название объекта одинаковое для всех языков",
       "propertyNamePlaceholder": "Например: Laguna Village",
       
       "videoUrlLabel": "URL видео (YouTube, Vimeo)",
@@ -3184,6 +3189,12 @@
       "savedMonthlyPrices": "Сохранено {{count}} месячных цен",
       "savedBlockedDates": "Сохранено {{count}} заблокированных дат",
       "googleDrivePhotosLoading": "Фотографии из Google Drive загружаются...",
+      "linkPasted": "Ссылка вставлена из буфера обмена",
+      "clipboardEmpty": "Буфер обмена пуст",
+      "clipboardError": "Не удалось прочитать буфер обмена",
+      "detecting": "Определение...",
+      "detectingCoordinates": "Определяем координаты и адрес...",
+      "coordinatesAndAddressDetected": "Координаты и адрес определены успешно",
       "salePriceSaved": "Цена продажи успешно сохранена",
       "yearPriceSaved": "Годовая цена успешно сохранена",
       "selectCommissionType": "Необходимо выбрать тип комиссии",
@@ -3317,13 +3328,13 @@
     },
 
     "tabs": {
-      "basic": "Основное",
+      "basic": "Главное",
       "media": "Медиа",
-      "features": "Характеристики",
+      "features": "Опции",
       "pricing": "Цены",
       "calendar": "Календарь",
-      "owner": "Владелец",
-      "translations": "Переводы"
+      "owner": "Owner",
+      "translations": "Описание"
     },
 
     "translations": {

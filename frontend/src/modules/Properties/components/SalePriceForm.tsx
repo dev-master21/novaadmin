@@ -50,10 +50,10 @@ const SalePriceForm = ({
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
   
-  const [price, setPrice] = useState<number | null>(initialData?.price || null);
-  const [pricingMode, setPricingMode] = useState<'net' | 'gross'>(initialData?.pricing_mode || 'net');
-  const [commissionType, setCommissionType] = useState<'percentage' | 'fixed' | null>(initialData?.commission_type || null);
-  const [commissionValue, setCommissionValue] = useState<number | null>(initialData?.commission_value || null);
+  const [price, setPrice] = useState<number | null>(null);
+  const [pricingMode, setPricingMode] = useState<'net' | 'gross'>('net');
+  const [commissionType, setCommissionType] = useState<'percentage' | 'fixed' | null>(null);
+  const [commissionValue, setCommissionValue] = useState<number | null>(null);
   const [editedGrossPrice, setEditedGrossPrice] = useState<number | undefined>(undefined);
   
   const [hasChanges, setHasChanges] = useState(false);
@@ -61,11 +61,25 @@ const SalePriceForm = ({
 
   useEffect(() => {
     if (initialData) {
-      setPrice(initialData.price || null);
-      setPricingMode(initialData.pricing_mode || 'net');
-      setCommissionType(initialData.commission_type || null);
-      setCommissionValue(initialData.commission_value || null);
-      setEditedGrossPrice(undefined);
+      const mode = initialData.pricing_mode || 'net';
+      const sourcePrice = initialData.source_price;
+      const finalPrice = initialData.price;
+      const commType = initialData.commission_type;
+      const commValue = initialData.commission_value;
+      
+      const loadedPrice = mode === 'net' 
+        ? (sourcePrice || finalPrice)
+        : finalPrice;
+      
+      const loadedEditedGrossPrice = mode === 'net' && finalPrice 
+        ? Number(finalPrice)
+        : undefined;
+      
+      setPrice(loadedPrice);
+      setPricingMode(mode);
+      setCommissionType(commType ?? null);
+      setCommissionValue(commValue || null);
+      setEditedGrossPrice(loadedEditedGrossPrice);
     }
   }, [initialData]);
 
@@ -75,7 +89,6 @@ const SalePriceForm = ({
     commType: 'percentage' | 'fixed' | null,
     commValue: number | null
   ) => {
-    // ✅ ИСПРАВЛЕНО: Преобразуем priceValue в число
     const numericPrice = Number(priceValue);
     
     if (!commType || !commValue || commValue <= 0) {
@@ -195,17 +208,9 @@ const SalePriceForm = ({
     setHasChanges(true);
   };
 
+  // ✅ ОБНОВЛЕНО: handleSave - с локальным сохранением при создании объекта
   const handleSave = async () => {
-    if (!propertyId || propertyId === 0) {
-      notifications.show({
-        title: t('properties.messages.warning'),
-        message: t('properties.messages.saveAfterCreate'),
-        color: 'orange',
-        icon: <IconAlertTriangle size={16} />
-      });
-      return;
-    }
-
+    // Валидация
     if (!price || !commissionType) {
       notifications.show({
         title: t('properties.messages.warning'),
@@ -228,6 +233,74 @@ const SalePriceForm = ({
       }
     }
 
+    // ✅ НОВОЕ: Проверка - если объект не создан, сохраняем локально
+    if (!propertyId || propertyId === 0) {
+      setSaving(true);
+
+      try {
+        // Расчёт данных
+        let calculated;
+        
+        if (pricingMode === 'net' && editedGrossPrice !== undefined && editedGrossPrice !== null) {
+          const sourcePrice = Number(price);
+          const finalPrice = Number(editedGrossPrice);
+          const marginAmount = finalPrice - sourcePrice;
+          const marginPercentage = sourcePrice > 0 ? (marginAmount / sourcePrice) * 100 : 0;
+          
+          calculated = {
+            finalPrice: Math.round(finalPrice),
+            sourcePrice: Math.round(sourcePrice),
+            marginAmount: Math.round(marginAmount),
+            marginPercentage: Math.round(marginPercentage * 100) / 100
+          };
+        } else {
+          calculated = calculateMarginData(pricingMode, Number(price), commissionType, commissionValue);
+        }
+
+        // ✅ НОВОЕ: Формируем данные для локального сохранения
+        const localData = {
+          sale_price: calculated.finalPrice,
+          sale_pricing_mode: pricingMode,
+          sale_commission_type_new: commissionType,
+          sale_commission_value_new: commissionValue,
+          sale_source_price: calculated.sourcePrice,
+          sale_margin_amount: calculated.marginAmount,
+          sale_margin_percentage: calculated.marginPercentage
+        };
+
+        // ✅ НОВОЕ: Сохраняем локально через onChange
+        if (onChange) {
+          onChange(localData);
+        }
+
+        setHasChanges(false);
+        
+        // ✅ НОВОЕ: Уведомление о локальном сохранении (синий цвет)
+        notifications.show({
+          title: t('common.success'),
+          message: t('properties.messages.salePriceSavedLocally', {
+            defaultValue: 'Цена продажи сохранена локально. Будет применена при создании объекта.'
+          }),
+          color: 'blue',
+          icon: <IconCheck size={16} />
+        });
+
+      } catch (error: any) {
+        console.error('Local save sale price error:', error);
+        notifications.show({
+          title: t('errors.generic'),
+          message: t('errors.generic'),
+          color: 'red',
+          icon: <IconX size={16} />
+        });
+      } finally {
+        setSaving(false);
+      }
+      
+      return;
+    }
+
+    // ✅ СУЩЕСТВУЮЩИЙ КОД: Если объект создан - сохраняем в БД
     setSaving(true);
 
     try {
@@ -252,8 +325,8 @@ const SalePriceForm = ({
       const updateData = {
         sale_price: calculated.finalPrice,
         sale_pricing_mode: pricingMode,
-        sale_commission_type: commissionType,
-        sale_commission_value: commissionValue,
+        sale_commission_type_new: commissionType,
+        sale_commission_value_new: commissionValue,
         sale_source_price: calculated.sourcePrice,
         sale_margin_amount: calculated.marginAmount,
         sale_margin_percentage: calculated.marginPercentage

@@ -3,16 +3,59 @@
 // frontend/src/utils/googleMapsUtils.ts
 
 /**
- * Извлекает координаты из ссылки Google Maps через бэкенд
+ * Проверяет, является ли строка ссылкой Google Maps
+ */
+export const isGoogleMapsLink = (url: string): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  
+  const normalizedUrl = url.toLowerCase().trim();
+  
+  // Поддерживаем все возможные форматы
+  return (
+    normalizedUrl.includes('maps.app.goo.gl') ||
+    normalizedUrl.includes('google.com/maps') ||
+    normalizedUrl.includes('maps.google.com') ||
+    normalizedUrl.includes('goo.gl/maps')
+  );
+};
+
+/**
+ * Нормализует URL Google Maps
+ */
+export const normalizeGoogleMapsUrl = (url: string): string => {
+  let normalizedUrl = url.trim();
+  
+  // Добавляем https:// если отсутствует протокол
+  if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+    normalizedUrl = 'https://' + normalizedUrl;
+  }
+  
+  // Удаляем параметры после ? если это короткая ссылка goo.gl
+  if (normalizedUrl.includes('maps.app.goo.gl') || normalizedUrl.includes('goo.gl/maps')) {
+    const questionMarkIndex = normalizedUrl.indexOf('?');
+    if (questionMarkIndex > -1) {
+      normalizedUrl = normalizedUrl.substring(0, questionMarkIndex);
+    }
+  }
+  
+  return normalizedUrl;
+};
+
+/**
+ * Извлекает координаты и адрес из ссылки Google Maps через бэкенд
  */
 export const extractCoordinatesFromGoogleMapsLink = async (url: string) => {
   try {
     console.log('Extracting coordinates from:', url);
 
     // Проверяем формат ссылки
-    if (!url.includes('maps.app.goo.gl') && !url.includes('google.com/maps')) {
+    if (!isGoogleMapsLink(url)) {
       throw new Error('Invalid Google Maps URL format');
     }
+
+    // Нормализуем URL
+    const normalizedUrl = normalizeGoogleMapsUrl(url);
+    console.log('Normalized URL:', normalizedUrl);
 
     // Получаем токен из localStorage
     let token = null;
@@ -45,7 +88,7 @@ export const extractCoordinatesFromGoogleMapsLink = async (url: string) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ url })
+      body: JSON.stringify({ url: normalizedUrl })
     });
 
     const data = await response.json();
@@ -59,10 +102,15 @@ export const extractCoordinatesFromGoogleMapsLink = async (url: string) => {
       throw new Error(data.message || 'Ошибка при получении координат');
     }
 
-    // Backend возвращает data.data.coordinates для совместимости
-    if (data.success && data.data && data.data.coordinates) {
+    // Backend возвращает data.data с coordinates и address
+    if (data.success && data.data) {
       console.log('Coordinates received:', data.data.coordinates);
-      return data.data.coordinates;
+      console.log('Address received:', data.data.address);
+      
+      return {
+        coordinates: data.data.coordinates,
+        address: data.data.address || null
+      };
     }
 
     throw new Error(data.message || 'Не удалось извлечь координаты из ссылки');

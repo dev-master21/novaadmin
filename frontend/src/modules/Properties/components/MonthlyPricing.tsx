@@ -221,20 +221,12 @@ const MonthlyPricing = ({
     setChangedMonths(prev => new Set(prev).add(monthNumber));
   };
 
+  // ✅ ОБНОВЛЕНО: handleSaveMonth - с локальным сохранением при создании объекта
   const handleSaveMonth = async (monthNumber: number) => {
-    if (!propertyId || propertyId === 0) {
-      notifications.show({
-        title: t('monthlyPricing.warning'),
-        message: t('monthlyPricing.saveAfterCreate'),
-        color: 'orange',
-        icon: <IconAlertTriangle size={16} />
-      });
-      return;
-    }
-
     const monthData = prices[monthNumber];
     if (!monthData || !monthData.price || !monthData.pricing_mode) return;
 
+    // Валидация
     if (!monthData.commission_type) {
       notifications.show({
         title: t('monthlyPricing.warning'),
@@ -257,6 +249,108 @@ const MonthlyPricing = ({
       }
     }
 
+    // ✅ НОВОЕ: Проверка - если объект не создан, сохраняем локально
+    if (!propertyId || propertyId === 0) {
+      setSavingMonths(prev => new Set(prev).add(monthNumber));
+
+      try {
+        // Расчёт данных
+        let calculated;
+        
+        if (monthData.pricing_mode === 'net' && monthData.edited_gross_price !== undefined && monthData.edited_gross_price !== null) {
+          const sourcePrice = Number(monthData.price);
+          const finalPrice = Number(monthData.edited_gross_price);
+          const marginAmount = finalPrice - sourcePrice;
+          const marginPercentage = sourcePrice > 0 ? (marginAmount / sourcePrice) * 100 : 0;
+          
+          calculated = {
+            finalPrice: Math.round(finalPrice),
+            sourcePrice: Math.round(sourcePrice),
+            marginAmount: Math.round(marginAmount),
+            marginPercentage: Math.round(marginPercentage * 100) / 100
+          };
+        } else {
+          calculated = calculateMarginData(
+            monthData.pricing_mode,
+            Number(monthData.price),
+            monthData.commission_type || null,
+            monthData.commission_value || null
+          );
+        }
+
+        // Формируем данные месяца
+        const monthlyPriceData = {
+          month_number: monthNumber,
+          price_per_month: calculated.finalPrice,
+          source_price: calculated.sourcePrice,
+          minimum_days: monthData.days || null,
+          pricing_mode: monthData.pricing_mode,
+          commission_type: monthData.commission_type,
+          commission_value: monthData.commission_value || null,
+          margin_amount: calculated.marginAmount,
+          margin_percentage: calculated.marginPercentage
+        };
+
+        // ✅ НОВОЕ: Получаем текущий массив monthlyPricing из initialPricing
+        const currentMonthlyPricing = initialPricing || [];
+        
+        // Обновляем или добавляем месяц
+        const existingIndex = currentMonthlyPricing.findIndex(mp => mp.month_number === monthNumber);
+        
+        let updatedMonthlyPricing;
+        if (existingIndex >= 0) {
+          // Обновляем существующий месяц
+          updatedMonthlyPricing = [...currentMonthlyPricing];
+          updatedMonthlyPricing[existingIndex] = monthlyPriceData as any;
+        } else {
+          // Добавляем новый месяц
+          updatedMonthlyPricing = [...currentMonthlyPricing, monthlyPriceData as any];
+        }
+
+        // ✅ НОВОЕ: Отправляем обновлённый массив через onChange
+        if (onChange) {
+          console.log('MonthlyPricing: Sending updated pricing to parent:', updatedMonthlyPricing);
+          onChange(updatedMonthlyPricing);
+        }
+
+        // Убираем флаг изменений
+        setChangedMonths(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(monthNumber);
+          return newSet;
+        });
+
+        // ✅ НОВОЕ: Уведомление о локальном сохранении
+        notifications.show({
+          title: t('monthlyPricing.success'),
+          message: t('monthlyPricing.monthSavedLocally', { 
+            month: months[monthNumber - 1].name,
+            defaultValue: `${months[monthNumber - 1].name} сохранён локально. Будет применён при создании объекта.`
+          }),
+          color: 'blue',
+          icon: <IconCheck size={16} />
+        });
+
+      } catch (error: any) {
+        console.error('=== LOCAL SAVE ERROR ===', error);
+        notifications.show({
+          title: t('monthlyPricing.error'),
+          message: t('monthlyPricing.errorSaving'),
+          color: 'red',
+          icon: <IconX size={16} />
+        });
+      } finally {
+        setSavingMonths(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(monthNumber);
+          return newSet;
+        });
+      }
+      
+      return;
+    }
+
+    // ✅ СУЩЕСТВУЮЩИЙ КОД: Если объект создан - сохраняем в БД
     setSavingMonths(prev => new Set(prev).add(monthNumber));
 
     try {
@@ -394,6 +488,14 @@ const MonthlyPricing = ({
         return newSet;
       });
 
+      // ✅ НОВОЕ: Обновляем массив monthlyPricing при локальном удалении
+      if (onChange) {
+        const updatedMonthlyPricing = (initialPricing || []).filter(
+          mp => mp.month_number !== monthToConfirmClear
+        );
+        onChange(updatedMonthlyPricing);
+      }
+
       notifications.show({
         title: t('monthlyPricing.success'),
         message: t('monthlyPricing.monthCleared', { month: months[monthToConfirmClear - 1].name }),
@@ -459,7 +561,6 @@ const MonthlyPricing = ({
     }
   };
 
-  // ✅ ИСПРАВЛЕНО: Добавлена функция handleClearAll
   const handleClearAll = () => {
     openClearAllModal();
   };
@@ -468,6 +569,11 @@ const MonthlyPricing = ({
     if (!propertyId || propertyId === 0) {
       setPrices({});
       setChangedMonths(new Set());
+      
+      // ✅ НОВОЕ: Очищаем массив monthlyPricing локально
+      if (onChange) {
+        onChange([]);
+      }
       
       notifications.show({
         title: t('monthlyPricing.success'),

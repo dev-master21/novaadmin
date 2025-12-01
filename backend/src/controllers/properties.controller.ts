@@ -460,8 +460,34 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       building_ownership, land_ownership, ownership_type,
       sale_price, year_price, minimum_nights, ics_calendar_url, status, video_url,
       
+      // ✅ Старые поля комиссий (для обратной совместимости)
+      sale_commission_type,
+      sale_commission_value,
+      rent_commission_type,
+      rent_commission_value,
+      
+      // ✅ Sale Price - все новые поля
+      sale_pricing_mode,
+      sale_commission_type_new,
+      sale_commission_value_new,
+      sale_source_price,
+      sale_margin_amount,
+      sale_margin_percentage,
+      
+      // ✅ Year Price - все поля
+      year_pricing_mode,
+      year_commission_type,
+      year_commission_value,
+      year_source_price,
+      year_margin_amount,
+      year_margin_percentage,
+      
       // Информация о владельце
       owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
+      
+      // Реновация
+      renovation_type,
+      renovation_date,
       
       // Включено в аренду, депозит, коммунальные
       rental_includes, deposit_type, deposit_amount, electricity_rate, water_rate,
@@ -486,6 +512,19 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       photosFromGoogleDrive
     } = req.body;
 
+    // ✅ Функция для конвертации пустых строк в NULL
+    const emptyToNull = (value: any) => {
+      if (value === '' || value === undefined) return null;
+      return value;
+    };
+
+    // ✅ Функция для валидации ENUM полей
+    const validateEnum = (value: any, validValues: string[]) => {
+      if (value === '' || value === undefined || value === null) return null;
+      if (validValues.includes(value)) return value;
+      return null;
+    };
+
     // Автоматический расчет расстояния до пляжа
     let calculatedDistanceToBeach = distance_to_beach;
 
@@ -503,34 +542,121 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // Создаем объект
-    const propertyResult = await connection.query(
-      `INSERT INTO properties (
-        deal_type, property_type, region, address, google_maps_link,
-        latitude, longitude, property_number, property_name, complex_name,
-        bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
-        floors, floor, penthouse_floors, construction_year, construction_month,
-        furniture_status, parking_spaces, pets_allowed, pets_custom,
-        building_ownership, land_ownership, ownership_type,
-        sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status, created_by,
-        owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
-        rental_includes, deposit_type, deposit_amount, electricity_rate, water_rate,
-        distance_to_beach
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        deal_type, property_type, region, address, google_maps_link,
-        latitude, longitude, property_number, property_name, complex_name,
-        bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
-        floors, floor, penthouse_floors, construction_year, construction_month,
-        furniture_status, parking_spaces, pets_allowed, pets_custom,
-        building_ownership, land_ownership, ownership_type,
-        sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status || 'draft',
-        req.admin?.id,
-        owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
-        rental_includes, deposit_type, deposit_amount, electricity_rate, water_rate,
-        calculatedDistanceToBeach
-      ]
-    );
+    // ✅ ИСПРАВЛЕНО: Добавлены ВСЕ поля включая старые комиссии
+const propertyResult = await connection.query(
+  `INSERT INTO properties (
+    deal_type, property_type, region, address, google_maps_link,
+    latitude, longitude, property_number, property_name, complex_name,
+    bedrooms, bathrooms, indoor_area, outdoor_area, 
+    distance_to_beach, plot_size,
+    floors, floor, penthouse_floors, construction_year, construction_month,
+    furniture_status, parking_spaces, pets_allowed, pets_custom,
+    building_ownership, land_ownership, ownership_type,
+    sale_price, sale_pricing_mode, sale_commission_type_new, sale_commission_value_new,
+    sale_source_price, sale_margin_amount, sale_margin_percentage,
+    minimum_nights, ics_calendar_url, video_url, status, created_by,
+    owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
+    year_price, year_pricing_mode, year_commission_type, year_commission_value,
+    year_source_price, year_margin_amount, year_margin_percentage,
+    sale_commission_type, sale_commission_value,
+    rent_commission_type, rent_commission_value,
+    renovation_type, renovation_date,
+    rental_includes, deposit_type, deposit_amount, electricity_rate, water_rate
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  [
+    // 1-4: Обязательные поля
+    deal_type,
+    property_type,
+    region,
+    address,
+    
+    // 5-7: Google Maps
+    emptyToNull(google_maps_link),
+    emptyToNull(latitude),
+    emptyToNull(longitude),
+    
+    // 8-10: Номер и названия
+    property_number,
+    property_name,
+    emptyToNull(complex_name),
+    
+    // 11-14: Размеры помещений
+    emptyToNull(bedrooms),
+    emptyToNull(bathrooms),
+    emptyToNull(indoor_area),
+    emptyToNull(outdoor_area),
+    
+    // 15-16: Расстояние до пляжа и участок
+    calculatedDistanceToBeach,
+    emptyToNull(plot_size),
+    
+    // 17-22: Этажи и строительство
+    emptyToNull(floors),
+    emptyToNull(floor),
+    emptyToNull(penthouse_floors),
+    emptyToNull(construction_year),
+    emptyToNull(construction_month),
+    validateEnum(furniture_status, ['fullyFurnished', 'partiallyFurnished', 'unfurnished', 'builtIn', 'empty']),
+    
+    // 23-28: Парковка, животные, владение
+    emptyToNull(parking_spaces),
+    emptyToNull(pets_allowed),
+    emptyToNull(pets_custom),
+    emptyToNull(building_ownership),
+    emptyToNull(land_ownership),
+    emptyToNull(ownership_type),
+    
+    // 29-35: Sale Price с новыми полями
+    emptyToNull(sale_price),
+    validateEnum(sale_pricing_mode, ['net', 'gross']) || 'net',
+    validateEnum(sale_commission_type_new, ['percentage', 'fixed']),
+    emptyToNull(sale_commission_value_new),
+    emptyToNull(sale_source_price),
+    emptyToNull(sale_margin_amount),
+    emptyToNull(sale_margin_percentage),
+    
+    // 36-39: Календарь и статус
+    emptyToNull(minimum_nights),
+    emptyToNull(ics_calendar_url),
+    emptyToNull(video_url),
+    status || 'draft',
+    req.admin?.id,
+    
+    // 40-45: Информация о владельце
+    emptyToNull(owner_name),
+    emptyToNull(owner_phone),
+    emptyToNull(owner_email),
+    emptyToNull(owner_telegram),
+    emptyToNull(owner_instagram),
+    emptyToNull(owner_notes),
+    
+    // 46-52: Year Price с полями
+    emptyToNull(year_price),
+    validateEnum(year_pricing_mode, ['net', 'gross']) || 'net',
+    validateEnum(year_commission_type, ['percentage', 'fixed']),
+    emptyToNull(year_commission_value),
+    emptyToNull(year_source_price),
+    emptyToNull(year_margin_amount),
+    emptyToNull(year_margin_percentage),
+    
+    // 53-56: Старые поля комиссий
+    validateEnum(sale_commission_type, ['percentage', 'fixed']),
+    emptyToNull(sale_commission_value),
+    validateEnum(rent_commission_type, ['percentage', 'monthly_rent', 'fixed']),
+    emptyToNull(rent_commission_value),
+    
+    // 57-58: Реновация
+    validateEnum(renovation_type, ['full', 'partial']),
+    emptyToNull(renovation_date),
+    
+    // 59-63: Аренда и депозит
+    emptyToNull(rental_includes),
+    validateEnum(deposit_type, ['one_month', 'two_months', 'custom']),
+    emptyToNull(deposit_amount),
+    emptyToNull(electricity_rate),
+    emptyToNull(water_rate)
+  ]
+);
 
     const propertyId = (propertyResult as any)[0].insertId;
     logger.info(`Property created: ${propertyId} by user ${req.admin?.username}`);
@@ -598,7 +724,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ ИЗМЕНЕНО: Добавляем сезонные цены с новыми полями
+    // Добавляем сезонные цены
     if (seasonalPricing && Array.isArray(seasonalPricing) && seasonalPricing.length > 0) {
       for (const price of seasonalPricing) {
         await connection.query(
@@ -628,7 +754,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ ИЗМЕНЕНО: Добавляем месячные цены с новыми полями
+    // Добавляем месячные цены
     if (monthlyPricing && Array.isArray(monthlyPricing) && monthlyPricing.length > 0) {
       for (const price of monthlyPricing) {
         await connection.query(
@@ -747,7 +873,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
 }
 
 /**
- * Обновить объект недвижимости
+ * ✅ ИСПРАВЛЕНО: Обновить объект недвижимости
  * PUT /api/properties/:id
  */
 async update(req: AuthRequest, res: Response): Promise<void> {
@@ -755,28 +881,10 @@ async update(req: AuthRequest, res: Response): Promise<void> {
   
   try {
     const { id } = req.params;
-    const {
-      deal_type, property_type, region, address, google_maps_link,
-      latitude, longitude, property_number, property_name, complex_name,
-      bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
-      floors, floor, penthouse_floors, construction_year, construction_month,
-      furniture_status, parking_spaces, pets_allowed, pets_custom,
-      building_ownership, land_ownership, ownership_type,
-      sale_price, year_price, minimum_nights, ics_calendar_url, status, video_url,
-      owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
-      rental_includes, deposit_type, deposit_amount, electricity_rate, water_rate,
-      distance_to_beach,
-      translations,
-      renovationDates,
-      sale_commission_type, sale_commission_value,
-      rent_commission_type, rent_commission_value,
-      renovation_type, renovation_date,
-      seasonalPricing,
-      monthlyPricing
-    } = req.body;
 
+    // ✅ Сначала получаем текущие данные объекта
     const existingPropertyResult: any = await connection.query(
-      'SELECT id, latitude, longitude, distance_to_beach FROM properties WHERE id = ? AND deleted_at IS NULL',
+      'SELECT * FROM properties WHERE id = ? AND deleted_at IS NULL',
       [id]
     );
 
@@ -793,30 +901,145 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    let updatedDistanceToBeach = distance_to_beach;
+    // ✅ НОВОЕ: Функция для конвертации пустых строк в NULL
+    const emptyToNull = (value: any) => {
+      if (value === '' || value === undefined) return null;
+      return value;
+    };
 
-    if (latitude && longitude) {
+    // ✅ НОВОЕ: Функция для валидации ENUM полей
+    const validateEnum = (value: any, validValues: string[]) => {
+      if (value === '' || value === undefined || value === null) return null;
+      if (validValues.includes(value)) return value;
+      return null;
+    };
+
+    // ✅ НОВОЕ: Берем значения из req.body, если они есть, иначе - из existingProperty
+    const updateData = {
+      deal_type: req.body.deal_type !== undefined ? req.body.deal_type : existingProperty.deal_type,
+      property_type: req.body.property_type !== undefined ? req.body.property_type : existingProperty.property_type,
+      region: req.body.region !== undefined ? req.body.region : existingProperty.region,
+      address: req.body.address !== undefined ? req.body.address : existingProperty.address,
+      google_maps_link: req.body.google_maps_link !== undefined ? emptyToNull(req.body.google_maps_link) : existingProperty.google_maps_link,
+      
+      latitude: req.body.latitude !== undefined ? emptyToNull(req.body.latitude) : existingProperty.latitude,
+      longitude: req.body.longitude !== undefined ? emptyToNull(req.body.longitude) : existingProperty.longitude,
+      property_number: req.body.property_number !== undefined ? req.body.property_number : existingProperty.property_number,
+      property_name: req.body.property_name !== undefined ? emptyToNull(req.body.property_name) : existingProperty.property_name,
+      complex_name: req.body.complex_name !== undefined ? emptyToNull(req.body.complex_name) : existingProperty.complex_name,
+      
+      bedrooms: req.body.bedrooms !== undefined ? emptyToNull(req.body.bedrooms) : existingProperty.bedrooms,
+      bathrooms: req.body.bathrooms !== undefined ? emptyToNull(req.body.bathrooms) : existingProperty.bathrooms,
+      indoor_area: req.body.indoor_area !== undefined ? emptyToNull(req.body.indoor_area) : existingProperty.indoor_area,
+      outdoor_area: req.body.outdoor_area !== undefined ? emptyToNull(req.body.outdoor_area) : existingProperty.outdoor_area,
+      plot_size: req.body.plot_size !== undefined ? emptyToNull(req.body.plot_size) : existingProperty.plot_size,
+      
+      floors: req.body.floors !== undefined ? emptyToNull(req.body.floors) : existingProperty.floors,
+      floor: req.body.floor !== undefined ? emptyToNull(req.body.floor) : existingProperty.floor,
+      penthouse_floors: req.body.penthouse_floors !== undefined ? emptyToNull(req.body.penthouse_floors) : existingProperty.penthouse_floors,
+      construction_year: req.body.construction_year !== undefined ? emptyToNull(req.body.construction_year) : existingProperty.construction_year,
+      construction_month: req.body.construction_month !== undefined ? emptyToNull(req.body.construction_month) : existingProperty.construction_month,
+      
+      furniture_status: req.body.furniture_status !== undefined 
+        ? validateEnum(req.body.furniture_status, ['fullyFurnished', 'partiallyFurnished', 'unfurnished', 'builtIn', 'empty'])
+        : existingProperty.furniture_status,
+      
+      parking_spaces: req.body.parking_spaces !== undefined ? emptyToNull(req.body.parking_spaces) : existingProperty.parking_spaces,
+      pets_allowed: req.body.pets_allowed !== undefined ? emptyToNull(req.body.pets_allowed) : existingProperty.pets_allowed,
+      pets_custom: req.body.pets_custom !== undefined ? emptyToNull(req.body.pets_custom) : existingProperty.pets_custom,
+      
+      building_ownership: req.body.building_ownership !== undefined ? emptyToNull(req.body.building_ownership) : existingProperty.building_ownership,
+      land_ownership: req.body.land_ownership !== undefined ? emptyToNull(req.body.land_ownership) : existingProperty.land_ownership,
+      ownership_type: req.body.ownership_type !== undefined ? emptyToNull(req.body.ownership_type) : existingProperty.ownership_type,
+      
+      sale_price: req.body.sale_price !== undefined ? emptyToNull(req.body.sale_price) : existingProperty.sale_price,
+      year_price: req.body.year_price !== undefined ? emptyToNull(req.body.year_price) : existingProperty.year_price,
+      minimum_nights: req.body.minimum_nights !== undefined ? emptyToNull(req.body.minimum_nights) : existingProperty.minimum_nights,
+      ics_calendar_url: req.body.ics_calendar_url !== undefined ? emptyToNull(req.body.ics_calendar_url) : existingProperty.ics_calendar_url,
+      video_url: req.body.video_url !== undefined ? emptyToNull(req.body.video_url) : existingProperty.video_url,
+      status: req.body.status !== undefined ? req.body.status : existingProperty.status,
+      
+      owner_name: req.body.owner_name !== undefined ? emptyToNull(req.body.owner_name) : existingProperty.owner_name,
+      owner_phone: req.body.owner_phone !== undefined ? emptyToNull(req.body.owner_phone) : existingProperty.owner_phone,
+      owner_email: req.body.owner_email !== undefined ? emptyToNull(req.body.owner_email) : existingProperty.owner_email,
+      owner_telegram: req.body.owner_telegram !== undefined ? emptyToNull(req.body.owner_telegram) : existingProperty.owner_telegram,
+      owner_instagram: req.body.owner_instagram !== undefined ? emptyToNull(req.body.owner_instagram) : existingProperty.owner_instagram,
+      owner_notes: req.body.owner_notes !== undefined ? emptyToNull(req.body.owner_notes) : existingProperty.owner_notes,
+      
+      // ✅ ИСПРАВЛЕНО: Старые поля комиссий (для обратной совместимости)
+      sale_commission_type: req.body.sale_commission_type !== undefined 
+        ? validateEnum(req.body.sale_commission_type, ['percentage', 'fixed'])
+        : existingProperty.sale_commission_type,
+      sale_commission_value: req.body.sale_commission_value !== undefined ? emptyToNull(req.body.sale_commission_value) : existingProperty.sale_commission_value,
+      
+      rent_commission_type: req.body.rent_commission_type !== undefined 
+        ? validateEnum(req.body.rent_commission_type, ['percentage', 'monthly_rent', 'fixed'])
+        : existingProperty.rent_commission_type,
+      rent_commission_value: req.body.rent_commission_value !== undefined ? emptyToNull(req.body.rent_commission_value) : existingProperty.rent_commission_value,
+      
+      // ✅ НОВОЕ: Поля для годовой цены
+      year_pricing_mode: req.body.year_pricing_mode !== undefined 
+        ? validateEnum(req.body.year_pricing_mode, ['net', 'gross'])
+        : existingProperty.year_pricing_mode,
+      year_commission_type: req.body.year_commission_type !== undefined 
+        ? validateEnum(req.body.year_commission_type, ['percentage', 'fixed'])
+        : existingProperty.year_commission_type,
+      year_commission_value: req.body.year_commission_value !== undefined ? emptyToNull(req.body.year_commission_value) : existingProperty.year_commission_value,
+      year_source_price: req.body.year_source_price !== undefined ? emptyToNull(req.body.year_source_price) : existingProperty.year_source_price,
+      year_margin_amount: req.body.year_margin_amount !== undefined ? emptyToNull(req.body.year_margin_amount) : existingProperty.year_margin_amount,
+      year_margin_percentage: req.body.year_margin_percentage !== undefined ? emptyToNull(req.body.year_margin_percentage) : existingProperty.year_margin_percentage,
+      
+      // ✅ НОВОЕ: Поля для цены продажи
+      sale_pricing_mode: req.body.sale_pricing_mode !== undefined 
+        ? validateEnum(req.body.sale_pricing_mode, ['net', 'gross'])
+        : existingProperty.sale_pricing_mode,
+      sale_commission_type_new: req.body.sale_commission_type_new !== undefined 
+        ? validateEnum(req.body.sale_commission_type_new, ['percentage', 'fixed'])
+        : existingProperty.sale_commission_type_new,
+      sale_commission_value_new: req.body.sale_commission_value_new !== undefined ? emptyToNull(req.body.sale_commission_value_new) : existingProperty.sale_commission_value_new,
+      sale_source_price: req.body.sale_source_price !== undefined ? emptyToNull(req.body.sale_source_price) : existingProperty.sale_source_price,
+      sale_margin_amount: req.body.sale_margin_amount !== undefined ? emptyToNull(req.body.sale_margin_amount) : existingProperty.sale_margin_amount,
+      sale_margin_percentage: req.body.sale_margin_percentage !== undefined ? emptyToNull(req.body.sale_margin_percentage) : existingProperty.sale_margin_percentage,
+      
+      renovation_type: req.body.renovation_type !== undefined 
+        ? validateEnum(req.body.renovation_type, ['full', 'partial'])
+        : existingProperty.renovation_type,
+      renovation_date: req.body.renovation_date !== undefined ? emptyToNull(req.body.renovation_date) : existingProperty.renovation_date,
+      
+      rental_includes: req.body.rental_includes !== undefined ? emptyToNull(req.body.rental_includes) : existingProperty.rental_includes,
+      
+      deposit_type: req.body.deposit_type !== undefined 
+        ? validateEnum(req.body.deposit_type, ['one_month', 'two_months', 'custom'])
+        : existingProperty.deposit_type,
+      deposit_amount: req.body.deposit_amount !== undefined ? emptyToNull(req.body.deposit_amount) : existingProperty.deposit_amount,
+      electricity_rate: req.body.electricity_rate !== undefined ? emptyToNull(req.body.electricity_rate) : existingProperty.electricity_rate,
+      water_rate: req.body.water_rate !== undefined ? emptyToNull(req.body.water_rate) : existingProperty.water_rate,
+      
+      distance_to_beach: req.body.distance_to_beach !== undefined ? emptyToNull(req.body.distance_to_beach) : existingProperty.distance_to_beach
+    };
+
+    // ✅ Автоматический пересчет расстояния до пляжа если координаты изменились
+    if (updateData.latitude && updateData.longitude) {
       const coordsChanged = 
-        parseFloat(existingProperty.latitude) !== parseFloat(latitude) || 
-        parseFloat(existingProperty.longitude) !== parseFloat(longitude);
+        parseFloat(existingProperty.latitude || '0') !== parseFloat(updateData.latitude) || 
+        parseFloat(existingProperty.longitude || '0') !== parseFloat(updateData.longitude);
 
       if (coordsChanged || !existingProperty.distance_to_beach) {
         try {
           const beachDistance = await googleMapsService.calculateDistanceToNearestBeach({
-            lat: parseFloat(latitude),
-            lng: parseFloat(longitude)
+            lat: parseFloat(updateData.latitude),
+            lng: parseFloat(updateData.longitude)
           });
           
-          updatedDistanceToBeach = beachDistance.distance;
+          updateData.distance_to_beach = beachDistance.distance;
           logger.info(`Auto-recalculated beach distance: ${beachDistance.distance}m to ${beachDistance.beachName}`);
         } catch (error) {
           logger.warn('Failed to auto-calculate beach distance:', error);
-          updatedDistanceToBeach = existingProperty.distance_to_beach;
         }
       }
     }
 
-    // Обновляем основную информацию
+    // ✅ Обновляем основную информацию
     await connection.query(
       `UPDATE properties SET
         deal_type = ?, property_type = ?, region = ?, address = ?, google_maps_link = ?,
@@ -829,33 +1052,91 @@ async update(req: AuthRequest, res: Response): Promise<void> {
         owner_name = ?, owner_phone = ?, owner_email = ?, owner_telegram = ?, owner_instagram = ?, owner_notes = ?,
         sale_commission_type = ?, sale_commission_value = ?,
         rent_commission_type = ?, rent_commission_value = ?,
+        year_pricing_mode = ?, year_commission_type = ?, year_commission_value = ?,
+        year_source_price = ?, year_margin_amount = ?, year_margin_percentage = ?,
+        sale_pricing_mode = ?, sale_commission_type_new = ?, sale_commission_value_new = ?,
+        sale_source_price = ?, sale_margin_amount = ?, sale_margin_percentage = ?,
         renovation_type = ?, renovation_date = ?,
         rental_includes = ?, deposit_type = ?, deposit_amount = ?, electricity_rate = ?, water_rate = ?,
         distance_to_beach = ?,
         updated_at = NOW()
       WHERE id = ?`,
       [
-        deal_type, property_type, region, address, google_maps_link,
-        latitude, longitude, property_number, property_name, complex_name,
-        bedrooms, bathrooms, indoor_area, outdoor_area, plot_size,
-        floors, floor, penthouse_floors, construction_year, construction_month,
-        furniture_status, parking_spaces, pets_allowed, pets_custom,
-        building_ownership, land_ownership, ownership_type,
-        sale_price, year_price, minimum_nights, ics_calendar_url, video_url, status || 'draft',
-        owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
-        sale_commission_type, sale_commission_value,
-        rent_commission_type, rent_commission_value,
-        renovation_type, renovation_date,
-        rental_includes, deposit_type, deposit_amount, electricity_rate, water_rate,
-        updatedDistanceToBeach,
+        updateData.deal_type,
+        updateData.property_type,
+        updateData.region,
+        updateData.address,
+        updateData.google_maps_link,
+        updateData.latitude,
+        updateData.longitude,
+        updateData.property_number,
+        updateData.property_name,
+        updateData.complex_name,
+        updateData.bedrooms,
+        updateData.bathrooms,
+        updateData.indoor_area,
+        updateData.outdoor_area,
+        updateData.plot_size,
+        updateData.floors,
+        updateData.floor,
+        updateData.penthouse_floors,
+        updateData.construction_year,
+        updateData.construction_month,
+        updateData.furniture_status,
+        updateData.parking_spaces,
+        updateData.pets_allowed,
+        updateData.pets_custom,
+        updateData.building_ownership,
+        updateData.land_ownership,
+        updateData.ownership_type,
+        updateData.sale_price,
+        updateData.year_price,
+        updateData.minimum_nights,
+        updateData.ics_calendar_url,
+        updateData.video_url,
+        updateData.status,
+        updateData.owner_name,
+        updateData.owner_phone,
+        updateData.owner_email,
+        updateData.owner_telegram,
+        updateData.owner_instagram,
+        updateData.owner_notes,
+        updateData.sale_commission_type,
+        updateData.sale_commission_value,
+        updateData.rent_commission_type,
+        updateData.rent_commission_value,
+        // ✅ НОВОЕ: Годовая цена
+        updateData.year_pricing_mode,
+        updateData.year_commission_type,
+        updateData.year_commission_value,
+        updateData.year_source_price,
+        updateData.year_margin_amount,
+        updateData.year_margin_percentage,
+        // ✅ НОВОЕ: Цена продажи
+        updateData.sale_pricing_mode,
+        updateData.sale_commission_type_new,
+        updateData.sale_commission_value_new,
+        updateData.sale_source_price,
+        updateData.sale_margin_amount,
+        updateData.sale_margin_percentage,
+        updateData.renovation_type,
+        updateData.renovation_date,
+        updateData.rental_includes,
+        updateData.deposit_type,
+        updateData.deposit_amount,
+        updateData.electricity_rate,
+        updateData.water_rate,
+        updateData.distance_to_beach,
         id
       ]
     );
     
-    // Обновляем переводы правильно
-    const languages = ['ru', 'en', 'th', 'zh', 'he'];
+    // ✅ Обновляем переводы только если они переданы
+    if (req.body.translations !== undefined || req.body.property_name !== undefined) {
+      const languages = ['ru', 'en', 'th', 'zh', 'he'];
+      const translations = req.body.translations || {};
+      const property_name = req.body.property_name;
 
-    if (translations && typeof translations === 'object') {
       for (const lang of languages) {
         const translationData = translations[lang];
         const description = translationData?.description || '';
@@ -874,23 +1155,9 @@ async update(req: AuthRequest, res: Response): Promise<void> {
           );
         }
       }
-    } else if (property_name !== undefined) {
-      for (const lang of languages) {
-        await connection.query(
-          `INSERT INTO property_translations 
-           (property_id, language_code, property_name, description, created_at, updated_at) 
-           VALUES (?, ?, ?, '', NOW(), NOW())
-           ON DUPLICATE KEY UPDATE 
-           property_name = VALUES(property_name),
-           updated_at = NOW()`,
-          [id, lang, property_name]
-        );
-      }
     }
 
-    // Обновляем features
-    await connection.query('DELETE FROM property_features WHERE property_id = ?', [id]);
-
+    // ✅ Обновляем features только если они переданы
     const featureTypes: { [key: string]: string } = {
       propertyFeatures: 'property',
       outdoorFeatures: 'outdoor',
@@ -899,26 +1166,32 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       views: 'view'
     };
 
-    for (const [key, type] of Object.entries(featureTypes)) {
-      const featuresArray = req.body[key];
-      if (featuresArray && Array.isArray(featuresArray) && featuresArray.length > 0) {
-        for (const feature of featuresArray) {
-          const renovationDate = renovationDates?.[feature] || null;
-          await connection.query(
-            `INSERT INTO property_features (property_id, feature_type, feature_value, renovation_date)
-             VALUES (?, ?, ?, ?)`,
-            [id, type, feature, renovationDate]
-          );
+    const hasAnyFeatures = Object.keys(featureTypes).some(key => req.body[key] !== undefined);
+    
+    if (hasAnyFeatures) {
+      await connection.query('DELETE FROM property_features WHERE property_id = ?', [id]);
+
+      for (const [key, type] of Object.entries(featureTypes)) {
+        const featuresArray = req.body[key];
+        if (featuresArray && Array.isArray(featuresArray) && featuresArray.length > 0) {
+          for (const feature of featuresArray) {
+            const renovationDate = req.body.renovationDates?.[feature] || null;
+            await connection.query(
+              `INSERT INTO property_features (property_id, feature_type, feature_value, renovation_date)
+               VALUES (?, ?, ?, ?)`,
+              [id, type, feature, renovationDate]
+            );
+          }
         }
       }
     }
 
-    // ✅ ИЗМЕНЕНО: Обновляем сезонные цены с новыми полями
-    if (seasonalPricing !== undefined) {
+    // ✅ Обновляем сезонные цены только если они переданы
+    if (req.body.seasonalPricing !== undefined) {
       await connection.query('DELETE FROM property_pricing WHERE property_id = ?', [id]);
 
-      if (Array.isArray(seasonalPricing) && seasonalPricing.length > 0) {
-        for (const price of seasonalPricing) {
+      if (Array.isArray(req.body.seasonalPricing) && req.body.seasonalPricing.length > 0) {
+        for (const price of req.body.seasonalPricing) {
           await connection.query(
             `INSERT INTO property_pricing (
               property_id, season_type, start_date_recurring, end_date_recurring, 
@@ -936,23 +1209,28 @@ async update(req: AuthRequest, res: Response): Promise<void> {
               price.minimum_nights || null,
               price.pricing_type || 'per_night',
               price.pricing_mode || 'net',
-              price.commission_type || null,
-              price.commission_value || null,
-              price.source_price || null,
-              price.margin_amount || null,
-              price.margin_percentage || null
+              emptyToNull(price.commission_type),
+              emptyToNull(price.commission_value),
+              emptyToNull(price.source_price),
+              emptyToNull(price.margin_amount),
+              emptyToNull(price.margin_percentage)
             ]
           );
         }
       }
     }
 
-    // ✅ ИЗМЕНЕНО: Обновляем месячные цены с новыми полями
-    if (monthlyPricing !== undefined) {
+    // ✅ Обновляем месячные цены только если они переданы
+    if (req.body.monthlyPricing !== undefined) {
       await connection.query('DELETE FROM property_pricing_monthly WHERE property_id = ?', [id]);
 
-      if (Array.isArray(monthlyPricing) && monthlyPricing.length > 0) {
-        for (const price of monthlyPricing) {
+      if (Array.isArray(req.body.monthlyPricing) && req.body.monthlyPricing.length > 0) {
+        for (const price of req.body.monthlyPricing) {
+          // Пропускаем месяцы с null ценой
+          if (price.price_per_month === null || price.price_per_month === undefined || price.price_per_month === '') {
+            continue;
+          }
+
           await connection.query(
             `INSERT INTO property_pricing_monthly 
              (property_id, month_number, price_per_month, minimum_days,
@@ -963,13 +1241,13 @@ async update(req: AuthRequest, res: Response): Promise<void> {
               id,
               price.month_number,
               price.price_per_month,
-              price.minimum_days || null,
+              emptyToNull(price.minimum_days),
               price.pricing_mode || 'net',
-              price.commission_type || null,
-              price.commission_value || null,
-              price.source_price || null,
-              price.margin_amount || null,
-              price.margin_percentage || null
+              emptyToNull(price.commission_type),
+              emptyToNull(price.commission_value),
+              emptyToNull(price.source_price),
+              emptyToNull(price.margin_amount),
+              emptyToNull(price.margin_percentage)
             ]
           );
         }
@@ -983,7 +1261,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       success: true,
       message: 'Объект успешно обновлен',
       data: {
-        distance_to_beach: updatedDistanceToBeach
+        distance_to_beach: updateData.distance_to_beach
       }
     });
 
