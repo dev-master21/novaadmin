@@ -288,6 +288,11 @@ export const propertiesApi = {
   getPropertyPrices: (id: number): Promise<{ data: PropertyPricesInfo }> =>
     api.get(`/properties/${id}/prices`),
   
+  // Получение preview URL для просмотра на основном сайте
+  async getPreviewUrl(propertyId: number) {
+    return api.get(`/properties/${propertyId}/preview-url`);
+  },
+
 deleteFloorPlan: (propertyId: number) => 
   api.delete(`/properties/${propertyId}/floor-plan`),
 

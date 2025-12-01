@@ -15,16 +15,49 @@ import {
   uploadVRPanorama,
   uploadVideo 
 } from '../config/upload.config';
+import { generatePreviewUrl } from '../utils/previewToken';
+
 
 const router = Router();
 
 // Основные CRUD операции
 router.get('/', authenticate, requirePermission('properties.read'), propertiesController.getAll.bind(propertiesController));
 router.get('/owners/unique', authenticate, requirePermission('properties.update'), propertiesController.getUniqueOwners.bind(propertiesController));
+
+// ⚠️ ВАЖНО: Специфичные роуты ПЕРЕД общим роутом /:id
+// Preview URL - ДОЛЖЕН БЫТЬ ПЕРЕД /:id
+router.get(
+  '/:id/preview-url',
+  authenticate,
+  async (req: any, res: any) => {
+    try {
+      const { id } = req.params;
+      const previewUrl = generatePreviewUrl(id);
+      
+      res.json({
+        success: true,
+        data: {
+          previewUrl
+        }
+      });
+    } catch (error) {
+      console.error('Error generating preview URL:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate preview URL'
+      });
+    }
+  }
+);
+
+// Prices route - ПЕРЕД /:id
+router.get('/:id/prices', propertiesController.getPropertyPrices.bind(propertiesController));
+
+// Общий роут для получения по ID - ДОЛЖЕН БЫТЬ ПОСЛЕ специфичных роутов
 router.get('/:id', authenticate, requirePermission('properties.read'), propertiesController.getById.bind(propertiesController));
+
 router.post('/', authenticate, requirePermission('properties.create'), propertiesController.create.bind(propertiesController));
 router.put('/:id', authenticate, canEditProperty, propertiesController.update.bind(propertiesController));
-router.get('/:id/prices', propertiesController.getPropertyPrices.bind(propertiesController));
 
 // Удаление и изменение статуса
 router.delete('/:id', authenticate, requireSuperAdmin, propertiesController.delete.bind(propertiesController));
@@ -219,8 +252,6 @@ router.post(
 // AI создание объекта
 router.post('/create-with-ai', authenticate, requirePermission('properties.create'), propertiesController.createWithAI.bind(propertiesController));
 router.post('/save-from-ai', authenticate, requirePermission('properties.create'), propertiesController.saveFromAI.bind(propertiesController));
-
-router.get('/:id/prices', propertiesController.getPropertyPrices.bind(propertiesController));
 
 // Генерация HTML презентации
 router.post(

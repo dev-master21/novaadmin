@@ -146,6 +146,7 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === 'dark';
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
   const { canEditProperty, canViewPropertyOwner, canChangePropertyStatus } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -3014,7 +3015,7 @@ const handleSaveClick = async () => {
         <Text>{t('properties.complexInfoText')}</Text>
       </Modal>
 
-      {/* ✅ НОВОЕ: Модальное окно после успешного редактирования */}
+{/* ✅ ИСПРАВЛЕНО: Модальное окно после успешного редактирования */}
       <Modal
         opened={afterSaveModalOpened}
         onClose={closeAfterSaveModal}
@@ -3029,13 +3030,42 @@ const handleSaveClick = async () => {
             leftSection={<IconExternalLink size={20} />}
             variant="light"
             color="blue"
-            onClick={() => {
-              window.open(`https://novaestate.company/properties/${id}?viewupdate`, '_blank');
-              closeAfterSaveModal();
-            }}
-          >
-            {t('properties.afterSave.viewOnSite') || 'Просмотреть на сайте'}
-          </Button>
+            onClick={async () => {
+              try {
+                setIsGeneratingPreview(true);
+                
+                // Запрашиваем preview URL с токеном
+                const response = await propertiesApi.getPreviewUrl(Number(id));
+                
+     if (response.data?.success) {
+        // ИСПРАВЛЕНИЕ: response.data.data.previewUrl вместо response.data.previewUrl
+        window.open(response.data.data.previewUrl, '_blank');
+        closeAfterSaveModal();
+      } else {
+        notifications.show({
+          title: t('errors.generic'),
+          message: t('properties.messages.previewUrlError'),
+          color: 'red',
+          icon: <IconX size={18} />
+        });
+      }
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('properties.messages.previewUrlError'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  }}
+  loading={isGeneratingPreview}
+  disabled={isGeneratingPreview}
+>
+  {t('properties.afterSave.viewOnSite')}
+</Button>
 
           <Button
             fullWidth
