@@ -182,6 +182,52 @@ export const propertyOwnersApi = {
   changePassword: (data: ChangePasswordRequest) =>
     ownerApi.post<{ success: boolean; message: string }>('/property-owners/change-password', data),
 
-  getPropertyPreviewUrl: (propertyId: number) =>
-    ownerApi.get<{ success: boolean; data: { previewUrl: string } }>(`/property-owners/property/${propertyId}/preview-url`),
+getPropertyPreviewUrl: (propertyId: number) =>
+  ownerApi.get<{ success: boolean; data: { previewUrl: string } }>(`/property-owners/property/${propertyId}/preview-url`),
+
+// ✅ КАЛЕНДАРЬ - Получить календарь (blocked dates) - ДОБАВЛЕНО
+getPropertyCalendar: (propertyId: number) =>
+  ownerApi.get(`/property-owners/property/${propertyId}/calendar`),
+
+// ✅ КАЛЕНДАРЬ - Добавить блокировку
+addBlockedPeriod: (propertyId: number, data: { start_date: string; end_date: string; reason?: string }) =>
+  ownerApi.post(`/property-owners/property/${propertyId}/calendar/block`, data),
+
+// ✅ КАЛЕНДАРЬ - Удалить даты
+removeBlockedDates: (propertyId: number, dates: string[]) =>
+  ownerApi.delete(`/property-owners/property/${propertyId}/calendar/block`, { data: { dates } }),
+
+// ✅ КАЛЕНДАРЬ - Получить ICS информацию
+getICSInfo: (propertyId: number) =>
+  ownerApi.get(`/property-owners/property/${propertyId}/ics`),
+
+// ✅ КАЛЕНДАРЬ - Получить внешние календари
+getExternalCalendars: (propertyId: number) =>
+  ownerApi.get(`/property-owners/property/${propertyId}/external-calendars`),
+
+// ✅ КАЛЕНДАРЬ - Добавить внешний календарь
+addExternalCalendar: (propertyId: number, data: { calendar_name: string; ics_url: string }) =>
+  ownerApi.post(`/property-owners/property/${propertyId}/external-calendars`, data),
+
+// ✅ КАЛЕНДАРЬ - Удалить внешний календарь
+removeExternalCalendar: (propertyId: number, calendarId: number, removeDates: boolean) =>
+  ownerApi.delete(`/property-owners/property/${propertyId}/external-calendars/${calendarId}`, {
+    data: { remove_dates: removeDates }
+  }),
+
+// ✅ КАЛЕНДАРЬ - Переключить синхронизацию
+toggleExternalCalendar: (propertyId: number, calendarId: number, isEnabled: boolean) =>
+  ownerApi.patch(`/property-owners/property/${propertyId}/external-calendars/${calendarId}/toggle`, {
+    is_enabled: isEnabled
+  }),
+
+// ✅ КАЛЕНДАРЬ - Анализировать конфликты
+analyzeExternalCalendars: (propertyId: number, calendarIds: number[]) =>
+  ownerApi.post(`/property-owners/property/${propertyId}/external-calendars/analyze`, {
+    calendar_ids: calendarIds
+  }),
+
+// ✅ КАЛЕНДАРЬ - Синхронизировать календари
+syncExternalCalendars: (propertyId: number) =>
+  ownerApi.post(`/property-owners/property/${propertyId}/external-calendars/sync`),
 };

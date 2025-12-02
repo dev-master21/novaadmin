@@ -474,7 +474,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       sale_margin_amount,
       sale_margin_percentage,
       
-      // ✅ Year Price - все поля
+      // ✅ Year Price - все поля (включая новый режим 'month')
       year_pricing_mode,
       year_commission_type,
       year_commission_value,
@@ -542,121 +542,121 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ ИСПРАВЛЕНО: Добавлены ВСЕ поля включая старые комиссии
-const propertyResult = await connection.query(
-  `INSERT INTO properties (
-    deal_type, property_type, region, address, google_maps_link,
-    latitude, longitude, property_number, property_name, complex_name,
-    bedrooms, bathrooms, indoor_area, outdoor_area, 
-    distance_to_beach, plot_size,
-    floors, floor, penthouse_floors, construction_year, construction_month,
-    furniture_status, parking_spaces, pets_allowed, pets_custom,
-    building_ownership, land_ownership, ownership_type,
-    sale_price, sale_pricing_mode, sale_commission_type_new, sale_commission_value_new,
-    sale_source_price, sale_margin_amount, sale_margin_percentage,
-    minimum_nights, ics_calendar_url, video_url, status, created_by,
-    owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
-    year_price, year_pricing_mode, year_commission_type, year_commission_value,
-    year_source_price, year_margin_amount, year_margin_percentage,
-    sale_commission_type, sale_commission_value,
-    rent_commission_type, rent_commission_value,
-    renovation_type, renovation_date,
-    rental_includes, deposit_type, deposit_amount, electricity_rate, water_rate
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  [
-    // 1-4: Обязательные поля
-    deal_type,
-    property_type,
-    region,
-    address,
-    
-    // 5-7: Google Maps
-    emptyToNull(google_maps_link),
-    emptyToNull(latitude),
-    emptyToNull(longitude),
-    
-    // 8-10: Номер и названия
-    property_number,
-    property_name,
-    emptyToNull(complex_name),
-    
-    // 11-14: Размеры помещений
-    emptyToNull(bedrooms),
-    emptyToNull(bathrooms),
-    emptyToNull(indoor_area),
-    emptyToNull(outdoor_area),
-    
-    // 15-16: Расстояние до пляжа и участок
-    calculatedDistanceToBeach,
-    emptyToNull(plot_size),
-    
-    // 17-22: Этажи и строительство
-    emptyToNull(floors),
-    emptyToNull(floor),
-    emptyToNull(penthouse_floors),
-    emptyToNull(construction_year),
-    emptyToNull(construction_month),
-    validateEnum(furniture_status, ['fullyFurnished', 'partiallyFurnished', 'unfurnished', 'builtIn', 'empty']),
-    
-    // 23-28: Парковка, животные, владение
-    emptyToNull(parking_spaces),
-    emptyToNull(pets_allowed),
-    emptyToNull(pets_custom),
-    emptyToNull(building_ownership),
-    emptyToNull(land_ownership),
-    emptyToNull(ownership_type),
-    
-    // 29-35: Sale Price с новыми полями
-    emptyToNull(sale_price),
-    validateEnum(sale_pricing_mode, ['net', 'gross']) || 'net',
-    validateEnum(sale_commission_type_new, ['percentage', 'fixed']),
-    emptyToNull(sale_commission_value_new),
-    emptyToNull(sale_source_price),
-    emptyToNull(sale_margin_amount),
-    emptyToNull(sale_margin_percentage),
-    
-    // 36-39: Календарь и статус
-    emptyToNull(minimum_nights),
-    emptyToNull(ics_calendar_url),
-    emptyToNull(video_url),
-    status || 'draft',
-    req.admin?.id,
-    
-    // 40-45: Информация о владельце
-    emptyToNull(owner_name),
-    emptyToNull(owner_phone),
-    emptyToNull(owner_email),
-    emptyToNull(owner_telegram),
-    emptyToNull(owner_instagram),
-    emptyToNull(owner_notes),
-    
-    // 46-52: Year Price с полями
-    emptyToNull(year_price),
-    validateEnum(year_pricing_mode, ['net', 'gross']) || 'net',
-    validateEnum(year_commission_type, ['percentage', 'fixed']),
-    emptyToNull(year_commission_value),
-    emptyToNull(year_source_price),
-    emptyToNull(year_margin_amount),
-    emptyToNull(year_margin_percentage),
-    
-    // 53-56: Старые поля комиссий
-    validateEnum(sale_commission_type, ['percentage', 'fixed']),
-    emptyToNull(sale_commission_value),
-    validateEnum(rent_commission_type, ['percentage', 'monthly_rent', 'fixed']),
-    emptyToNull(rent_commission_value),
-    
-    // 57-58: Реновация
-    validateEnum(renovation_type, ['full', 'partial']),
-    emptyToNull(renovation_date),
-    
-    // 59-63: Аренда и депозит
-    emptyToNull(rental_includes),
-    validateEnum(deposit_type, ['one_month', 'two_months', 'custom']),
-    emptyToNull(deposit_amount),
-    emptyToNull(electricity_rate),
-    emptyToNull(water_rate)
-  ]
-);
+    // ✅ ОБНОВЛЕНО: Добавлена валидация 'month' для year_commission_type
+    const propertyResult = await connection.query(
+      `INSERT INTO properties (
+        deal_type, property_type, region, address, google_maps_link,
+        latitude, longitude, property_number, property_name, complex_name,
+        bedrooms, bathrooms, indoor_area, outdoor_area, 
+        distance_to_beach, plot_size,
+        floors, floor, penthouse_floors, construction_year, construction_month,
+        furniture_status, parking_spaces, pets_allowed, pets_custom,
+        building_ownership, land_ownership, ownership_type,
+        sale_price, sale_pricing_mode, sale_commission_type_new, sale_commission_value_new,
+        sale_source_price, sale_margin_amount, sale_margin_percentage,
+        minimum_nights, ics_calendar_url, video_url, status, created_by,
+        owner_name, owner_phone, owner_email, owner_telegram, owner_instagram, owner_notes,
+        year_price, year_pricing_mode, year_commission_type, year_commission_value,
+        year_source_price, year_margin_amount, year_margin_percentage,
+        sale_commission_type, sale_commission_value,
+        rent_commission_type, rent_commission_value,
+        renovation_type, renovation_date,
+        rental_includes, deposit_type, deposit_amount, electricity_rate, water_rate
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        // 1-4: Обязательные поля
+        deal_type,
+        property_type,
+        region,
+        address,
+        
+        // 5-7: Google Maps
+        emptyToNull(google_maps_link),
+        emptyToNull(latitude),
+        emptyToNull(longitude),
+        
+        // 8-10: Номер и названия
+        property_number,
+        property_name,
+        emptyToNull(complex_name),
+        
+        // 11-14: Размеры помещений
+        emptyToNull(bedrooms),
+        emptyToNull(bathrooms),
+        emptyToNull(indoor_area),
+        emptyToNull(outdoor_area),
+        
+        // 15-16: Расстояние до пляжа и участок
+        calculatedDistanceToBeach,
+        emptyToNull(plot_size),
+        
+        // 17-22: Этажи и строительство
+        emptyToNull(floors),
+        emptyToNull(floor),
+        emptyToNull(penthouse_floors),
+        emptyToNull(construction_year),
+        emptyToNull(construction_month),
+        validateEnum(furniture_status, ['fullyFurnished', 'partiallyFurnished', 'unfurnished', 'builtIn', 'empty']),
+        
+        // 23-28: Парковка, животные, владение
+        emptyToNull(parking_spaces),
+        emptyToNull(pets_allowed),
+        emptyToNull(pets_custom),
+        emptyToNull(building_ownership),
+        emptyToNull(land_ownership),
+        emptyToNull(ownership_type),
+        
+        // 29-35: Sale Price с новыми полями
+        emptyToNull(sale_price),
+        validateEnum(sale_pricing_mode, ['net', 'gross']) || 'net',
+        validateEnum(sale_commission_type_new, ['percentage', 'fixed']),
+        emptyToNull(sale_commission_value_new),
+        emptyToNull(sale_source_price),
+        emptyToNull(sale_margin_amount),
+        emptyToNull(sale_margin_percentage),
+        
+        // 36-39: Календарь и статус
+        emptyToNull(minimum_nights),
+        emptyToNull(ics_calendar_url),
+        emptyToNull(video_url),
+        status || 'draft',
+        req.admin?.id,
+        
+        // 40-45: Информация о владельце
+        emptyToNull(owner_name),
+        emptyToNull(owner_phone),
+        emptyToNull(owner_email),
+        emptyToNull(owner_telegram),
+        emptyToNull(owner_instagram),
+        emptyToNull(owner_notes),
+        
+        // 46-52: Year Price с полями (✅ ОБНОВЛЕНО: добавлен 'month')
+        emptyToNull(year_price),
+        validateEnum(year_pricing_mode, ['net', 'gross', 'month']) || 'net',
+        validateEnum(year_commission_type, ['percentage', 'fixed', 'month']), // ✅ ДОБАВЛЕН 'month'
+        emptyToNull(year_commission_value),
+        emptyToNull(year_source_price),
+        emptyToNull(year_margin_amount),
+        emptyToNull(year_margin_percentage),
+        
+        // 53-56: Старые поля комиссий
+        validateEnum(sale_commission_type, ['percentage', 'fixed']),
+        emptyToNull(sale_commission_value),
+        validateEnum(rent_commission_type, ['percentage', 'monthly_rent', 'fixed']),
+        emptyToNull(rent_commission_value),
+        
+        // 57-58: Реновация
+        validateEnum(renovation_type, ['full', 'partial']),
+        emptyToNull(renovation_date),
+        
+        // 59-63: Аренда и депозит
+        emptyToNull(rental_includes),
+        validateEnum(deposit_type, ['one_month', 'two_months', 'custom']),
+        emptyToNull(deposit_amount),
+        emptyToNull(electricity_rate),
+        emptyToNull(water_rate)
+      ]
+    );
 
     const propertyId = (propertyResult as any)[0].insertId;
     logger.info(`Property created: ${propertyId} by user ${req.admin?.username}`);
@@ -851,11 +851,12 @@ const propertyResult = await connection.query(
         logger.error('❌ Failed to download photos from Google Drive:', photoError);
       }
     }
-        try {
+
+    try {
       const icsData = await icsGeneratorService.generateICSFile(
         propertyId,
         property_name || null,
-        [] // Пустой массив событий
+        []
       );
     
       await connection.query(
@@ -867,7 +868,6 @@ const propertyResult = await connection.query(
       logger.info(`Empty ICS file created for property ${propertyId}: ${icsData.filename}`);
     } catch (icsError) {
       logger.error(`Failed to create ICS file for property ${propertyId}:`, icsError);
-      // Не прерываем создание объекта, если .ics не создался
     }
 
     await db.commit(connection);
@@ -891,7 +891,7 @@ const propertyResult = await connection.query(
 }
 
 /**
- * ✅ ИСПРАВЛЕНО: Обновить объект недвижимости
+ * ✅ ОБНОВЛЕНО: Обновить объект недвижимости
  * PUT /api/properties/:id
  */
 async update(req: AuthRequest, res: Response): Promise<void> {
@@ -900,7 +900,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
 
-    // ✅ Сначала получаем текущие данные объекта
+    // Получаем текущие данные объекта
     const existingPropertyResult: any = await connection.query(
       'SELECT * FROM properties WHERE id = ? AND deleted_at IS NULL',
       [id]
@@ -919,20 +919,20 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    // ✅ НОВОЕ: Функция для конвертации пустых строк в NULL
+    // Функция для конвертации пустых строк в NULL
     const emptyToNull = (value: any) => {
       if (value === '' || value === undefined) return null;
       return value;
     };
 
-    // ✅ НОВОЕ: Функция для валидации ENUM полей
+    // Функция для валидации ENUM полей
     const validateEnum = (value: any, validValues: string[]) => {
       if (value === '' || value === undefined || value === null) return null;
       if (validValues.includes(value)) return value;
       return null;
     };
 
-    // ✅ НОВОЕ: Берем значения из req.body, если они есть, иначе - из existingProperty
+    // Берем значения из req.body, если они есть, иначе - из existingProperty
     const updateData = {
       deal_type: req.body.deal_type !== undefined ? req.body.deal_type : existingProperty.deal_type,
       property_type: req.body.property_type !== undefined ? req.body.property_type : existingProperty.property_type,
@@ -984,7 +984,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       owner_instagram: req.body.owner_instagram !== undefined ? emptyToNull(req.body.owner_instagram) : existingProperty.owner_instagram,
       owner_notes: req.body.owner_notes !== undefined ? emptyToNull(req.body.owner_notes) : existingProperty.owner_notes,
       
-      // ✅ ИСПРАВЛЕНО: Старые поля комиссий (для обратной совместимости)
+      // Старые поля комиссий
       sale_commission_type: req.body.sale_commission_type !== undefined 
         ? validateEnum(req.body.sale_commission_type, ['percentage', 'fixed'])
         : existingProperty.sale_commission_type,
@@ -995,19 +995,19 @@ async update(req: AuthRequest, res: Response): Promise<void> {
         : existingProperty.rent_commission_type,
       rent_commission_value: req.body.rent_commission_value !== undefined ? emptyToNull(req.body.rent_commission_value) : existingProperty.rent_commission_value,
       
-      // ✅ НОВОЕ: Поля для годовой цены
+      // ✅ ОБНОВЛЕНО: Поля для годовой цены (добавлен 'month')
       year_pricing_mode: req.body.year_pricing_mode !== undefined 
-        ? validateEnum(req.body.year_pricing_mode, ['net', 'gross'])
+        ? validateEnum(req.body.year_pricing_mode, ['net', 'gross', 'month'])
         : existingProperty.year_pricing_mode,
       year_commission_type: req.body.year_commission_type !== undefined 
-        ? validateEnum(req.body.year_commission_type, ['percentage', 'fixed'])
+        ? validateEnum(req.body.year_commission_type, ['percentage', 'fixed', 'month']) // ✅ ДОБАВЛЕН 'month'
         : existingProperty.year_commission_type,
       year_commission_value: req.body.year_commission_value !== undefined ? emptyToNull(req.body.year_commission_value) : existingProperty.year_commission_value,
       year_source_price: req.body.year_source_price !== undefined ? emptyToNull(req.body.year_source_price) : existingProperty.year_source_price,
       year_margin_amount: req.body.year_margin_amount !== undefined ? emptyToNull(req.body.year_margin_amount) : existingProperty.year_margin_amount,
       year_margin_percentage: req.body.year_margin_percentage !== undefined ? emptyToNull(req.body.year_margin_percentage) : existingProperty.year_margin_percentage,
       
-      // ✅ НОВОЕ: Поля для цены продажи
+      // Поля для цены продажи
       sale_pricing_mode: req.body.sale_pricing_mode !== undefined 
         ? validateEnum(req.body.sale_pricing_mode, ['net', 'gross'])
         : existingProperty.sale_pricing_mode,
@@ -1036,7 +1036,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       distance_to_beach: req.body.distance_to_beach !== undefined ? emptyToNull(req.body.distance_to_beach) : existingProperty.distance_to_beach
     };
 
-    // ✅ Автоматический пересчет расстояния до пляжа если координаты изменились
+    // Автоматический пересчет расстояния до пляжа если координаты изменились
     if (updateData.latitude && updateData.longitude) {
       const coordsChanged = 
         parseFloat(existingProperty.latitude || '0') !== parseFloat(updateData.latitude) || 
@@ -1057,7 +1057,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ Обновляем основную информацию
+    // Обновляем основную информацию
     await connection.query(
       `UPDATE properties SET
         deal_type = ?, property_type = ?, region = ?, address = ?, google_maps_link = ?,
@@ -1123,14 +1123,14 @@ async update(req: AuthRequest, res: Response): Promise<void> {
         updateData.sale_commission_value,
         updateData.rent_commission_type,
         updateData.rent_commission_value,
-        // ✅ НОВОЕ: Годовая цена
+        // Годовая цена
         updateData.year_pricing_mode,
         updateData.year_commission_type,
         updateData.year_commission_value,
         updateData.year_source_price,
         updateData.year_margin_amount,
         updateData.year_margin_percentage,
-        // ✅ НОВОЕ: Цена продажи
+        // Цена продажи
         updateData.sale_pricing_mode,
         updateData.sale_commission_type_new,
         updateData.sale_commission_value_new,
@@ -1149,7 +1149,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       ]
     );
     
-    // ✅ Обновляем переводы только если они переданы
+    // Обновляем переводы только если они переданы
     if (req.body.translations !== undefined || req.body.property_name !== undefined) {
       const languages = ['ru', 'en', 'th', 'zh', 'he'];
       const translations = req.body.translations || {};
@@ -1175,7 +1175,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ Обновляем features только если они переданы
+    // Обновляем features только если они переданы
     const featureTypes: { [key: string]: string } = {
       propertyFeatures: 'property',
       outdoorFeatures: 'outdoor',
@@ -1204,7 +1204,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ Обновляем сезонные цены только если они переданы
+    // Обновляем сезонные цены только если они переданы
     if (req.body.seasonalPricing !== undefined) {
       await connection.query('DELETE FROM property_pricing WHERE property_id = ?', [id]);
 
@@ -1238,7 +1238,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ Обновляем месячные цены только если они переданы
+    // Обновляем месячные цены только если они переданы
     if (req.body.monthlyPricing !== undefined) {
       await connection.query('DELETE FROM property_pricing_monthly WHERE property_id = ?', [id]);
 

@@ -40,11 +40,13 @@ import { useTranslation } from 'react-i18next';
 import { useMediaQuery, useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { propertiesApi, MonthlyPrice } from '@/api/properties.api';
+import { propertyOwnersApi } from '@/api/propertyOwners.api';
 
 interface MonthlyPricingProps {
   propertyId: number;
   initialPricing?: MonthlyPrice[];
   viewMode?: boolean;
+  isOwnerMode?: boolean;
   onChange?: (pricing: MonthlyPrice[]) => void;
 }
 
@@ -62,6 +64,7 @@ const MonthlyPricing = ({
   propertyId, 
   initialPricing = [], 
   viewMode = false,
+  isOwnerMode = false,
   onChange
 }: MonthlyPricingProps) => {
   const { t } = useTranslation();
@@ -351,45 +354,49 @@ const MonthlyPricing = ({
     }
 
     // ✅ СУЩЕСТВУЮЩИЙ КОД: Если объект создан - сохраняем в БД
-    setSavingMonths(prev => new Set(prev).add(monthNumber));
+setSavingMonths(prev => new Set(prev).add(monthNumber));
 
-    try {
-      let calculated;
-      
-      if (monthData.pricing_mode === 'net' && monthData.edited_gross_price !== undefined && monthData.edited_gross_price !== null) {
-        const sourcePrice = Number(monthData.price);
-        const finalPrice = Number(monthData.edited_gross_price);
-        const marginAmount = finalPrice - sourcePrice;
-        const marginPercentage = sourcePrice > 0 ? (marginAmount / sourcePrice) * 100 : 0;
-        
-        calculated = {
-          finalPrice: Math.round(finalPrice),
-          sourcePrice: Math.round(sourcePrice),
-          marginAmount: Math.round(marginAmount),
-          marginPercentage: Math.round(marginPercentage * 100) / 100
-        };
-      } else {
-        calculated = calculateMarginData(
-          monthData.pricing_mode,
-          Number(monthData.price),
-          monthData.commission_type || null,
-          monthData.commission_value || null
-        );
-      }
+try {
+  let calculated;
+  
+  if (monthData.pricing_mode === 'net' && monthData.edited_gross_price !== undefined && monthData.edited_gross_price !== null) {
+    const sourcePrice = Number(monthData.price);
+    const finalPrice = Number(monthData.edited_gross_price);
+    const marginAmount = finalPrice - sourcePrice;
+    const marginPercentage = sourcePrice > 0 ? (marginAmount / sourcePrice) * 100 : 0;
+    
+    calculated = {
+      finalPrice: Math.round(finalPrice),
+      sourcePrice: Math.round(sourcePrice),
+      marginAmount: Math.round(marginAmount),
+      marginPercentage: Math.round(marginPercentage * 100) / 100
+    };
+  } else {
+    calculated = calculateMarginData(
+      monthData.pricing_mode,
+      Number(monthData.price),
+      monthData.commission_type || null,
+      monthData.commission_value || null
+    );
+  }
 
-      const monthlyPricing = [{
-        month_number: monthNumber,
-        price_per_month: calculated.finalPrice,
-        source_price: calculated.sourcePrice,
-        minimum_days: monthData.days || null,
-        pricing_mode: monthData.pricing_mode,
-        commission_type: monthData.commission_type,
-        commission_value: monthData.commission_value || null,
-        margin_amount: calculated.marginAmount,
-        margin_percentage: calculated.marginPercentage
-      }];
+  const monthlyPricing = [{
+    month_number: monthNumber,
+    price_per_month: calculated.finalPrice,
+    source_price: calculated.sourcePrice,
+    minimum_days: monthData.days || null,
+    pricing_mode: monthData.pricing_mode,
+    commission_type: monthData.commission_type,
+    commission_value: monthData.commission_value || null,
+    margin_amount: calculated.marginAmount,
+    margin_percentage: calculated.marginPercentage
+  }];
 
-      await propertiesApi.updateMonthlyPricing(propertyId, monthlyPricing);
+  if (isOwnerMode) {
+    await propertyOwnersApi.updatePropertyMonthlyPricing(propertyId, monthlyPricing);
+  } else {
+    await propertiesApi.updateMonthlyPricing(propertyId, monthlyPricing);
+  }
       
       setChangedMonths(prev => {
         const newSet = new Set(prev);
@@ -523,8 +530,12 @@ const MonthlyPricing = ({
         margin_percentage: null
       }];
 
-      await propertiesApi.updateMonthlyPricing(propertyId, monthlyPricing as any);
-
+        if (isOwnerMode) {
+        await propertyOwnersApi.updatePropertyMonthlyPricing(propertyId, monthlyPricing as any);
+      } else {
+        await propertiesApi.updateMonthlyPricing(propertyId, monthlyPricing as any);
+      }
+    
       const newPrices = { ...prices };
       delete newPrices[monthToConfirmClear];
       setPrices(newPrices);
@@ -601,7 +612,11 @@ const MonthlyPricing = ({
         margin_percentage: null
       }));
 
-      await propertiesApi.updateMonthlyPricing(propertyId, monthlyPricing as any);
+        if (isOwnerMode) {
+        await propertyOwnersApi.updatePropertyMonthlyPricing(propertyId, monthlyPricing as any);
+      } else {
+        await propertiesApi.updateMonthlyPricing(propertyId, monthlyPricing as any);
+      }
 
       setPrices({});
       setChangedMonths(new Set());

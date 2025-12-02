@@ -182,7 +182,7 @@
       "commission": "Комиссия",
       "clientPrice": "Цена для клиента (GROSS)",
       "ownerReceives": "Владелец получит",
-      "ourMargin": "Наша маржа"
+      "ourMargin": "Комиссия"
     }
   },
   
@@ -1001,7 +1001,7 @@
     "commissionAdd": "Комиссия",
     "finalPriceClient": "Цена для клиента (GROSS)",
     "clientPriceGross": "Цена для клиента (GROSS)",
-    "ourMargin": "Наша маржа",
+    "ourMargin": "Комиссия",
     "ownerPrice": "Цена владельца",
     "months": {
       "january": "Январь",
@@ -3080,9 +3080,25 @@
     "noProperties": "Нет объектов",
     "loadingProperties": "Загрузка объектов...",
     "yearPrice": {
-      "title": "Цена годовой аренды",
-      "description": "Цена за месяц при годовом контракте (12+ месяцев)",
-      "info": "Это цена за месяц, если клиент арендует на год или больше"
+      "title": "Годовая цена",
+      "description": "Цена за год аренды",
+      "info": "Укажите цену аренды на год",
+      "mode": {
+        "month": "MONTH"
+      },
+      "monthlyPriceLabel": "Месячная цена при годовом контракте",
+      "monthsCountLabel": "Количество месяцев комиссии",
+      "monthsCountDescription": "Укажите количество месяцев (например: 1 или 0.5)",
+      "validation": {
+        "enterMonthlyPrice": "Укажите месячную цену",
+        "enterMonthsCount": "Укажите количество месяцев комиссии"
+      },
+      "calculation": {
+        "monthlyPrice": "Месячная цена при годовом контракте",
+        "yearlyTotal": "Клиент платит за год (12 мес.)",
+        "ourCommission": "Комиссия компании ({{count}} мес.)",
+        "ownerReceives": "Хозяин получит"
+      }
     },
     "photo": "Фото",
     "propertyNumber": "Номер объекта",
@@ -4144,7 +4160,7 @@
       "finalPriceClient": "Цена для клиента (GROSS)",
       "editGrossHint": "Вы можете редактировать GROSS цену, и маржа пересчитается автоматически",
       "clientPriceGross": "Цена для клиента (GROSS)",
-      "ourMargin": "Наша маржа",
+      "ourMargin": "Комиссия",
       "ownerPrice": "Владелец получит",
       "pricingType": "Тип ценообразования",
       "perNight": "За ночь",

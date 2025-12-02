@@ -7,7 +7,6 @@ import { validateRequest } from '../middlewares/validation.middleware';
 const router = Router();
 
 // ========== АДМИНСКИЕ ЭНДПОИНТЫ ==========
-// Создание доступа для владельца (только для админов)
 router.post(
   '/create',
   authenticate,
@@ -17,7 +16,6 @@ router.post(
   propertyOwnersController.createOwnerAccess.bind(propertyOwnersController)
 );
 
-// Получить информацию о доступе владельца (только для админов)
 router.get(
   '/info/:ownerName',
   authenticate,
@@ -34,13 +32,11 @@ router.put(
 );
 
 // ========== ПУБЛИЧНЫЕ ЭНДПОИНТЫ ==========
-// Проверка токена владельца (без авторизации)
 router.get(
   '/verify/:token',
   propertyOwnersController.verifyOwnerToken.bind(propertyOwnersController)
 );
 
-// Авторизация владельца
 router.post(
   '/login',
   validateRequest({
@@ -49,7 +45,6 @@ router.post(
   propertyOwnersController.login.bind(propertyOwnersController)
 );
 
-// Обновление токена
 router.post(
   '/refresh',
   validateRequest({
@@ -59,47 +54,101 @@ router.post(
 );
 
 // ========== ЭНДПОИНТЫ ДЛЯ АВТОРИЗОВАННЫХ ВЛАДЕЛЬЦЕВ ==========
-router.use(authenticateOwner); // Все роуты ниже требуют авторизации владельца
+router.use(authenticateOwner);
 
-// Получить список объектов владельца
 router.get(
   '/properties',
   propertyOwnersController.getOwnerProperties.bind(propertyOwnersController)
 );
 
-// ✅ ДОБАВЬТЕ ЭТУ СТРОКУ - Получить конкретный объект
 router.get(
   '/property/:id',
   propertyOwnersController.getOwnerProperty.bind(propertyOwnersController)
 );
+
 router.put(
   '/property/:id/pricing',
   requirePricingEditPermission,
   propertyOwnersController.updatePropertyPricing.bind(propertyOwnersController)
 );
 
-// Обновить месячные цены объекта (с проверкой прав)
 router.put(
   '/property/:id/monthly-pricing',
   requirePricingEditPermission,
   propertyOwnersController.updatePropertyMonthlyPricing.bind(propertyOwnersController)
 );
-// Получить preview URL для объекта
+
 router.get(
   '/property/:id/preview-url',
   propertyOwnersController.getPropertyPreviewUrl.bind(propertyOwnersController)
 );
 
+// ✅ НОВЫЕ РОУТЫ ДЛЯ КАЛЕНДАРЯ
+
+// Получить календарь (просмотр - без проверки прав)
 router.get(
   '/property/:id/calendar',
   propertyOwnersController.getPropertyCalendar.bind(propertyOwnersController)
 );
 
-// Обновить календарь объекта (с проверкой прав)
-router.put(
-  '/property/:id/calendar',
+// Добавить блокировку (требует прав на редактирование)
+router.post(
+  '/property/:id/calendar/block',
   requireCalendaryEditPermission,
-  propertyOwnersController.updatePropertyCalendar.bind(propertyOwnersController)
+  propertyOwnersController.addBlockedPeriod.bind(propertyOwnersController)
+);
+
+// Удалить блокировки (требует прав на редактирование)
+router.delete(
+  '/property/:id/calendar/block',
+  requireCalendaryEditPermission,
+  propertyOwnersController.removeBlockedDates.bind(propertyOwnersController)
+);
+
+// Получить ICS информацию (просмотр - без проверки прав)
+router.get(
+  '/property/:id/ics',
+  propertyOwnersController.getICSInfo.bind(propertyOwnersController)
+);
+
+// Получить внешние календари (просмотр - без проверки прав)
+router.get(
+  '/property/:id/external-calendars',
+  propertyOwnersController.getExternalCalendars.bind(propertyOwnersController)
+);
+
+// Добавить внешний календарь (требует прав на редактирование)
+router.post(
+  '/property/:id/external-calendars',
+  requireCalendaryEditPermission,
+  propertyOwnersController.addExternalCalendar.bind(propertyOwnersController)
+);
+
+// Удалить внешний календарь (требует прав на редактирование)
+router.delete(
+  '/property/:id/external-calendars/:calendarId',
+  requireCalendaryEditPermission,
+  propertyOwnersController.removeExternalCalendar.bind(propertyOwnersController)
+);
+
+// Переключить синхронизацию календаря (требует прав на редактирование)
+router.patch(
+  '/property/:id/external-calendars/:calendarId/toggle',
+  requireCalendaryEditPermission,
+  propertyOwnersController.toggleExternalCalendar.bind(propertyOwnersController)
+);
+
+// Анализировать конфликты (просмотр - без проверки прав)
+router.post(
+  '/property/:id/external-calendars/analyze',
+  propertyOwnersController.analyzeExternalCalendars.bind(propertyOwnersController)
+);
+
+// Синхронизировать календари (требует прав на редактирование)
+router.post(
+  '/property/:id/external-calendars/sync',
+  requireCalendaryEditPermission,
+  propertyOwnersController.syncExternalCalendars.bind(propertyOwnersController)
 );
 
 // Смена пароля

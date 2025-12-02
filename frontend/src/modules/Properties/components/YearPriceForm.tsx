@@ -9,9 +9,9 @@ import {
   Button,
   NumberInput,
   SegmentedControl,
-  Select,
   Paper,
-  Alert
+  Alert,
+  MantineTheme
 } from '@mantine/core';
 import {
   IconCalendar,
@@ -33,13 +33,14 @@ interface YearPriceFormProps {
   propertyId: number;
   initialData?: {
     price: number | null;
-    pricing_mode?: 'net' | 'gross';
-    commission_type?: 'percentage' | 'fixed' | null;
+    pricing_mode?: 'net' | 'gross' | 'month';
+    commission_type?: 'percentage' | 'fixed' | 'month' | null;
     commission_value?: number | null;
     source_price?: number | null;
+    margin_percentage?: number | null;
   };
   viewMode?: boolean;
-  isOwnerMode?: boolean; // ✅ НОВЫЙ PROP
+  isOwnerMode?: boolean;
   onChange?: (data: any) => void;
 }
 
@@ -47,27 +48,43 @@ const YearPriceForm = ({
   propertyId, 
   initialData,
   viewMode = false,
-  isOwnerMode = false, // ✅ НОВЫЙ PROP
+  isOwnerMode = false,
   onChange
 }: YearPriceFormProps) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
   
   const [price, setPrice] = useState<number | null>(null);
-  const [pricingMode, setPricingMode] = useState<'net' | 'gross'>('net');
+  const [pricingMode, setPricingMode] = useState<'month' | 'net' | 'gross'>('month');
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed' | null>(null);
   const [commissionValue, setCommissionValue] = useState<number | null>(null);
+  const [monthsCount, setMonthsCount] = useState<number>(1);
   const [editedGrossPrice, setEditedGrossPrice] = useState<number | undefined>(undefined);
   
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // ✅ ИСПРАВЛЕНО: Добавлен ключ для принудительного обновления
   useEffect(() => {
+    console.log('🔄 YearPriceForm: Loading initialData', initialData);
+    
     if (initialData) {
-      const mode = initialData.pricing_mode || 'net';
+      // ✅ Определяем режим из pricing_mode
+      let mode: 'month' | 'net' | 'gross' = 'month';
+      
+      if (initialData.pricing_mode === 'month') {
+        mode = 'month';
+        // ✅ Загружаем количество месяцев из year_margin_percentage
+        const loadedMonths = initialData.margin_percentage || 1;
+        console.log('📊 Loading MONTH mode, months:', loadedMonths);
+        setMonthsCount(loadedMonths);
+      } else {
+        mode = (initialData.pricing_mode || 'net') as 'net' | 'gross';
+      }
+      
+      const commType = initialData.commission_type;
       const sourcePrice = initialData.source_price;
       const finalPrice = initialData.price;
-      const commType = initialData.commission_type;
       const commValue = initialData.commission_value;
       
       const loadedPrice = mode === 'net' 
@@ -78,21 +95,48 @@ const YearPriceForm = ({
         ? Number(finalPrice)
         : undefined;
       
+      console.log('📊 Setting state:', { 
+        price: loadedPrice, 
+        mode, 
+        monthsCount: mode === 'month' ? (initialData.margin_percentage || 1) : monthsCount 
+      });
+      
       setPrice(loadedPrice);
       setPricingMode(mode);
-      setCommissionType(commType ?? null);
+      setCommissionType(commType === 'month' ? null : (commType ?? null));
       setCommissionValue(commValue || null);
       setEditedGrossPrice(loadedEditedGrossPrice);
+      setHasChanges(false);
     }
-  }, [initialData]);
+  }, [initialData?.price, initialData?.pricing_mode, initialData?.margin_percentage]); // ✅ Зависимости
 
   const calculateMarginData = (
-    mode: 'net' | 'gross',
+    mode: 'month' | 'net' | 'gross',
     priceValue: number,
     commType: 'percentage' | 'fixed' | null,
-    commValue: number | null
+    commValue: number | null,
+    months?: number
   ) => {
     const numericPrice = Number(priceValue);
+    
+    if (mode === 'month') {
+      const monthlyPrice = numericPrice;
+      const monthsCommission = months !== undefined && months !== null ? months : 1; // ✅ ИСПРАВЛЕНО
+      const yearlyTotal = monthlyPrice * 12;
+      const marginAmount = monthlyPrice * monthsCommission;
+      const ownerReceives = yearlyTotal - marginAmount;
+      
+      console.log('💰 Calculate MONTH:', { monthlyPrice, monthsCommission, yearlyTotal, marginAmount, ownerReceives });
+      
+      return {
+        finalPrice: monthlyPrice,
+        sourcePrice: monthlyPrice,
+        marginAmount: Math.round(marginAmount),
+        marginPercentage: monthsCommission,
+        yearlyTotal: Math.round(yearlyTotal),
+        ownerReceives: Math.round(ownerReceives)
+      };
+    }
     
     if (!commType || !commValue || commValue <= 0) {
       return {
@@ -145,7 +189,13 @@ const YearPriceForm = ({
   };
 
   const getDisplayData = () => {
-    if (!price || !commissionType) return null;
+    if (!price) return null;
+
+    if (pricingMode === 'month') {
+      return calculateMarginData(pricingMode, Number(price), null, null, monthsCount);
+    }
+
+    if (!commissionType) return null;
 
     if (pricingMode === 'net' && editedGrossPrice !== undefined && editedGrossPrice !== null) {
       const sourcePrice = Number(price);
@@ -172,7 +222,7 @@ const YearPriceForm = ({
   };
 
   const handleModeChange = (value: string) => {
-    setPricingMode(value as 'net' | 'gross');
+    setPricingMode(value as 'month' | 'net' | 'gross');
     setEditedGrossPrice(undefined);
     setHasChanges(true);
   };
@@ -187,6 +237,28 @@ const YearPriceForm = ({
     const numValue = typeof value === 'number' ? value : parseFloat(value as string) || null;
     setCommissionValue(numValue);
     setEditedGrossPrice(undefined);
+    setHasChanges(true);
+  };
+
+  // ✅ ИСПРАВЛЕНО: Убрано автоматическое значение 1, добавлена поддержка десятичных
+  const handleMonthsCountChange = (value: number | string) => {
+    let numValue: number;
+    
+    if (typeof value === 'number') {
+      numValue = value;
+    } else {
+      // Заменяем запятую на точку для поддержки русской локали
+      const normalizedValue = String(value).replace(',', '.');
+      numValue = parseFloat(normalizedValue);
+      
+      // Если не удалось распарсить - ставим 1
+      if (isNaN(numValue)) {
+        numValue = 1;
+      }
+    }
+    
+    console.log('📝 MonthsCount changed:', value, '→', numValue);
+    setMonthsCount(numValue);
     setHasChanges(true);
   };
 
@@ -212,37 +284,61 @@ const YearPriceForm = ({
   };
 
   const handleSave = async () => {
-    // Валидация
-    if (!price || !commissionType) {
-      notifications.show({
-        title: t('properties.messages.warning'),
-        message: t('properties.messages.selectCommissionType'),
-        color: 'orange',
-        icon: <IconAlertTriangle size={16} />
-      });
-      return;
-    }
-
-    if (pricingMode === 'net' && editedGrossPrice) {
-      if (editedGrossPrice <= Number(price)) {
+    if (pricingMode === 'month') {
+      if (!price) {
         notifications.show({
           title: t('properties.messages.warning'),
-          message: t('properties.messages.grossMustBeHigher'),
+          message: t('properties.yearPrice.validation.enterMonthlyPrice'),
           color: 'orange',
           icon: <IconAlertTriangle size={16} />
         });
         return;
       }
+      if (!monthsCount || monthsCount <= 0) {
+        notifications.show({
+          title: t('properties.messages.warning'),
+          message: t('properties.yearPrice.validation.enterMonthsCount'),
+          color: 'orange',
+          icon: <IconAlertTriangle size={16} />
+        });
+        return;
+      }
+    } else {
+      if (!price || !commissionType) {
+        notifications.show({
+          title: t('properties.messages.warning'),
+          message: t('properties.messages.selectCommissionType'),
+          color: 'orange',
+          icon: <IconAlertTriangle size={16} />
+        });
+        return;
+      }
+
+      if (pricingMode === 'net' && editedGrossPrice) {
+        if (editedGrossPrice <= Number(price)) {
+          notifications.show({
+            title: t('properties.messages.warning'),
+            message: t('properties.messages.grossMustBeHigher'),
+            color: 'orange',
+            icon: <IconAlertTriangle size={16} />
+          });
+          return;
+        }
+      }
     }
 
-    // Если объект не создан, сохраняем локально через onChange
+    console.log('💾 Saving with monthsCount:', monthsCount);
+
     if (!propertyId || propertyId === 0) {
       setSaving(true);
 
       try {
         let calculated;
         
-        if (pricingMode === 'net' && editedGrossPrice !== undefined && editedGrossPrice !== null) {
+        if (pricingMode === 'month') {
+          calculated = calculateMarginData('month', Number(price), null, null, monthsCount);
+          console.log('💾 Calculated MONTH data:', calculated);
+        } else if (pricingMode === 'net' && editedGrossPrice !== undefined && editedGrossPrice !== null) {
           const sourcePrice = Number(price);
           const finalPrice = Number(editedGrossPrice);
           const marginAmount = finalPrice - sourcePrice;
@@ -261,12 +357,14 @@ const YearPriceForm = ({
         const localData = {
           year_price: calculated.finalPrice,
           year_pricing_mode: pricingMode,
-          year_commission_type: commissionType,
-          year_commission_value: commissionValue,
+          year_commission_type: pricingMode === 'month' ? 'month' : commissionType,
+          year_commission_value: pricingMode === 'month' ? null : commissionValue,
           year_source_price: calculated.sourcePrice,
           year_margin_amount: calculated.marginAmount,
           year_margin_percentage: calculated.marginPercentage
         };
+
+        console.log('💾 Local save data:', localData);
 
         if (onChange) {
           onChange(localData);
@@ -276,9 +374,7 @@ const YearPriceForm = ({
         
         notifications.show({
           title: t('common.success'),
-          message: t('properties.messages.yearPriceSavedLocally', {
-            defaultValue: 'Годовая цена сохранена локально. Будет применена при создании объекта.'
-          }),
+          message: t('properties.messages.yearPriceSavedLocally'),
           color: 'blue',
           icon: <IconCheck size={16} />
         });
@@ -298,13 +394,15 @@ const YearPriceForm = ({
       return;
     }
 
-    // ✅ ИСПРАВЛЕНО: Если объект создан - используем правильный API
     setSaving(true);
 
     try {
       let calculated;
       
-      if (pricingMode === 'net' && editedGrossPrice !== undefined && editedGrossPrice !== null) {
+      if (pricingMode === 'month') {
+        calculated = calculateMarginData('month', Number(price), null, null, monthsCount);
+        console.log('💾 Calculated MONTH data for server:', calculated);
+      } else if (pricingMode === 'net' && editedGrossPrice !== undefined && editedGrossPrice !== null) {
         const sourcePrice = Number(price);
         const finalPrice = Number(editedGrossPrice);
         const marginAmount = finalPrice - sourcePrice;
@@ -323,19 +421,18 @@ const YearPriceForm = ({
       const updateData = {
         year_price: calculated.finalPrice,
         year_pricing_mode: pricingMode,
-        year_commission_type: commissionType,
-        year_commission_value: commissionValue,
+        year_commission_type: pricingMode === 'month' ? 'month' : commissionType,
+        year_commission_value: pricingMode === 'month' ? null : commissionValue,
         year_source_price: calculated.sourcePrice,
         year_margin_amount: calculated.marginAmount,
         year_margin_percentage: calculated.marginPercentage
       };
 
-      // ✅ НОВОЕ: Используем owner API или admin API в зависимости от режима
+      console.log('💾 Sending to server:', updateData);
+
       if (isOwnerMode) {
-        // Используем owner API для обновления годовой цены
         await propertyOwnersApi.updatePropertyPricing(propertyId, updateData);
       } else {
-        // Используем admin API
         await propertiesApi.update(propertyId, updateData);
       }
       
@@ -348,8 +445,19 @@ const YearPriceForm = ({
         icon: <IconCheck size={16} />
       });
 
+      // ✅ ИСПРАВЛЕНО: Правильная структура данных для родителя
       if (onChange) {
-        onChange(updateData);
+        const updatedData = {
+          price: updateData.year_price,
+          pricing_mode: updateData.year_pricing_mode,
+          commission_type: updateData.year_commission_type,
+          commission_value: updateData.year_commission_value,
+          source_price: updateData.year_source_price,
+          margin_percentage: updateData.year_margin_percentage
+        };
+        
+        console.log('✅ Calling onChange with:', updatedData);
+        onChange(updatedData);
       }
     } catch (error: any) {
       console.error('Save year price error:', error);
@@ -365,8 +473,8 @@ const YearPriceForm = ({
   };
 
   const displayData = getDisplayData();
-  const hasPrice = price && price > 0 && pricingMode;
-  const hasCommission = commissionType && commissionType !== null;
+  const hasPrice = price && price > 0;
+  const hasCommission = pricingMode === 'month' || (commissionType && commissionType !== null);
   const canSave = hasChanges && hasPrice && hasCommission && !saving;
 
   return (
@@ -386,6 +494,7 @@ const YearPriceForm = ({
           <Text size="sm">{t('properties.yearPrice.info')}</Text>
         </Alert>
 
+        {/* ✅ ИСПРАВЛЕНО: Улучшенные стили для MONTH */}
         <Stack gap="xs">
           <Text size="sm" fw={500}>
             {t('properties.pricing.selectMode')} <Text component="span" c="red">*</Text>
@@ -394,11 +503,53 @@ const YearPriceForm = ({
             value={pricingMode}
             onChange={handleModeChange}
             disabled={viewMode}
+            fullWidth
+            size="lg"
             data={[
-              { value: 'net', label: 'NET' },
-              { value: 'gross', label: 'GROSS' }
+              { 
+                value: 'month', 
+                label: 'MONTH'
+              },
+              { 
+                value: 'net', 
+                label: 'NET' 
+              },
+              { 
+                value: 'gross', 
+                label: 'GROSS' 
+              }
             ]}
-            fullWidth={isMobile}
+            styles={{
+              root: {
+                background: 'rgba(37, 38, 43, 1)',
+                padding: '6px',
+                borderRadius: '10px',
+                border: '1px solid rgba(55, 58, 64, 1)'
+              },
+              indicator: (theme: MantineTheme) => ({
+                background: pricingMode === 'month' 
+                  ? 'linear-gradient(135deg, #fd7e14 0%, #e8590c 100%)'
+                  : theme.colors.blue[6],
+                boxShadow: pricingMode === 'month'
+                  ? '0 0 25px rgba(253, 126, 20, 0.5), 0 4px 10px rgba(0,0,0,0.3)'
+                  : '0 2px 8px rgba(0,0,0,0.15)',
+                borderRadius: '8px'
+              }),
+              label: {
+                fontSize: isMobile ? '14px' : '16px',
+                fontWeight: 600,
+                padding: isMobile ? '12px 18px' : '14px 24px',
+                transition: 'all 0.25s ease',
+                '&[data-active]': {
+                  color: 'white !important',
+                  fontWeight: 700,
+                  textShadow: pricingMode === 'month' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none'
+                },
+                '&:not([data-active])': {
+                  color: 'rgba(144, 146, 150, 1)'
+                }
+              }
+            }}
           />
         </Stack>
 
@@ -408,9 +559,11 @@ const YearPriceForm = ({
               <IconCurrencyBaht size={14} />
             </ThemeIcon>
             <Text size="sm" fw={500}>
-              {pricingMode === 'gross' 
-                ? t('properties.pricing.clientPrice')
-                : t('properties.pricing.sourcePrice')
+              {pricingMode === 'month' 
+                ? t('properties.yearPrice.monthlyPriceLabel')
+                : pricingMode === 'gross' 
+                  ? t('properties.pricing.clientPrice')
+                  : t('properties.pricing.sourcePrice')
               }
             </Text>
           </Group>
@@ -438,127 +591,235 @@ const YearPriceForm = ({
           />
         </Stack>
 
-        <Stack gap="xs">
-          <Text size="sm" fw={500}>
-            {t('properties.pricing.commissionType')} <Text component="span" c="red">*</Text>
-          </Text>
-          <Select
-            placeholder={t('common.select')}
-            value={commissionType}
-            onChange={handleCommissionTypeChange}
-            disabled={viewMode}
-            data={[
-              { value: 'percentage', label: t('properties.pricing.percentageCommission') },
-              { value: 'fixed', label: t('properties.pricing.fixedCommission') }
-            ]}
-            size="md"
-          />
-        </Stack>
-
-        {commissionType && (
-          <NumberInput
-            label={commissionType === 'percentage' ? t('properties.pricing.commissionPercent') : t('properties.pricing.commissionAmount')}
-            value={commissionValue ?? undefined}
-            onChange={handleCommissionValueChange}
-            min={0}
-            suffix={commissionType === 'percentage' ? '%' : ' ฿'}
-            disabled={viewMode}
-            placeholder="0"
-            size="md"
-          />
+        {pricingMode === 'month' && (
+          <Stack gap="xs">
+            <Text size="sm" fw={500}>
+              {t('properties.yearPrice.monthsCountLabel')} <Text component="span" c="red">*</Text>
+            </Text>
+            <NumberInput
+              value={monthsCount}
+              onChange={handleMonthsCountChange}
+              min={0.1}
+              max={12}
+              step={0.5}
+              decimalScale={2} // ✅ ИСПРАВЛЕНО: Увеличено до 2 для поддержки 0.5
+              fixedDecimalScale={false}
+              disabled={viewMode}
+              placeholder="1"
+              size="md"
+              description={t('properties.yearPrice.monthsCountDescription')}
+              allowDecimal={true} // ✅ Явно разрешаем десятичные
+              styles={{
+                input: {
+                  fontSize: '16px'
+                }
+              }}
+            />
+          </Stack>
         )}
 
-        {hasPrice && displayData && hasCommission && (
+        {pricingMode !== 'month' && (
+          <>
+            <Stack gap="xs">
+              <Text size="sm" fw={500}>
+                {t('properties.pricing.commissionType')} <Text component="span" c="red">*</Text>
+              </Text>
+              <SegmentedControl
+                value={commissionType || ''}
+                onChange={handleCommissionTypeChange}
+                disabled={viewMode}
+                fullWidth
+                size="lg"
+                data={[
+                  { value: 'percentage', label: t('properties.pricing.percentageCommission') },
+                  { value: 'fixed', label: t('properties.pricing.fixedCommission') }
+                ]}
+                styles={{
+                  root: {
+                    background: 'rgba(37, 38, 43, 1)',
+                    padding: '6px',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(55, 58, 64, 1)'
+                  },
+                  indicator: {
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                  },
+                  label: {
+                    fontSize: isMobile ? '14px' : '16px',
+                    fontWeight: 600,
+                    padding: isMobile ? '12px 18px' : '14px 24px',
+                    transition: 'all 0.25s ease',
+                    '&[data-active]': {
+                      color: 'white',
+                      fontWeight: 700
+                    },
+                    '&:not([data-active])': {
+                      color: 'rgba(144, 146, 150, 1)'
+                    }
+                  }
+                }}
+              />
+            </Stack>
+
+            {commissionType && (
+              <NumberInput
+                label={commissionType === 'percentage' ? t('properties.pricing.commissionPercent') : t('properties.pricing.commissionAmount')}
+                value={commissionValue ?? undefined}
+                onChange={handleCommissionValueChange}
+                min={0}
+                suffix={commissionType === 'percentage' ? '%' : ' ฿'}
+                disabled={viewMode}
+                placeholder="0"
+                size="md"
+              />
+            )}
+          </>
+        )}
+
+        {hasPrice && displayData && hasCommission && pricingMode === 'month' && (
           <Paper p="md" withBorder style={{ background: 'var(--mantine-color-dark-6)' }}>
             <Stack gap="sm">
               <Text size="sm" fw={600} c="dimmed">{t('properties.pricing.calculation')}</Text>
               
-              {pricingMode === 'net' ? (
-                <Stack gap="xs">
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">{t('properties.pricing.sourcePriceNet')}</Text>
-                    <Text size="md" fw={600}>{displayData.sourcePrice.toLocaleString()} ฿</Text>
+              <Stack gap="xs">
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">{t('properties.yearPrice.calculation.monthlyPrice')}</Text>
+                  <Text size="md" fw={600}>{displayData.sourcePrice.toLocaleString()} ฿</Text>
+                </Group>
+
+                <Group justify="space-between">
+                  <Group gap="xs">
+                    <IconArrowRight size={16} style={{ opacity: 0.5 }} />
+                    <Text size="sm" c="orange">{t('properties.yearPrice.calculation.yearlyTotal')}</Text>
                   </Group>
-                  
-                  {displayData.marginAmount > 0 && (
+                  <Text size="lg" fw={700} c="orange">
+                    {displayData.yearlyTotal?.toLocaleString()} ฿
+                  </Text>
+                </Group>
+
+                <div style={{ 
+                  borderTop: '2px dashed var(--mantine-color-dark-4)', 
+                  marginTop: 4, 
+                  marginBottom: 4 
+                }} />
+
+                <Group justify="space-between">
+                  <Group gap="xs">
+                    <IconArrowRight size={16} style={{ opacity: 0.5 }} />
+                    <Text size="sm" c="green">{t('properties.yearPrice.calculation.ourCommission', { count: monthsCount })}</Text>
+                  </Group>
+                  <Text size="md" fw={600} c="green">
+                    {displayData.marginAmount.toLocaleString()} ฿
+                  </Text>
+                </Group>
+
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">{t('properties.yearPrice.calculation.ownerReceives')}</Text>
+                  <Text size="lg" fw={700}>{displayData.ownerReceives?.toLocaleString()} ฿</Text>
+                </Group>
+              </Stack>
+            </Stack>
+          </Paper>
+        )}
+
+        {hasPrice && displayData && hasCommission && pricingMode === 'net' && (
+          <Paper p="md" withBorder style={{ background: 'var(--mantine-color-dark-6)' }}>
+            <Stack gap="sm">
+              <Text size="sm" fw={600} c="dimmed">{t('properties.pricing.calculation')}</Text>
+              
+              <Stack gap="xs">
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">{t('properties.pricing.sourcePriceNet')}</Text>
+                  <Text size="md" fw={600}>{displayData.sourcePrice.toLocaleString()} ฿</Text>
+                </Group>
+                
+                {displayData.marginAmount > 0 && (
+                  <Group justify="space-between">
+                    <Group gap="xs">
+                      <IconArrowRight size={16} style={{ opacity: 0.5 }} />
+                      <Text size="sm" c="green">{t('properties.pricing.commissionAdd')}</Text>
+                    </Group>
+                    <Text size="md" fw={600} c="green">
+                      +{displayData.marginAmount.toLocaleString()} ฿ ({displayData.marginPercentage.toFixed(2)}%)
+                    </Text>
+                  </Group>
+                )}
+
+                <div style={{ 
+                  borderTop: '2px dashed var(--mantine-color-dark-4)', 
+                  marginTop: 4, 
+                  marginBottom: 4 
+                }} />
+
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed">{t('properties.pricing.finalPriceClient')}</Text>
+                  <NumberInput
+                    value={editedGrossPrice !== undefined && editedGrossPrice !== null ? editedGrossPrice : displayData.finalPrice}
+                    onChange={handleGrossPriceChange}
+                    min={0}
+                    step={1000}
+                    thousandSeparator=" "
+                    disabled={viewMode}
+                    leftSection={<IconCurrencyBaht size={16} />}
+                    placeholder="0"
+                    size="lg"
+                    styles={{
+                      input: {
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        color: 'var(--mantine-color-green-4)',
+                        background: 'var(--mantine-color-dark-7)'
+                      }
+                    }}
+                  />
+                  {!isMobile && (
+                    <Text size="xs" c="dimmed" ta="center">
+                      {t('properties.pricing.editGrossHint')}
+                    </Text>
+                  )}
+                </Stack>
+              </Stack>
+            </Stack>
+          </Paper>
+        )}
+
+        {hasPrice && displayData && hasCommission && pricingMode === 'gross' && (
+          <Paper p="md" withBorder style={{ background: 'var(--mantine-color-dark-6)' }}>
+            <Stack gap="sm">
+              <Text size="sm" fw={600} c="dimmed">{t('properties.pricing.calculation')}</Text>
+              
+              <Stack gap="xs">
+                <Group justify="space-between">
+                  <Text size="sm" fw={700}>{t('properties.pricing.clientPriceGross')}</Text>
+                  <Text size="lg" fw={700}>{displayData.finalPrice.toLocaleString()} ฿</Text>
+                </Group>
+
+                {displayData.marginAmount > 0 && (
+                  <>
+                    <div style={{ 
+                      borderTop: '2px dashed var(--mantine-color-dark-4)', 
+                      marginTop: 4, 
+                      marginBottom: 4 
+                    }} />
+
                     <Group justify="space-between">
                       <Group gap="xs">
                         <IconArrowRight size={16} style={{ opacity: 0.5 }} />
-                        <Text size="sm" c="green">{t('properties.pricing.commissionAdd')}</Text>
+                        <Text size="sm" c="green">{t('properties.pricing.ourMargin')}</Text>
                       </Group>
                       <Text size="md" fw={600} c="green">
-                        +{displayData.marginAmount.toLocaleString()} ฿ ({displayData.marginPercentage.toFixed(2)}%)
+                        {displayData.marginAmount.toLocaleString()} ฿ ({displayData.marginPercentage.toFixed(2)}%)
                       </Text>
                     </Group>
-                  )}
-
-                  <div style={{ 
-                    borderTop: '2px dashed var(--mantine-color-dark-4)', 
-                    marginTop: 4, 
-                    marginBottom: 4 
-                  }} />
-
-                  <Stack gap="xs">
-                    <Text size="xs" c="dimmed">{t('properties.pricing.finalPriceClient')}</Text>
-                    <NumberInput
-                      value={editedGrossPrice !== undefined && editedGrossPrice !== null ? editedGrossPrice : displayData.finalPrice}
-                      onChange={handleGrossPriceChange}
-                      min={0}
-                      step={1000}
-                      thousandSeparator=" "
-                      disabled={viewMode}
-                      leftSection={<IconCurrencyBaht size={16} />}
-                      placeholder="0"
-                      size="lg"
-                      styles={{
-                        input: {
-                          fontSize: '20px',
-                          fontWeight: 700,
-                          color: 'var(--mantine-color-green-4)',
-                          background: 'var(--mantine-color-dark-7)'
-                        }
-                      }}
-                    />
-                    {!isMobile && (
-                      <Text size="xs" c="dimmed" ta="center">
-                        {t('properties.pricing.editGrossHint')}
-                      </Text>
-                    )}
-                  </Stack>
-                </Stack>
-              ) : (
-                <Stack gap="xs">
-                  <Group justify="space-between">
-                    <Text size="sm" fw={700}>{t('properties.pricing.clientPriceGross')}</Text>
-                    <Text size="lg" fw={700}>{displayData.finalPrice.toLocaleString()} ฿</Text>
-                  </Group>
-
-                  {displayData.marginAmount > 0 && (
-                    <>
-                      <div style={{ 
-                        borderTop: '2px dashed var(--mantine-color-dark-4)', 
-                        marginTop: 4, 
-                        marginBottom: 4 
-                      }} />
-
-                      <Group justify="space-between">
-                        <Group gap="xs">
-                          <IconArrowRight size={16} style={{ opacity: 0.5 }} />
-                          <Text size="sm" c="green">{t('properties.pricing.ourMargin')}</Text>
-                        </Group>
-                        <Text size="md" fw={600} c="green">
-                          {displayData.marginAmount.toLocaleString()} ฿ ({displayData.marginPercentage.toFixed(2)}%)
-                        </Text>
-                      </Group>
-                      
-                      <Group justify="space-between">
-                        <Text size="sm" c="dimmed">{t('properties.pricing.ownerPrice')}</Text>
-                        <Text size="md" fw={600}>{displayData.sourcePrice.toLocaleString()} ฿</Text>
-                      </Group>
-                    </>
-                  )}
-                </Stack>
-              )}
+                    
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">{t('properties.pricing.ownerPrice')}</Text>
+                      <Text size="md" fw={600}>{displayData.sourcePrice.toLocaleString()} ฿</Text>
+                    </Group>
+                  </>
+                )}
+              </Stack>
             </Stack>
           </Paper>
         )}

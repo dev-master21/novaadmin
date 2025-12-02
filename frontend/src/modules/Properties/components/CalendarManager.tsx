@@ -57,8 +57,45 @@ import { useTranslation } from 'react-i18next';
 import { notifications } from '@mantine/notifications';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { propertiesApi } from '@/api/properties.api';
+import { propertyOwnersApi } from '@/api/propertyOwners.api'; // ✅ ДОБАВЛЕНО
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
+
+const createApiAdapter = (isOwnerMode: boolean) => {
+  if (isOwnerMode) {
+    return {
+      getCalendar: (propertyId: number) => propertyOwnersApi.getPropertyCalendar(propertyId),
+      addBlockedPeriod: (propertyId: number, data: any) => propertyOwnersApi.addBlockedPeriod(propertyId, data),
+      removeBlockedDates: (propertyId: number, dates: string[]) => propertyOwnersApi.removeBlockedDates(propertyId, dates),
+      getICSInfo: (propertyId: number) => propertyOwnersApi.getICSInfo(propertyId),
+      getExternalCalendars: (propertyId: number) => propertyOwnersApi.getExternalCalendars(propertyId),
+      addExternalCalendar: (propertyId: number, data: any) => propertyOwnersApi.addExternalCalendar(propertyId, data),
+      removeExternalCalendar: (propertyId: number, calendarId: number, removeDates: boolean) => 
+        propertyOwnersApi.removeExternalCalendar(propertyId, calendarId, removeDates),
+      toggleExternalCalendar: (propertyId: number, calendarId: number, isEnabled: boolean) => 
+        propertyOwnersApi.toggleExternalCalendar(propertyId, calendarId, isEnabled),
+      analyzeExternalCalendars: (propertyId: number, calendarIds: number[]) => 
+        propertyOwnersApi.analyzeExternalCalendars(propertyId, calendarIds),
+      syncExternalCalendars: (propertyId: number) => propertyOwnersApi.syncExternalCalendars(propertyId),
+    };
+  } else {
+    return {
+      getCalendar: (propertyId: number) => propertiesApi.getCalendar(propertyId),
+      addBlockedPeriod: (propertyId: number, data: any) => propertiesApi.addBlockedPeriod(propertyId, data),
+      removeBlockedDates: (propertyId: number, dates: string[]) => propertiesApi.removeBlockedDates(propertyId, dates),
+      getICSInfo: (propertyId: number) => propertiesApi.getICSInfo(propertyId),
+      getExternalCalendars: (propertyId: number) => propertiesApi.getExternalCalendars(propertyId),
+      addExternalCalendar: (propertyId: number, data: any) => propertiesApi.addExternalCalendar(propertyId, data),
+      removeExternalCalendar: (propertyId: number, calendarId: number, removeDates: boolean) => 
+        propertiesApi.removeExternalCalendar(propertyId, calendarId, removeDates),
+      toggleExternalCalendar: (propertyId: number, calendarId: number, isEnabled: boolean) => 
+        propertiesApi.toggleExternalCalendar(propertyId, calendarId, isEnabled),
+      analyzeExternalCalendars: (propertyId: number, calendarIds: number[]) => 
+        propertiesApi.analyzeExternalCalendars(propertyId, calendarIds),
+      syncExternalCalendars: (propertyId: number) => propertiesApi.syncExternalCalendars(propertyId),
+    };
+  }
+};
 
 interface BlockedDate {
   blocked_date: string;
@@ -83,6 +120,7 @@ interface ExternalCalendar {
 interface CalendarManagerProps {
   propertyId: number;
   viewMode?: boolean;
+  isOwnerMode?: boolean; // ✅ ДОБАВЛЕНО
   initialBlockedDates?: Array<{
     blocked_date: string;
     reason: string;
@@ -93,19 +131,24 @@ interface CalendarManagerProps {
 const CalendarManager = ({ 
   propertyId, 
   viewMode = false,
+  isOwnerMode = false, // ✅ ДОБАВЛЕНО
   initialBlockedDates = [],
   onChange
 }: CalendarManagerProps) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
+  // ✅ ДОБАВЛЕНО: Выбор API в зависимости от режима
+  const api = createApiAdapter(isOwnerMode);
+
+
   // ✅ КРИТИЧНО: Refs для защиты от множественных запросов
   const isInitialMount = useRef(true);
   const hasLoadedData = useRef(false);
-  const isLoadingRef = useRef(false); // ✅ НОВОЕ: Защита от параллельных загрузок
+  const isLoadingRef = useRef(false);
   const initialDatesRef = useRef(initialBlockedDates);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const propertyIdRef = useRef(propertyId); // ✅ НОВОЕ: Отслеживание изменения propertyId
+  const propertyIdRef = useRef(propertyId);
 
   // Состояния
   const [tempBlockedDates, setTempBlockedDates] = useState<BlockedDate[]>(initialBlockedDates || []);
@@ -167,7 +210,6 @@ const CalendarManager = ({
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
       }
-      // Сбрасываем флаги
       isLoadingRef.current = false;
       hasLoadedData.current = false;
     };
@@ -204,23 +246,22 @@ const CalendarManager = ({
     if (isInitialMount.current) {
       isInitialMount.current = false;
       
-      console.log('📅 CalendarManager initialized', { propertyId, isCreatingMode });
+      console.log('📅 CalendarManager initialized', { propertyId, isCreatingMode, isOwnerMode }); // ✅ ОБНОВЛЕНО
       
       if (isCreatingMode) {
         if (initialDatesRef.current.length > 0) {
           console.log('📝 Setting initial blocked dates:', initialDatesRef.current.length);
           setTempBlockedDates(initialDatesRef.current);
-          loadCalendarData(); // Только локальная загрузка для режима создания
+          loadCalendarData();
         }
       } else {
-        loadAllData(); // Загружаем все данные один раз
+        loadAllData();
       }
     }
   }, []);
 
   // ✅ ОПТИМИЗИРОВАНО: Последовательная загрузка с защитой от повторных вызовов
   const loadAllData = async () => {
-    // ✅ КРИТИЧНО: Защита от параллельных загрузок
     if (hasLoadedData.current || isLoadingRef.current) {
       console.log('⏭️ Data already loaded or loading, skipping');
       return;
@@ -235,7 +276,6 @@ const CalendarManager = ({
     try {
       console.log('🔄 Loading calendar data sequentially...');
       
-      // 1. Загружаем данные календаря
       await loadCalendarData();
       
       if (abortControllerRef.current.signal.aborted) {
@@ -245,7 +285,6 @@ const CalendarManager = ({
       
       await new Promise(resolve => setTimeout(resolve, 150));
       
-      // 2. Загружаем ICS информацию
       await loadICSInfo();
       
       if (abortControllerRef.current.signal.aborted) {
@@ -255,7 +294,6 @@ const CalendarManager = ({
       
       await new Promise(resolve => setTimeout(resolve, 150));
       
-      // 3. Загружаем внешние календари
       await loadExternalCalendars();
       
       console.log('✅ All calendar data loaded successfully');
@@ -283,20 +321,41 @@ const CalendarManager = ({
       return;
     }
 
-    try {
-      const { data } = await propertiesApi.getCalendar(propertyId);
-      const blocked = data.data.blocked_dates || [];
-      
-      setBlockedDates(blocked);
+try {
+  const { data } = await api.getCalendar(propertyId);
+  
+  // ✅ ОТЛАДКА: Смотрим структуру ответа
+  console.log('📦 API Response:', data);
+  console.log('📦 Raw blocked dates:', data.data);
+  
+  const blocked = data.data.blocked_dates || [];
+  
+  // ✅ ОТЛАДКА: Смотрим массив дат
+  console.log('📅 Blocked dates array:', blocked);
+  console.log('📅 First blocked date:', blocked[0]);
+  
+  setBlockedDates(blocked);
 
-      const blockedMap = new Map<string, BlockedDate>();
-      blocked.forEach((item: BlockedDate) => {
-        blockedMap.set(item.blocked_date, item);
-      });
-      
-      setBlockedDatesMap(blockedMap);
-      console.log('📅 Calendar data loaded:', blocked.length, 'dates');
-    } catch (error: any) {
+  const blockedMap = new Map<string, BlockedDate>();
+  blocked.forEach((item: BlockedDate) => {
+    // ✅ НОРМАЛИЗАЦИЯ: Убираем время, оставляем только дату
+    const normalizedDate = item.blocked_date.split('T')[0]; // '2025-12-03T17:00:00.000Z' → '2025-12-03'
+    
+    blockedMap.set(normalizedDate, {
+      ...item,
+      blocked_date: normalizedDate // Сохраняем нормализованную дату
+    });
+    
+    console.log(`  📍 Added to map: ${normalizedDate}`, item);
+  });
+  
+  setBlockedDatesMap(blockedMap);
+  
+  // ✅ ОТЛАДКА: Итоговая карта
+  console.log('📅 Calendar data loaded:', blocked.length, 'dates');
+  console.log('🗺️ Blocked dates map size:', blockedMap.size);
+  console.log('🗺️ Map contents:', Array.from(blockedMap.entries()));
+} catch (error: any) {
       if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
         return;
       }
@@ -312,7 +371,7 @@ const CalendarManager = ({
 
   const loadICSInfo = async () => {
     try {
-      const { data } = await propertiesApi.getICSInfo(propertyId);
+      const { data } = await api.getICSInfo(propertyId); // ✅ ИЗМЕНЕНО
       setIcsInfo(data.data);
       console.log('ℹ️ ICS info loaded');
     } catch (error: any) {
@@ -325,7 +384,7 @@ const CalendarManager = ({
 
   const loadExternalCalendars = async () => {
     try {
-      const { data } = await propertiesApi.getExternalCalendars(propertyId);
+      const { data } = await api.getExternalCalendars(propertyId); // ✅ ИЗМЕНЕНО
       setExternalCalendars(data.data || []);
       console.log('📆 External calendars loaded:', data.data?.length || 0);
     } catch (error: any) {
@@ -336,7 +395,7 @@ const CalendarManager = ({
     }
   };
 
-  // ✅ УПРОЩЕНО: Перезагрузка только календаря (без лишних запросов)
+  // ✅ УПРОЩЕНО: Перезагрузка только календаря
   const reloadCalendarData = async () => {
     if (isCreatingMode) {
       await loadCalendarData();
@@ -347,8 +406,8 @@ const CalendarManager = ({
     
     try {
       await loadCalendarData();
-      await new Promise(resolve => setTimeout(resolve, 200)); // Небольшая задержка
-      await loadICSInfo(); // ✅ ДОБАВЛЕНО: Обновляем ICS информацию
+      await new Promise(resolve => setTimeout(resolve, 200));
+      await loadICSInfo();
       console.log('✅ Calendar data and ICS info reloaded');
     } catch (error) {
       console.error('❌ Error reloading calendar data:', error);
@@ -486,18 +545,17 @@ const CalendarManager = ({
         setCalendarSelectionMode(false);
         setReason('');
         
-        // ✅ ОПТИМИЗИРОВАНО: Только локальная перезагрузка без запросов к серверу
         await loadCalendarData();
         return;
       }
 
       try {
         if (forceAdd && conflicts.length > 0) {
-          await propertiesApi.removeBlockedDates(propertyId, conflicts);
+          await api.removeBlockedDates(propertyId, conflicts); // ✅ ИЗМЕНЕНО
         }
 
         for (const date of selectedCalendarDates) {
-          await propertiesApi.addBlockedPeriod(propertyId, {
+          await api.addBlockedPeriod(propertyId, { // ✅ ИЗМЕНЕНО
             start_date: date,
             end_date: date,
             reason: reason || undefined
@@ -518,7 +576,6 @@ const CalendarManager = ({
         setCalendarSelectionMode(false);
         setReason('');
         
-        // ✅ ОПТИМИЗИРОВАНО: Только календарь, без ICS и внешних календарей
         await reloadCalendarData();
       } catch (error: any) {
         notifications.show({
@@ -579,17 +636,16 @@ const CalendarManager = ({
         setCalendarSelectionMode(false);
         setReason('');
         
-        // ✅ ОПТИМИЗИРОВАНО: Только локальная перезагрузка
         await loadCalendarData();
         return;
       }
 
       try {
         if (forceAdd && conflicts.length > 0) {
-          await propertiesApi.removeBlockedDates(propertyId, conflicts);
+          await api.removeBlockedDates(propertyId, conflicts); // ✅ ИЗМЕНЕНО
         }
 
-        await propertiesApi.addBlockedPeriod(propertyId, {
+        await api.addBlockedPeriod(propertyId, { // ✅ ИЗМЕНЕНО
           start_date: start.format('YYYY-MM-DD'),
           end_date: end.format('YYYY-MM-DD'),
           reason: reason || undefined
@@ -610,7 +666,6 @@ const CalendarManager = ({
         setCalendarSelectionMode(false);
         setReason('');
         
-        // ✅ ОПТИМИЗИРОВАНО: Только календарь
         await reloadCalendarData();
       } catch (error: any) {
         notifications.show({
@@ -639,20 +694,18 @@ const CalendarManager = ({
         color: 'green',
         icon: <IconCheck size={18} />
       });
-      // ✅ ОПТИМИЗИРОВАНО: Только локальная перезагрузка
       await loadCalendarData();
       return;
     }
 
     try {
-      await propertiesApi.removeBlockedDates(propertyId, dates);
+      await api.removeBlockedDates(propertyId, dates); // ✅ ИЗМЕНЕНО
       notifications.show({
         title: t('common.success'),
         message: t('calendarManager.datesUnblocked'),
         color: 'green',
         icon: <IconCheck size={18} />
       });
-      // ✅ ОПТИМИЗИРОВАНО: Только календарь
       await reloadCalendarData();
     } catch (error: any) {
       notifications.show({
@@ -691,7 +744,7 @@ const CalendarManager = ({
     }
 
     try {
-      await propertiesApi.addExternalCalendar(propertyId, {
+      await api.addExternalCalendar(propertyId, { // ✅ ИЗМЕНЕНО
         calendar_name: calendarName,
         ics_url: icsUrl
       });
@@ -704,7 +757,6 @@ const CalendarManager = ({
       });
       
       closeExternalCalendarModal();
-      // ✅ ОПТИМИЗИРОВАНО: Только внешние календари
       await loadExternalCalendars();
     } catch (error: any) {
       notifications.show({
@@ -718,7 +770,7 @@ const CalendarManager = ({
 
   const handleRemoveExternalCalendar = async (calendarId: number, removeDates: boolean) => {
     try {
-      await propertiesApi.removeExternalCalendar(propertyId, calendarId, removeDates);
+      await api.removeExternalCalendar(propertyId, calendarId, removeDates); // ✅ ИЗМЕНЕНО
       notifications.show({
         title: t('common.success'),
         message: t('calendarManager.calendarRemoved'),
@@ -728,7 +780,6 @@ const CalendarManager = ({
       closeDeleteCalendarModal();
       setCalendarToDelete(null);
       
-      // ✅ ОПТИМИЗИРОВАНО: Последовательная загрузка с задержками
       await loadExternalCalendars();
       await new Promise(resolve => setTimeout(resolve, 200));
       
@@ -749,7 +800,7 @@ const CalendarManager = ({
 
   const handleToggleExternalCalendar = async (calendarId: number, isEnabled: boolean) => {
     try {
-      await propertiesApi.toggleExternalCalendar(propertyId, calendarId, isEnabled);
+      await api.toggleExternalCalendar(propertyId, calendarId, isEnabled); // ✅ ИЗМЕНЕНО
       notifications.show({
         title: t('common.success'),
         message: t('calendarManager.syncToggled', { 
@@ -758,7 +809,6 @@ const CalendarManager = ({
         color: 'green',
         icon: <IconCheck size={18} />
       });
-      // ✅ ОПТИМИЗИРОВАНО: Только внешние календари
       await loadExternalCalendars();
     } catch (error: any) {
       notifications.show({
@@ -783,7 +833,7 @@ const CalendarManager = ({
     setAnalyzingConflicts(true);
     try {
       const calendarIds = externalCalendars.map(c => c.id);
-      const { data } = await propertiesApi.analyzeExternalCalendars(propertyId, calendarIds);
+      const { data } = await api.analyzeExternalCalendars(propertyId, calendarIds); // ✅ ИЗМЕНЕНО
       
       setAnalysisResult(data.data);
       openAnalysisModal();
@@ -817,7 +867,7 @@ const CalendarManager = ({
   const handleSyncCalendars = async () => {
     setSyncing(true);
     try {
-      const { data } = await propertiesApi.syncExternalCalendars(propertyId);
+      const { data } = await api.syncExternalCalendars(propertyId); // ✅ ИЗМЕНЕНО
       
       if (data.success) {
         notifications.show({
@@ -837,7 +887,6 @@ const CalendarManager = ({
         });
       }
 
-      // ✅ ОПТИМИЗИРОВАНО: Последовательная загрузка с задержками
       await loadExternalCalendars();
       await new Promise(resolve => setTimeout(resolve, 200));
       
@@ -920,9 +969,18 @@ const CalendarManager = ({
     return calendar;
   };
 
-  const getDateStatus = (date: dayjs.Dayjs) => {
-    const dateStr = date.format('YYYY-MM-DD');
-    const blockedInfo = blockedDatesMap.get(dateStr);
+const getDateStatus = (date: dayjs.Dayjs) => {
+  const dateStr = date.format('YYYY-MM-DD');
+  const blockedInfo = blockedDatesMap.get(dateStr);
+  
+  // ✅ ОТЛАДКА: Проверяем поиск в карте (только для первых 3 дат текущего месяца)
+  if (date.date() <= 3 && date.month() === selectedMonth) {
+    console.log(`🔍 Checking date ${dateStr}:`, {
+      found: !!blockedInfo,
+      data: blockedInfo,
+      mapSize: blockedDatesMap.size
+    });
+  }
     
     if (!blockedInfo) {
       return { blocked: false, checkIn: false, checkOut: false };
@@ -1612,8 +1670,7 @@ const CalendarManager = ({
         </Card>
       )}
 
-      {/* Модальные окна остаются без изменений... */}
-      {/* (Все модальные окна из оригинального кода) */}
+      {/* МОДАЛЬНЫЕ ОКНА - без изменений, копируем все как есть */}
       
       {/* Модальное окно выбора типа добавления */}
       <Modal
@@ -1684,10 +1741,7 @@ const CalendarManager = ({
         </Stack>
       </Modal>
 
-      {/* Остальные модальные окна без изменений... */}
-      {/* (Копируем все остальные модальные окна из оригинального кода) */}
-
-{/* Модальное окно добавления блокировки */}
+      {/* Модальное окно добавления блокировки */}
       <Modal
         opened={blockModalOpened}
         onClose={() => {

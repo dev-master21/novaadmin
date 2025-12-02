@@ -61,14 +61,7 @@ const DepositForm = ({
               <Stack gap="xs">
                 <Radio
                   value="one_month"
-                  label={
-                    <Group gap="xs">
-                      <Text size="sm">{t('depositForm.oneMonth')}</Text>
-                      <Badge size="sm" variant="light" color="cyan">
-                        {t('depositForm.recommended')}
-                      </Badge>
-                    </Group>
-                  }
+                  label={<Text size="sm">{t('depositForm.oneMonth')}</Text>}
                   disabled={viewMode}
                   styles={{
                     radio: { cursor: viewMode ? 'not-allowed' : 'pointer' }
@@ -84,7 +77,9 @@ const DepositForm = ({
                 />
                 <Radio
                   value="custom"
-                  label={<Text size="sm">{t('depositForm.custom')}</Text>}
+                  label={<Group gap="xs"> <Text size="sm">{t('depositForm.custom')}</Text>                      <Badge size="sm" variant="light" color="cyan">
+                        {t('depositForm.recommended')}
+                      </Badge> </Group> }
                   disabled={viewMode}
                   styles={{
                     radio: { cursor: viewMode ? 'not-allowed' : 'pointer' }

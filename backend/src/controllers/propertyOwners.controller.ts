@@ -1000,7 +1000,7 @@ async getOwnerProperty(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    // Получаем объект с проверкой владельца
+    // ✅ ИСПРАВЛЕНО: Получаем объект со ВСЕМИ полями для цен
     const property = await db.queryOne<any>(
       `SELECT 
         p.id,
@@ -1009,18 +1009,34 @@ async getOwnerProperty(req: AuthRequest, res: Response): Promise<void> {
         p.deal_type,
         p.bedrooms,
         p.bathrooms,
-        p.sale_price,
-        p.year_price,
-        p.deposit_type,
-        p.deposit_amount,
-        p.electricity_rate,
-        p.water_rate,
-        p.sale_commission_type,
-        p.rent_commission_type,
         p.region,
         p.address,
         p.indoor_area,
-        p.outdoor_area
+        p.outdoor_area,
+        
+        -- Sale Price Fields
+        p.sale_price,
+        p.sale_pricing_mode,
+        p.sale_commission_type_new,
+        p.sale_commission_value_new,
+        p.sale_source_price,
+        p.sale_margin_amount,
+        p.sale_margin_percentage,
+        
+        -- Year Price Fields
+        p.year_price,
+        p.year_pricing_mode,
+        p.year_commission_type,
+        p.year_commission_value,
+        p.year_source_price,
+        p.year_margin_amount,
+        p.year_margin_percentage,
+        
+        -- Deposit & Utilities
+        p.deposit_type,
+        p.deposit_amount,
+        p.electricity_rate,
+        p.water_rate
       FROM properties p
       WHERE p.id = ? AND p.owner_name = ? AND p.deleted_at IS NULL`,
       [propertyId, ownerName]
@@ -1045,16 +1061,23 @@ async getOwnerProperty(req: AuthRequest, res: Response): Promise<void> {
                   Array.isArray(photosResult[0]) ? photosResult[0] : 
                   (photosResult as any).rows || [];
 
-    // Получаем цены
+    // ✅ ИСПРАВЛЕНО: Получаем сезонные цены со ВСЕМИ полями
     const seasonalPricing: any = await db.query(
       `SELECT 
+        id,
         season_type,
         start_date_recurring,
         end_date_recurring,
         price_per_night,
-        pricing_mode,
+        source_price_per_night,
+        minimum_nights,
         pricing_type,
-        minimum_nights
+        pricing_mode,
+        commission_type,
+        commission_value,
+        source_price,
+        margin_amount,
+        margin_percentage
        FROM property_pricing 
        WHERE property_id = ?
        ORDER BY 
@@ -1070,12 +1093,19 @@ async getOwnerProperty(req: AuthRequest, res: Response): Promise<void> {
       [property.id]
     );
 
+    // ✅ ИСПРАВЛЕНО: Получаем месячные цены с правильными полями
     const monthlyPricing: any = await db.query(
       `SELECT 
+        id,
         month_number,
         price_per_month,
+        minimum_days,
         pricing_mode,
-        minimum_days
+        commission_type,
+        commission_value,
+        source_price,
+        margin_amount,
+        margin_percentage
        FROM property_pricing_monthly 
        WHERE property_id = ?
        ORDER BY month_number`,
@@ -1331,25 +1361,26 @@ async updatePropertyMonthlyPricing(req: AuthRequest, res: Response): Promise<voi
     // Удаляем старые месячные цены
     await db.query('DELETE FROM property_pricing_monthly WHERE property_id = ?', [propertyId]);
 
-    // Добавляем новые
+    // ✅ ИСПРАВЛЕНО: Добавляем только месяцы с ценой
     for (const pricing of monthlyPricing) {
       if (pricing.price_per_month && pricing.price_per_month > 0) {
         await db.query(
           `INSERT INTO property_pricing_monthly 
-           (property_id, month_number, price_per_month, pricing_mode, 
-            commission_type, commission_value, source_price, margin_amount, margin_percentage, minimum_days)
+           (property_id, month_number, price_per_month, minimum_days,
+            pricing_mode, commission_type, commission_value,
+            source_price, margin_amount, margin_percentage)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             propertyId,
-            pricing.month,
+            pricing.month_number,
             pricing.price_per_month,
+            pricing.minimum_days || 28,
             pricing.pricing_mode || 'net',
-            pricing.commission_type,
-            pricing.commission_value,
-            pricing.source_price,
-            pricing.margin_amount,
-            pricing.margin_percentage,
-            pricing.minimum_days || 28
+            pricing.commission_type || null,
+            pricing.commission_value || null,
+            pricing.source_price || null,  // ✅ ИСПРАВЛЕНО: правильное название
+            pricing.margin_amount || null,
+            pricing.margin_percentage || null
           ]
         );
       }
@@ -1400,9 +1431,15 @@ async getPropertyCalendar(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    // Получаем заблокированные даты
+    // ✅ КРИТИЧНО: Форматируем даты как YYYY-MM-DD при возврате
     const blockedDates = await db.query(
-      `SELECT id, blocked_date, reason, is_check_in, is_check_out, source_calendar_id
+      `SELECT 
+        id, 
+        DATE_FORMAT(blocked_date, '%Y-%m-%d') as blocked_date,
+        reason, 
+        is_check_in, 
+        is_check_out, 
+        source_calendar_id
        FROM property_calendar
        WHERE property_id = ?
        ORDER BY blocked_date ASC`,
@@ -1477,19 +1514,31 @@ async updatePropertyCalendar(req: AuthRequest, res: Response): Promise<void> {
 
     const { dates_to_add, dates_to_remove } = req.body;
 
+    // ✅ ФУНКЦИЯ НОРМАЛИЗАЦИИ ДАТ
+    const normalizeDate = (date: string): string => {
+      // Если дата с временем (содержит 'T'), берём только часть до 'T'
+      return date.includes('T') ? date.split('T')[0] : date;
+    };
+
     // Удаляем даты
     if (dates_to_remove && Array.isArray(dates_to_remove) && dates_to_remove.length > 0) {
-      const placeholders = dates_to_remove.map(() => '?').join(',');
+      // ✅ НОРМАЛИЗУЕМ ДАТЫ ПЕРЕД УДАЛЕНИЕМ
+      const normalizedDatesToRemove = dates_to_remove.map(normalizeDate);
+      
+      const placeholders = normalizedDatesToRemove.map(() => '?').join(',');
       await db.query(
         `DELETE FROM property_calendar 
          WHERE property_id = ? AND blocked_date IN (${placeholders})`,
-        [propertyId, ...dates_to_remove]
+        [propertyId, ...normalizedDatesToRemove]
       );
     }
 
     // Добавляем новые даты
     if (dates_to_add && Array.isArray(dates_to_add) && dates_to_add.length > 0) {
       for (const dateInfo of dates_to_add) {
+        // ✅ НОРМАЛИЗУЕМ ДАТУ ПЕРЕД ДОБАВЛЕНИЕМ
+        const normalizedDate = normalizeDate(dateInfo.date);
+        
         await db.query(
           `INSERT INTO property_calendar 
            (property_id, blocked_date, reason, is_check_in, is_check_out)
@@ -1500,7 +1549,7 @@ async updatePropertyCalendar(req: AuthRequest, res: Response): Promise<void> {
            is_check_out = VALUES(is_check_out)`,
           [
             propertyId,
-            dateInfo.date,
+            normalizedDate, // ✅ ИСПОЛЬЗУЕМ НОРМАЛИЗОВАННУЮ ДАТУ
             dateInfo.reason || 'Заблокировано владельцем',
             dateInfo.is_check_in ? 1 : 0,
             dateInfo.is_check_out ? 1 : 0
@@ -1520,6 +1569,905 @@ async updatePropertyCalendar(req: AuthRequest, res: Response): Promise<void> {
     res.status(500).json({
       success: false,
       message: 'Ошибка обновления календаря'
+    });
+  }
+}
+/**
+ * Добавить заблокированный период (для владельцев с правами)
+ * POST /api/property-owners/property/:id/calendar/block
+ */
+async addBlockedPeriod(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+  
+  try {
+    const propertyId = parseInt(req.params.id);
+    const ownerName = (req as any).owner?.owner_name;
+    const canEditCalendar = (req as any).owner?.can_edit_calendar;
+
+    if (!ownerName) {
+      res.status(401).json({
+        success: false,
+        message: 'Не авторизован'
+      });
+      return;
+    }
+
+    if (!canEditCalendar) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет разрешения на редактирование календаря'
+      });
+      return;
+    }
+
+    const propertyResult: any = await connection.query(
+      'SELECT id, property_name FROM properties WHERE id = ? AND owner_name = ? AND deleted_at IS NULL',
+      [propertyId, ownerName]
+    );
+    
+    const properties = Array.isArray(propertyResult[0]) 
+      ? propertyResult[0] 
+      : propertyResult;
+    
+    const property = properties[0];
+
+    if (!property) {
+      await connection.rollback();
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден или у вас нет доступа к нему'
+      });
+      return;
+    }
+
+    const { start_date, end_date, reason } = req.body;
+
+    // ✅ ИСПРАВЛЕНО: Генерация дат БЕЗ timezone, используя полдень UTC
+    function addDays(dateStr: string, days: number): string {
+      const date = new Date(dateStr + 'T12:00:00.000Z');
+      date.setUTCDate(date.getUTCDate() + days);
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function daysBetween(startDateStr: string, endDateStr: string): number {
+      const start = new Date(startDateStr + 'T12:00:00.000Z');
+      const end = new Date(endDateStr + 'T12:00:00.000Z');
+      return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    const dates: string[] = [];
+    const dayCount = daysBetween(start_date, end_date);
+
+    for (let i = 0; i <= dayCount; i++) {
+      dates.push(addDays(start_date, i));
+    }
+
+    if (dates.length === 0) {
+      await connection.rollback();
+      res.status(400).json({
+        success: false,
+        message: 'Некорректный период дат'
+      });
+      return;
+    }
+
+    console.log(`📅 Adding ${dates.length} dates for property ${propertyId}:`, dates);
+
+    // Определяем первую и последнюю даты для пометки check-in/check-out
+    const isCheckIn = (dateStr: string) => dateStr === dates[0];
+    const isCheckOut = (dateStr: string) => dateStr === dates[dates.length - 1];
+
+    for (const date of dates) {
+      await connection.query(
+        `INSERT INTO property_calendar 
+         (property_id, blocked_date, reason, source_calendar_id, is_check_in, is_check_out)
+         VALUES (?, ?, ?, NULL, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           reason = VALUES(reason),
+           source_calendar_id = NULL,
+           is_check_in = VALUES(is_check_in),
+           is_check_out = VALUES(is_check_out)`,
+        [propertyId, date, reason || null, isCheckIn(date) ? 1 : 0, isCheckOut(date) ? 1 : 0]
+      );
+    }
+
+    // Обновляем ICS файл
+    const allBlockedDatesResult: any = await connection.query(
+      'SELECT blocked_date, reason FROM property_calendar WHERE property_id = ? ORDER BY blocked_date',
+      [propertyId]
+    );
+
+    const allBlockedDates = Array.isArray(allBlockedDatesResult[0]) 
+      ? allBlockedDatesResult[0] 
+      : [];
+
+    const icsGeneratorService = (await import('../services/icsGenerator.service')).default;
+    const icsData = await icsGeneratorService.generateICSFile(
+      property.id,
+      property.property_name || null,
+      allBlockedDates
+    );
+
+    await connection.query(
+      `INSERT INTO property_ics (property_id, ics_url, ics_filename, ics_file_path, total_blocked_days)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE 
+         ics_url = VALUES(ics_url),
+         ics_filename = VALUES(ics_filename),
+         ics_file_path = VALUES(ics_file_path),
+         total_blocked_days = VALUES(total_blocked_days),
+         updated_at = NOW()`,
+      [propertyId, icsData.url, icsData.filename, icsData.filepath, allBlockedDates.length]
+    );
+
+    await connection.commit();
+
+    logger.info(`Owner ${ownerName} added blocked period for property ${propertyId}: ${start_date} to ${end_date}`);
+
+    res.json({
+      success: true,
+      message: `Заблокировано ${dates.length} дней`,
+      data: {
+        blocked_dates: dates,
+        ics_url: icsData.url
+      }
+    });
+  } catch (error) {
+    await connection.rollback();
+    logger.error('Owner add blocked period error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка добавления периода занятости'
+    });
+  }
+}
+
+/**
+ * Удалить заблокированные даты (для владельцев с правами)
+ * DELETE /api/property-owners/property/:id/calendar/block
+ */
+async removeBlockedDates(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+  
+  try {
+    const propertyId = parseInt(req.params.id);
+    const ownerName = (req as any).owner?.owner_name;
+    const canEditCalendar = (req as any).owner?.can_edit_calendar;
+
+    if (!ownerName) {
+      res.status(401).json({
+        success: false,
+        message: 'Не авторизован'
+      });
+      return;
+    }
+
+    if (!canEditCalendar) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет разрешения на редактирование календаря'
+      });
+      return;
+    }
+
+    const { dates } = req.body;
+
+    if (!dates || !Array.isArray(dates) || dates.length === 0) {
+      await connection.rollback();
+      res.status(400).json({
+        success: false,
+        message: 'Необходимо указать даты для удаления'
+      });
+      return;
+    }
+
+    const propertyResult: any = await connection.query(
+      'SELECT id, property_name FROM properties WHERE id = ? AND owner_name = ? AND deleted_at IS NULL',
+      [propertyId, ownerName]
+    );
+
+    const properties = Array.isArray(propertyResult[0]) 
+      ? propertyResult[0] 
+      : propertyResult;
+
+    const property = properties[0];
+
+    if (!property) {
+      await connection.rollback();
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден или у вас нет доступа к нему'
+      });
+      return;
+    }
+
+    // ✅ КРИТИЧНО: Нормализуем даты перед удалением (убираем время)
+    const normalizedDates = dates.map((date: string) => {
+      if (typeof date !== 'string') return String(date);
+      return date.includes('T') ? date.split('T')[0] : date;
+    });
+
+    console.log('🗑️ Owner removing dates:', { 
+      propertyId,
+      original: dates, 
+      normalized: normalizedDates 
+    });
+
+    // Удаляем указанные даты
+    const placeholders = normalizedDates.map(() => '?').join(',');
+    await connection.query(
+      `DELETE FROM property_calendar 
+       WHERE property_id = ? AND blocked_date IN (${placeholders})`,
+      [propertyId, ...normalizedDates]
+    );
+
+    // Получаем оставшиеся заблокированные даты
+    const remainingDates = await connection.query<any>(
+      'SELECT blocked_date, reason FROM property_calendar WHERE property_id = ? ORDER BY blocked_date',
+      [propertyId]
+    );
+
+    const remainingDatesArray = Array.isArray(remainingDates[0]) 
+      ? remainingDates[0] 
+      : remainingDates;
+
+    // Обновляем ICS файл
+    const icsGeneratorService = (await import('../services/icsGenerator.service')).default;
+    const icsData = await icsGeneratorService.generateICSFile(
+      property.id,
+      property.property_name || null,
+      remainingDatesArray
+    );
+
+    await connection.query(
+      `INSERT INTO property_ics (property_id, ics_url, ics_filename, ics_file_path, total_blocked_days)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE 
+         ics_url = VALUES(ics_url),
+         ics_filename = VALUES(ics_filename),
+         ics_file_path = VALUES(ics_file_path),
+         total_blocked_days = VALUES(total_blocked_days),
+         updated_at = NOW()`,
+      [propertyId, icsData.url, icsData.filename, icsData.filepath, remainingDatesArray.length]
+    );
+
+    await connection.commit();
+
+    logger.info(`Owner ${ownerName} removed ${dates.length} blocked dates for property ${propertyId}`);
+
+    res.json({
+      success: true,
+      message: `Удалено ${dates.length} заблокированных дат`
+    });
+  } catch (error) {
+    await connection.rollback();
+    logger.error('Owner remove blocked dates error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка удаления заблокированных дат'
+    });
+  }
+}
+/**
+ * Получить информацию об ICS файле (для владельцев)
+ * GET /api/property-owners/property/:id/ics
+ */
+async getICSInfo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const propertyId = parseInt(req.params.id);
+    const ownerName = (req as any).owner?.owner_name;
+
+    if (!ownerName) {
+      res.status(401).json({
+        success: false,
+        message: 'Не авторизован'
+      });
+      return;
+    }
+
+    // Проверяем что объект принадлежит владельцу
+    const property = await db.queryOne<any>(
+      'SELECT id FROM properties WHERE id = ? AND owner_name = ? AND deleted_at IS NULL',
+      [propertyId, ownerName]
+    );
+
+    if (!property) {
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден или у вас нет доступа к нему'
+      });
+      return;
+    }
+
+    const icsInfo = await db.queryOne<any>(
+      'SELECT * FROM property_ics WHERE property_id = ?',
+      [propertyId]
+    );
+
+    res.json({
+      success: true,
+      data: icsInfo || null
+    });
+  } catch (error) {
+    logger.error('Owner get ICS info error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения информации о ICS файле'
+    });
+  }
+}
+
+/**
+ * Получить список внешних календарей (для владельцев)
+ * GET /api/property-owners/property/:id/external-calendars
+ */
+async getExternalCalendars(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const propertyId = parseInt(req.params.id);
+    const ownerName = (req as any).owner?.owner_name;
+
+    if (!ownerName) {
+      res.status(401).json({
+        success: false,
+        message: 'Не авторизован'
+      });
+      return;
+    }
+
+    // Проверяем что объект принадлежит владельцу
+    const property = await db.queryOne<any>(
+      'SELECT id FROM properties WHERE id = ? AND owner_name = ? AND deleted_at IS NULL',
+      [propertyId, ownerName]
+    );
+
+    if (!property) {
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден или у вас нет доступа к нему'
+      });
+      return;
+    }
+
+    const calendars = await db.query(
+      `SELECT id, property_id, calendar_name, ics_url, is_enabled, 
+              last_sync_at, sync_error, total_events, created_at, updated_at
+       FROM property_external_calendars
+       WHERE property_id = ?
+       ORDER BY created_at DESC`,
+      [propertyId]
+    );
+
+    res.json({
+      success: true,
+      data: calendars
+    });
+  } catch (error) {
+    logger.error('Owner get external calendars error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения списка календарей'
+    });
+  }
+}
+
+/**
+ * Добавить внешний календарь (для владельцев с правами)
+ * POST /api/property-owners/property/:id/external-calendars
+ */
+async addExternalCalendar(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const propertyId = parseInt(req.params.id);
+    const ownerName = (req as any).owner?.owner_name;
+    const canEditCalendar = (req as any).owner?.can_edit_calendar;
+
+    if (!ownerName) {
+      res.status(401).json({
+        success: false,
+        message: 'Не авторизован'
+      });
+      return;
+    }
+
+    if (!canEditCalendar) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет разрешения на редактирование календаря'
+      });
+      return;
+    }
+
+    const { calendar_name, ics_url } = req.body;
+
+    if (!calendar_name || !ics_url) {
+      res.status(400).json({
+        success: false,
+        message: 'Необходимо указать название и URL календаря'
+      });
+      return;
+    }
+
+    // Проверяем что объект принадлежит владельцу
+    const property = await db.queryOne<any>(
+      'SELECT id FROM properties WHERE id = ? AND owner_name = ? AND deleted_at IS NULL',
+      [propertyId, ownerName]
+    );
+
+    if (!property) {
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден или у вас нет доступа к нему'
+      });
+      return;
+    }
+
+    // Валидируем .ics URL
+    const externalCalendarSyncService = (await import('../services/externalCalendarSync.service')).default;
+    const validation = await externalCalendarSyncService.validateIcsUrl(ics_url);
+    
+    if (!validation.valid) {
+      res.status(400).json({
+        success: false,
+        message: validation.error || 'Невалидный .ics файл'
+      });
+      return;
+    }
+
+    // Добавляем календарь
+    const result: any = await db.query(
+      `INSERT INTO property_external_calendars (property_id, calendar_name, ics_url)
+       VALUES (?, ?, ?)`,
+      [propertyId, calendar_name, ics_url]
+    );
+
+    const calendarId = Array.isArray(result) ? result[0]?.insertId : result?.insertId;
+
+    logger.info(`Owner ${ownerName} added external calendar ${calendarId} for property ${propertyId}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Календарь успешно добавлен',
+      data: {
+        calendar_id: calendarId,
+        events_count: validation.eventsCount
+      }
+    });
+  } catch (error) {
+    logger.error('Owner add external calendar error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка добавления календаря'
+    });
+  }
+}
+
+/**
+ * Удалить внешний календарь (для владельцев с правами)
+ * DELETE /api/property-owners/property/:id/external-calendars/:calendarId
+ */
+async removeExternalCalendar(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+
+  try {
+    const propertyId = parseInt(req.params.id);
+    const calendarId = parseInt(req.params.calendarId);
+    const ownerName = (req as any).owner?.owner_name;
+    const canEditCalendar = (req as any).owner?.can_edit_calendar;
+
+    if (!ownerName) {
+      res.status(401).json({
+        success: false,
+        message: 'Не авторизован'
+      });
+      return;
+    }
+
+    if (!canEditCalendar) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет разрешения на редактирование календаря'
+      });
+      return;
+    }
+
+    const { remove_dates } = req.body;
+
+    // Проверяем что объект принадлежит владельцу
+const propertyResult: any = await connection.query(
+  'SELECT id, property_name FROM properties WHERE id = ? AND owner_name = ? AND deleted_at IS NULL',
+  [propertyId, ownerName]
+);
+
+const properties = Array.isArray(propertyResult[0]) 
+  ? propertyResult[0] 
+  : propertyResult;
+
+const property = properties[0];
+
+    if (!property) {
+      await connection.rollback();
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден или у вас нет доступа к нему'
+      });
+      return;
+    }
+
+    const calendarResult: any = await connection.query(
+      'SELECT id, property_id FROM property_external_calendars WHERE id = ? AND property_id = ?',
+      [calendarId, propertyId]
+    );
+
+    const calendars = Array.isArray(calendarResult[0]) ? calendarResult[0] : calendarResult;
+    const calendar = calendars[0];
+
+    if (!calendar) {
+      await connection.rollback();
+      res.status(404).json({
+        success: false,
+        message: 'Календарь не найден'
+      });
+      return;
+    }
+
+    // Если нужно удалить даты
+    if (remove_dates === true || remove_dates === 'true') {
+      await connection.query(
+        'DELETE FROM property_calendar WHERE property_id = ? AND source_calendar_id = ?',
+        [propertyId, calendarId]
+      );
+    }
+
+    // Удаляем календарь
+    await connection.query(
+      'DELETE FROM property_external_calendars WHERE id = ?',
+      [calendarId]
+    );
+
+    // Регенерируем .ics файл
+    const allBlockedDatesResult: any = await connection.query(
+      'SELECT blocked_date, reason FROM property_calendar WHERE property_id = ? ORDER BY blocked_date',
+      [propertyId]
+    );
+
+    const allBlockedDates = Array.isArray(allBlockedDatesResult[0])
+      ? allBlockedDatesResult[0]
+      : allBlockedDatesResult;
+
+    if (allBlockedDates.length > 0) {
+      const icsGeneratorService = (await import('../services/icsGenerator.service')).default;
+      const icsData = await icsGeneratorService.generateICSFile(
+        propertyId,
+        property.property_name || null,
+        allBlockedDates
+      );
+
+      await connection.query(
+        `UPDATE property_ics 
+         SET ics_url = ?, ics_filename = ?, ics_file_path = ?, 
+             total_blocked_days = ?, updated_at = NOW()
+         WHERE property_id = ?`,
+        [icsData.url, icsData.filename, icsData.filepath, allBlockedDates.length, propertyId]
+      );
+    } else {
+      await connection.query('DELETE FROM property_ics WHERE property_id = ?', [propertyId]);
+    }
+
+    await connection.commit();
+
+    logger.info(`Owner ${ownerName} removed external calendar ${calendarId} from property ${propertyId}`);
+
+    res.json({
+      success: true,
+      message: 'Календарь успешно удален'
+    });
+  } catch (error) {
+    await connection.rollback();
+    logger.error('Owner remove external calendar error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка удаления календаря'
+    });
+  }
+}
+
+/**
+ * Переключить синхронизацию календаря (для владельцев с правами)
+ * PATCH /api/property-owners/property/:id/external-calendars/:calendarId/toggle
+ */
+async toggleExternalCalendar(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const propertyId = parseInt(req.params.id);
+    const calendarId = parseInt(req.params.calendarId);
+    const ownerName = (req as any).owner?.owner_name;
+    const canEditCalendar = (req as any).owner?.can_edit_calendar;
+
+    if (!ownerName) {
+      res.status(401).json({
+        success: false,
+        message: 'Не авторизован'
+      });
+      return;
+    }
+
+    if (!canEditCalendar) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет разрешения на редактирование календаря'
+      });
+      return;
+    }
+
+    const { is_enabled } = req.body;
+
+    // Проверяем что объект принадлежит владельцу
+    const property = await db.queryOne<any>(
+      'SELECT id FROM properties WHERE id = ? AND owner_name = ? AND deleted_at IS NULL',
+      [propertyId, ownerName]
+    );
+
+    if (!property) {
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден или у вас нет доступа к нему'
+      });
+      return;
+    }
+
+    const calendar = await db.queryOne(
+      'SELECT id FROM property_external_calendars WHERE id = ? AND property_id = ?',
+      [calendarId, propertyId]
+    );
+
+    if (!calendar) {
+      res.status(404).json({
+        success: false,
+        message: 'Календарь не найден'
+      });
+      return;
+    }
+
+    await db.query(
+      'UPDATE property_external_calendars SET is_enabled = ? WHERE id = ?',
+      [is_enabled ? 1 : 0, calendarId]
+    );
+
+    logger.info(`Owner ${ownerName} ${is_enabled ? 'enabled' : 'disabled'} calendar ${calendarId}`);
+
+    res.json({
+      success: true,
+      message: `Синхронизация ${is_enabled ? 'включена' : 'отключена'}`
+    });
+  } catch (error) {
+    logger.error('Owner toggle external calendar error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка переключения синхронизации'
+    });
+  }
+}
+
+/**
+ * Анализировать пересечения календарей (для владельцев)
+ * POST /api/property-owners/property/:id/external-calendars/analyze
+ */
+async analyzeExternalCalendars(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const propertyId = parseInt(req.params.id);
+    const ownerName = (req as any).owner?.owner_name;
+
+    if (!ownerName) {
+      res.status(401).json({
+        success: false,
+        message: 'Не авторизован'
+      });
+      return;
+    }
+
+    const { calendar_ids } = req.body;
+
+    if (!calendar_ids || !Array.isArray(calendar_ids) || calendar_ids.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Необходимо указать календари для анализа'
+      });
+      return;
+    }
+
+    // Проверяем что объект принадлежит владельцу
+    const property = await db.queryOne<any>(
+      'SELECT id FROM properties WHERE id = ? AND owner_name = ? AND deleted_at IS NULL',
+      [propertyId, ownerName]
+    );
+
+    if (!property) {
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден или у вас нет доступа к нему'
+      });
+      return;
+    }
+
+    const externalCalendarSyncService = (await import('../services/externalCalendarSync.service')).default;
+    const analysis = await externalCalendarSyncService.analyzeCalendarConflicts(
+      propertyId,
+      calendar_ids
+    );
+
+    res.json({
+      success: true,
+      data: analysis
+    });
+  } catch (error: any) {
+    logger.error('Owner analyze external calendars error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Ошибка анализа календарей'
+    });
+  }
+}
+
+/**
+ * Синхронизировать все внешние календари объекта (для владельцев с правами)
+ * POST /api/property-owners/property/:id/external-calendars/sync
+ */
+async syncExternalCalendars(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+  
+  try {
+    const propertyId = parseInt(req.params.id);
+    const ownerName = (req as any).owner?.owner_name;
+    const canEditCalendar = (req as any).owner?.can_edit_calendar;
+
+    if (!ownerName) {
+      res.status(401).json({
+        success: false,
+        message: 'Не авторизован'
+      });
+      return;
+    }
+
+    if (!canEditCalendar) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет разрешения на редактирование календаря'
+      });
+      return;
+    }
+
+    // Получаем объект
+    const propertyResult: any = await connection.query(
+      'SELECT id, property_name FROM properties WHERE id = ? AND owner_name = ? AND deleted_at IS NULL',
+      [propertyId, ownerName]
+    );
+
+    const properties = Array.isArray(propertyResult[0]) 
+      ? propertyResult[0] 
+      : propertyResult;
+
+    const property = properties[0];
+
+    if (!property) {
+      await connection.rollback();
+      res.status(404).json({
+        success: false,
+        message: 'Объект не найден или у вас нет доступа к нему'
+      });
+      return;
+    }
+
+    // Получаем все включенные внешние календари
+    const calendarsResult: any = await connection.query(
+      'SELECT * FROM property_external_calendars WHERE property_id = ? AND is_enabled = 1',
+      [propertyId]
+    );
+
+    const calendars = Array.isArray(calendarsResult[0]) 
+      ? calendarsResult[0] 
+      : [];
+
+    if (calendars.length === 0) {
+      await connection.rollback();
+      res.json({
+        success: true,
+        message: 'Нет активных календарей для синхронизации',
+        data: {
+          syncedCalendars: 0,
+          totalEvents: 0
+        }
+      });
+      return;
+    }
+
+    let totalEvents = 0;
+    let syncedCalendars = 0;
+
+    const externalCalendarSyncService = (await import('../services/externalCalendarSync.service')).default;
+
+    for (const calendar of calendars) {
+      try {
+        const events = await externalCalendarSyncService.syncCalendar(
+          connection,
+          property.id,
+          calendar.id,
+          calendar.ics_url
+        );
+
+        totalEvents += events;
+        syncedCalendars++;
+
+        await connection.query(
+          `UPDATE property_external_calendars 
+           SET last_sync_at = NOW(), 
+               sync_error = NULL,
+               total_events = ?
+           WHERE id = ?`,
+          [events, calendar.id]
+        );
+
+        logger.info(`Owner ${ownerName} synced calendar ${calendar.id}: ${events} events`);
+      } catch (error: any) {
+        await connection.query(
+          `UPDATE property_external_calendars 
+           SET sync_error = ?
+           WHERE id = ?`,
+          [error.message || 'Unknown error', calendar.id]
+        );
+
+        logger.error(`Failed to sync calendar ${calendar.id}:`, error);
+      }
+    }
+
+    // Регенерируем ICS файл
+    const allBlockedDatesResult: any = await connection.query(
+      'SELECT blocked_date, reason FROM property_calendar WHERE property_id = ? ORDER BY blocked_date',
+      [propertyId]
+    );
+
+    const allBlockedDates = Array.isArray(allBlockedDatesResult[0]) 
+      ? allBlockedDatesResult[0] 
+      : [];
+
+    const icsGeneratorService = (await import('../services/icsGenerator.service')).default;
+    const icsData = await icsGeneratorService.generateICSFile(
+      property.id,
+      property.property_name || null,
+      allBlockedDates
+    );
+
+    await connection.query(
+      `INSERT INTO property_ics (property_id, ics_url, ics_filename, ics_file_path, total_blocked_days)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE 
+         ics_url = VALUES(ics_url),
+         ics_filename = VALUES(ics_filename),
+         ics_file_path = VALUES(ics_file_path),
+         total_blocked_days = VALUES(total_blocked_days),
+         updated_at = NOW()`,
+      [propertyId, icsData.url, icsData.filename, icsData.filepath, allBlockedDates.length]
+    );
+
+    await connection.commit();
+
+    logger.info(`Owner ${ownerName} synced calendars for property ${propertyId}: ${syncedCalendars} calendars, ${totalEvents} events`);
+
+    res.json({
+      success: true,
+      message: 'Синхронизация завершена успешно',
+      data: {
+        syncedCalendars,
+        totalEvents,
+        icsUrl: icsData.url
+      }
+    });
+  } catch (error) {
+    await connection.rollback();
+    logger.error('Owner sync external calendars error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка синхронизации внешних календарей'
     });
   }
 }

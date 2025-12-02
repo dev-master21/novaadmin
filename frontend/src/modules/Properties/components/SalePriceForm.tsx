@@ -27,6 +27,8 @@ import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { propertiesApi } from '@/api/properties.api';
+import { propertyOwnersApi } from '@/api/propertyOwners.api'; 
+
 
 interface SalePriceFormProps {
   propertyId: number;
@@ -38,6 +40,7 @@ interface SalePriceFormProps {
     source_price?: number | null;
   };
   viewMode?: boolean;
+  isOwnerMode?: boolean;
   onChange?: (data: any) => void;
 }
 
@@ -45,6 +48,7 @@ const SalePriceForm = ({
   propertyId, 
   initialData,
   viewMode = false,
+  isOwnerMode = false,
   onChange
 }: SalePriceFormProps) => {
   const { t } = useTranslation();
@@ -332,7 +336,11 @@ const SalePriceForm = ({
         sale_margin_percentage: calculated.marginPercentage
       };
 
-      await propertiesApi.update(propertyId, updateData);
+      if (isOwnerMode) {
+        await propertyOwnersApi.updatePropertyPricing(propertyId, updateData);
+      } else {
+        await propertiesApi.update(propertyId, updateData);
+      }
       
       setHasChanges(false);
       

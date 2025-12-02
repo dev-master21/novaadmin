@@ -252,6 +252,7 @@ const OwnerCalendarPage = () => {
           <CalendarManager 
             propertyId={Number(propertyId)} 
             viewMode={!canEditCalendar} 
+            isOwnerMode={true}
           />
         </Stack>
       </Container>

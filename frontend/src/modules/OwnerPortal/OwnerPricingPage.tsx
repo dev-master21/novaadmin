@@ -192,10 +192,9 @@ const handleSave = async () => {
 
     // ✅ ИСПРАВЛЕНО: Проверяем формат API и отправляем правильно
     if (values.monthlyPricing && values.monthlyPricing.length > 0) {
-      // Отправляем как { monthlyPricing: array }
       await propertyOwnersApi.updatePropertyMonthlyPricing(
         Number(propertyId), 
-        { monthlyPricing: values.monthlyPricing } as any
+        values.monthlyPricing
       );
     }
 
@@ -442,6 +441,7 @@ const handleSave = async () => {
                 source_price: property.sale_source_price || null
               }}
               viewMode={!canEditPricing}
+              isOwnerMode={true}
               onChange={(data) => {
                 form.setFieldValue('sale_price', data.sale_price);
                 form.setFieldValue('sale_pricing_mode', data.sale_pricing_mode);
@@ -467,6 +467,7 @@ const handleSave = async () => {
                   source_price: property.year_source_price || null
                 }}
                 viewMode={!canEditPricing}
+                isOwnerMode={true}
                 onChange={(data) => {
                   form.setFieldValue('year_price', data.year_price);
                   form.setFieldValue('year_pricing_mode', data.year_pricing_mode);
@@ -482,12 +483,19 @@ const handleSave = async () => {
                 propertyId={Number(propertyId) || 0}
                 initialPricing={property?.monthly_pricing || []}
                 viewMode={!canEditPricing}
+                isOwnerMode={true}
                 onChange={(monthlyPricing) => {
                   form.setFieldValue('monthlyPricing', monthlyPricing);
                 }}
               />
 
-              <SeasonalPricing viewMode={!canEditPricing} form={form} />
+              <SeasonalPricing 
+                viewMode={!canEditPricing} 
+                form={form}
+                propertyId={Number(propertyId)}
+                isOwnerMode={true}
+                autoSave={true}
+              />
 
               <DepositForm
                 dealType="rent"
