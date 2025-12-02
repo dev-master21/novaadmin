@@ -51,13 +51,14 @@ import {
   IconPlayerPlay,
   IconEye,
   IconCalendarTime,
-  IconCalendarPlus
+  IconCalendarPlus,
+  IconCalendarBolt
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { notifications } from '@mantine/notifications';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { propertiesApi } from '@/api/properties.api';
-import { propertyOwnersApi } from '@/api/propertyOwners.api'; // ✅ ДОБАВЛЕНО
+import { propertyOwnersApi } from '@/api/propertyOwners.api';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 
@@ -120,7 +121,7 @@ interface ExternalCalendar {
 interface CalendarManagerProps {
   propertyId: number;
   viewMode?: boolean;
-  isOwnerMode?: boolean; // ✅ ДОБАВЛЕНО
+  isOwnerMode?: boolean;
   initialBlockedDates?: Array<{
     blocked_date: string;
     reason: string;
@@ -131,24 +132,25 @@ interface CalendarManagerProps {
 const CalendarManager = ({ 
   propertyId, 
   viewMode = false,
-  isOwnerMode = false, // ✅ ДОБАВЛЕНО
+  isOwnerMode = false,
   initialBlockedDates = [],
   onChange
 }: CalendarManagerProps) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  // ✅ ДОБАВЛЕНО: Выбор API в зависимости от режима
   const api = createApiAdapter(isOwnerMode);
 
-
-  // ✅ КРИТИЧНО: Refs для защиты от множественных запросов
+  // ✅ Refs
   const isInitialMount = useRef(true);
   const hasLoadedData = useRef(false);
   const isLoadingRef = useRef(false);
   const initialDatesRef = useRef(initialBlockedDates);
   const abortControllerRef = useRef<AbortController | null>(null);
   const propertyIdRef = useRef(propertyId);
+  
+  // ✅ НОВЫЙ REF для скролла к календарю
+  const calendarSectionRef = useRef<HTMLDivElement>(null);
 
   // Состояния
   const [tempBlockedDates, setTempBlockedDates] = useState<BlockedDate[]>(initialBlockedDates || []);
@@ -162,10 +164,8 @@ const CalendarManager = ({
   const [selectedYear, setSelectedYear] = useState(dayjs().year());
   const [selectedMonth, setSelectedMonth] = useState(dayjs().month());
 
-  // Календари
   const [externalCalendars, setExternalCalendars] = useState<ExternalCalendar[]>([]);
   
-  // Модальные окна
   const [blockModalOpened, { open: openBlockModal, close: closeBlockModal }] = useDisclosure(false);
   const [externalCalendarModalOpened, { open: openExternalCalendarModal, close: closeExternalCalendarModal }] = useDisclosure(false);
   const [analysisModalOpened, { open: openAnalysisModal, close: closeAnalysisModal }] = useDisclosure(false);
@@ -174,35 +174,39 @@ const CalendarManager = ({
   const [deleteCalendarModalOpened, { open: openDeleteCalendarModal, close: closeDeleteCalendarModal }] = useDisclosure(false);
   const [addOccupancyModalOpened, { open: openAddOccupancyModal, close: closeAddOccupancyModal }] = useDisclosure(false);
   
-  // Форма добавления блокировки
   const [selectionType, setSelectionType] = useState<'period' | 'days'>('period');
   const [reason, setReason] = useState('');
   const [hasConflict, setHasConflict] = useState(false);
   const [conflictDates, setConflictDates] = useState<string[]>([]);
   
-  // Форма внешнего календаря
   const [calendarName, setCalendarName] = useState('');
   const [icsUrl, setIcsUrl] = useState('');
   const [addCalendarStep, setAddCalendarStep] = useState(0);
   
-  // Анализ
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [analyzingConflicts, setAnalyzingConflicts] = useState(false);
   const [syncing, setSyncing] = useState(false);
   
-  // Удаление периода
   const [periodToDelete, setPeriodToDelete] = useState<any>(null);
-  
-  // Удаление календаря
   const [calendarToDelete, setCalendarToDelete] = useState<ExternalCalendar | null>(null);
   
-  // Выбор периода/дней на календаре
   const [calendarSelectionMode, setCalendarSelectionMode] = useState(false);
   const [selectedCalendarDates, setSelectedCalendarDates] = useState<string[]>([]);
   const [periodStart, setPeriodStart] = useState<string | null>(null);
   const [periodEnd, setPeriodEnd] = useState<string | null>(null);
 
-  // ✅ Очистка при размонтировании компонента
+  // ✅ НОВАЯ ФУНКЦИЯ: плавный скролл к календарю
+  const scrollToCalendar = () => {
+    setTimeout(() => {
+      if (calendarSectionRef.current) {
+        calendarSectionRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }, 300);
+  };
+
   useEffect(() => {
     return () => {
       console.log('🧹 Cleaning up CalendarManager');
@@ -215,7 +219,6 @@ const CalendarManager = ({
     };
   }, []);
 
-  // ✅ Эффект для передачи данных через колбэк БЕЗ onChange в зависимостях
   useEffect(() => {
     if (isCreatingMode && onChange) {
       const timeoutId = setTimeout(() => {
@@ -226,7 +229,6 @@ const CalendarManager = ({
     }
   }, [tempBlockedDates, isCreatingMode]);
 
-  // ✅ КРИТИЧНО: Сброс при изменении propertyId
   useEffect(() => {
     if (propertyIdRef.current !== propertyId) {
       console.log('🔄 PropertyId changed, resetting...');
@@ -241,12 +243,11 @@ const CalendarManager = ({
     }
   }, [propertyId]);
 
-  // ✅ ИСПРАВЛЕНО: Инициализация только один раз
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       
-      console.log('📅 CalendarManager initialized', { propertyId, isCreatingMode, isOwnerMode }); // ✅ ОБНОВЛЕНО
+      console.log('📅 CalendarManager initialized', { propertyId, isCreatingMode, isOwnerMode });
       
       if (isCreatingMode) {
         if (initialDatesRef.current.length > 0) {
@@ -260,7 +261,6 @@ const CalendarManager = ({
     }
   }, []);
 
-  // ✅ ОПТИМИЗИРОВАНО: Последовательная загрузка с защитой от повторных вызовов
   const loadAllData = async () => {
     if (hasLoadedData.current || isLoadingRef.current) {
       console.log('⏭️ Data already loaded or loading, skipping');
@@ -321,41 +321,37 @@ const CalendarManager = ({
       return;
     }
 
-try {
-  const { data } = await api.getCalendar(propertyId);
-  
-  // ✅ ОТЛАДКА: Смотрим структуру ответа
-  console.log('📦 API Response:', data);
-  console.log('📦 Raw blocked dates:', data.data);
-  
-  const blocked = data.data.blocked_dates || [];
-  
-  // ✅ ОТЛАДКА: Смотрим массив дат
-  console.log('📅 Blocked dates array:', blocked);
-  console.log('📅 First blocked date:', blocked[0]);
-  
-  setBlockedDates(blocked);
+    try {
+      const { data } = await api.getCalendar(propertyId);
+      
+      console.log('📦 API Response:', data);
+      console.log('📦 Raw blocked dates:', data.data);
+      
+      const blocked = data.data.blocked_dates || [];
+      
+      console.log('📅 Blocked dates array:', blocked);
+      console.log('📅 First blocked date:', blocked[0]);
+      
+      setBlockedDates(blocked);
 
-  const blockedMap = new Map<string, BlockedDate>();
-  blocked.forEach((item: BlockedDate) => {
-    // ✅ НОРМАЛИЗАЦИЯ: Убираем время, оставляем только дату
-    const normalizedDate = item.blocked_date.split('T')[0]; // '2025-12-03T17:00:00.000Z' → '2025-12-03'
-    
-    blockedMap.set(normalizedDate, {
-      ...item,
-      blocked_date: normalizedDate // Сохраняем нормализованную дату
-    });
-    
-    console.log(`  📍 Added to map: ${normalizedDate}`, item);
-  });
-  
-  setBlockedDatesMap(blockedMap);
-  
-  // ✅ ОТЛАДКА: Итоговая карта
-  console.log('📅 Calendar data loaded:', blocked.length, 'dates');
-  console.log('🗺️ Blocked dates map size:', blockedMap.size);
-  console.log('🗺️ Map contents:', Array.from(blockedMap.entries()));
-} catch (error: any) {
+      const blockedMap = new Map<string, BlockedDate>();
+      blocked.forEach((item: BlockedDate) => {
+        const normalizedDate = item.blocked_date.split('T')[0];
+        
+        blockedMap.set(normalizedDate, {
+          ...item,
+          blocked_date: normalizedDate
+        });
+        
+        console.log(`  📍 Added to map: ${normalizedDate}`, item);
+      });
+      
+      setBlockedDatesMap(blockedMap);
+      
+      console.log('📅 Calendar data loaded:', blocked.length, 'dates');
+      console.log('🗺️ Blocked dates map size:', blockedMap.size);
+      console.log('🗺️ Map contents:', Array.from(blockedMap.entries()));
+    } catch (error: any) {
       if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
         return;
       }
@@ -371,7 +367,7 @@ try {
 
   const loadICSInfo = async () => {
     try {
-      const { data } = await api.getICSInfo(propertyId); // ✅ ИЗМЕНЕНО
+      const { data } = await api.getICSInfo(propertyId);
       setIcsInfo(data.data);
       console.log('ℹ️ ICS info loaded');
     } catch (error: any) {
@@ -384,7 +380,7 @@ try {
 
   const loadExternalCalendars = async () => {
     try {
-      const { data } = await api.getExternalCalendars(propertyId); // ✅ ИЗМЕНЕНО
+      const { data } = await api.getExternalCalendars(propertyId);
       setExternalCalendars(data.data || []);
       console.log('📆 External calendars loaded:', data.data?.length || 0);
     } catch (error: any) {
@@ -395,7 +391,6 @@ try {
     }
   };
 
-  // ✅ УПРОЩЕНО: Перезагрузка только календаря
   const reloadCalendarData = async () => {
     if (isCreatingMode) {
       await loadCalendarData();
@@ -414,7 +409,6 @@ try {
     }
   };
 
-  // Обработчики для календаря
   const handleCalendarDayClick = (dateStr: string) => {
     if (viewMode || !calendarSelectionMode) return;
 
@@ -505,14 +499,24 @@ try {
     openAddOccupancyModal();
   };
 
+  // ✅ ОБНОВЛЕНО: добавлен плавный скролл
   const handleSelectPeriod = () => {
     closeAddOccupancyModal();
     handleStartPeriodSelection();
+    scrollToCalendar();
   };
 
+  // ✅ ОБНОВЛЕНО: добавлен плавный скролл
   const handleSelectDays = () => {
     closeAddOccupancyModal();
     handleStartDaysSelection();
+    scrollToCalendar();
+  };
+
+  // ✅ НОВАЯ ФУНКЦИЯ: открытие модалки добавления внешнего календаря
+  const handleSelectSync = () => {
+    closeAddOccupancyModal();
+    handleAddExternalCalendar();
   };
 
   const handleSubmitBlock = async (forceAdd: boolean = false) => {
@@ -551,11 +555,11 @@ try {
 
       try {
         if (forceAdd && conflicts.length > 0) {
-          await api.removeBlockedDates(propertyId, conflicts); // ✅ ИЗМЕНЕНО
+          await api.removeBlockedDates(propertyId, conflicts);
         }
 
         for (const date of selectedCalendarDates) {
-          await api.addBlockedPeriod(propertyId, { // ✅ ИЗМЕНЕНО
+          await api.addBlockedPeriod(propertyId, {
             start_date: date,
             end_date: date,
             reason: reason || undefined
@@ -642,10 +646,10 @@ try {
 
       try {
         if (forceAdd && conflicts.length > 0) {
-          await api.removeBlockedDates(propertyId, conflicts); // ✅ ИЗМЕНЕНО
+          await api.removeBlockedDates(propertyId, conflicts);
         }
 
-        await api.addBlockedPeriod(propertyId, { // ✅ ИЗМЕНЕНО
+        await api.addBlockedPeriod(propertyId, {
           start_date: start.format('YYYY-MM-DD'),
           end_date: end.format('YYYY-MM-DD'),
           reason: reason || undefined
@@ -699,7 +703,7 @@ try {
     }
 
     try {
-      await api.removeBlockedDates(propertyId, dates); // ✅ ИЗМЕНЕНО
+      await api.removeBlockedDates(propertyId, dates);
       notifications.show({
         title: t('common.success'),
         message: t('calendarManager.datesUnblocked'),
@@ -744,7 +748,7 @@ try {
     }
 
     try {
-      await api.addExternalCalendar(propertyId, { // ✅ ИЗМЕНЕНО
+      await api.addExternalCalendar(propertyId, {
         calendar_name: calendarName,
         ics_url: icsUrl
       });
@@ -770,7 +774,7 @@ try {
 
   const handleRemoveExternalCalendar = async (calendarId: number, removeDates: boolean) => {
     try {
-      await api.removeExternalCalendar(propertyId, calendarId, removeDates); // ✅ ИЗМЕНЕНО
+      await api.removeExternalCalendar(propertyId, calendarId, removeDates);
       notifications.show({
         title: t('common.success'),
         message: t('calendarManager.calendarRemoved'),
@@ -800,7 +804,7 @@ try {
 
   const handleToggleExternalCalendar = async (calendarId: number, isEnabled: boolean) => {
     try {
-      await api.toggleExternalCalendar(propertyId, calendarId, isEnabled); // ✅ ИЗМЕНЕНО
+      await api.toggleExternalCalendar(propertyId, calendarId, isEnabled);
       notifications.show({
         title: t('common.success'),
         message: t('calendarManager.syncToggled', { 
@@ -833,7 +837,7 @@ try {
     setAnalyzingConflicts(true);
     try {
       const calendarIds = externalCalendars.map(c => c.id);
-      const { data } = await api.analyzeExternalCalendars(propertyId, calendarIds); // ✅ ИЗМЕНЕНО
+      const { data } = await api.analyzeExternalCalendars(propertyId, calendarIds);
       
       setAnalysisResult(data.data);
       openAnalysisModal();
@@ -867,7 +871,7 @@ try {
   const handleSyncCalendars = async () => {
     setSyncing(true);
     try {
-      const { data } = await api.syncExternalCalendars(propertyId); // ✅ ИЗМЕНЕНО
+      const { data } = await api.syncExternalCalendars(propertyId);
       
       if (data.success) {
         notifications.show({
@@ -912,7 +916,6 @@ try {
     }
   };
 
-  // Навигация по календарю
   const goToPreviousMonth = () => {
     if (selectedMonth === 0) {
       setSelectedMonth(11);
@@ -940,7 +943,6 @@ try {
     return dayjs().year(selectedYear).month(selectedMonth).format('MMMM YYYY');
   };
 
-  // Генерация календаря
   const generateCalendar = () => {
     const firstDay = dayjs().year(selectedYear).month(selectedMonth).startOf('month');
     const lastDay = firstDay.endOf('month');
@@ -969,18 +971,17 @@ try {
     return calendar;
   };
 
-const getDateStatus = (date: dayjs.Dayjs) => {
-  const dateStr = date.format('YYYY-MM-DD');
-  const blockedInfo = blockedDatesMap.get(dateStr);
-  
-  // ✅ ОТЛАДКА: Проверяем поиск в карте (только для первых 3 дат текущего месяца)
-  if (date.date() <= 3 && date.month() === selectedMonth) {
-    console.log(`🔍 Checking date ${dateStr}:`, {
-      found: !!blockedInfo,
-      data: blockedInfo,
-      mapSize: blockedDatesMap.size
-    });
-  }
+  const getDateStatus = (date: dayjs.Dayjs) => {
+    const dateStr = date.format('YYYY-MM-DD');
+    const blockedInfo = blockedDatesMap.get(dateStr);
+    
+    if (date.date() <= 3 && date.month() === selectedMonth) {
+      console.log(`🔍 Checking date ${dateStr}:`, {
+        found: !!blockedInfo,
+        data: blockedInfo,
+        mapSize: blockedDatesMap.size
+      });
+    }
     
     if (!blockedInfo) {
       return { blocked: false, checkIn: false, checkOut: false };
@@ -1064,7 +1065,6 @@ const getDateStatus = (date: dayjs.Dayjs) => {
   const calendar = generateCalendar();
   const periods = getGroupedPeriods();
 
-  // Рендер дня календаря
   const renderCalendarDay = (day: dayjs.Dayjs) => {
     const dateStr = day.format('YYYY-MM-DD');
     const status = getDateStatus(day);
@@ -1175,7 +1175,6 @@ const getDateStatus = (date: dayjs.Dayjs) => {
     );
   };
 
-  // Компонент легенды
   const CalendarLegend = () => (
     <Paper p="md" radius="md" withBorder>
       <Stack gap="sm">
@@ -1355,7 +1354,6 @@ const getDateStatus = (date: dayjs.Dayjs) => {
             </SimpleGrid>
           )}
 
-          {/* Alert о временном хранении */}
           {isCreatingMode && tempBlockedDates.length > 0 && (
             <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
               <Text size="sm">
@@ -1366,255 +1364,136 @@ const getDateStatus = (date: dayjs.Dayjs) => {
         </Stack>
       </Card>
 
-      {/* Внешние календари */}
-      {!viewMode && !isCreatingMode && (
+      {/* ✅ УБРАЛИ: блок "Внешние календари" - теперь все через модалку "Добавить" */}
+
+      <Divider />
+
+      {/* ✅ ДОБАВЛЕНО: ref для скролла к календарю */}
+      <div ref={calendarSectionRef}>
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Stack gap="md">
+            {/* Навигация по месяцам */}
             <Group justify="space-between" wrap="wrap">
-              <Group gap="sm">
-                <ThemeIcon size="lg" radius="md" variant="light" color="cyan">
-                  <IconRefresh size={20} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={600} size="md">{t('calendarManager.syncCalendars')}</Text>
-                  <Text size="xs" c="dimmed">{t('calendarManager.syncCalendarsDesc')}</Text>
-                </div>
+              <Group gap="xs">
+                <ActionIcon
+                  variant="light"
+                  color="violet"
+                  onClick={goToPreviousMonth}
+                  size="lg"
+                >
+                  <IconChevronLeft size={20} />
+                </ActionIcon>
+                <Text fw={600} size="lg" style={{ minWidth: isMobile ? '140px' : '180px', textAlign: 'center' }}>
+                  {getCurrentMonthName()}
+                </Text>
+                <ActionIcon
+                  variant="light"
+                  color="violet"
+                  onClick={goToNextMonth}
+                  size="lg"
+                >
+                  <IconChevronRight size={20} />
+                </ActionIcon>
               </Group>
 
-              <Group gap="xs" wrap="wrap">
-                {externalCalendars.length > 1 && (
-                  <Button
-                    variant="light"
-                    color="orange"
-                    size="sm"
-                    leftSection={<IconAlertCircle size={16} />}
-                    onClick={handleAnalyzeCalendars}
-                    loading={analyzingConflicts}
-                  >
-                    {t('calendarManager.analysis')}
-                  </Button>
-                )}
-                {externalCalendars.length > 0 && (
-                  <Button
-                    variant="light"
-                    color="teal"
-                    size="sm"
-                    leftSection={<IconRefresh size={16} />}
-                    onClick={handleSyncCalendars}
-                    loading={syncing}
-                  >
-                    {t('calendarManager.synchronize')}
-                  </Button>
-                )}
+              <Group gap="xs">
                 <Button
                   variant="light"
-                  color="blue"
+                  color="gray"
                   size="sm"
-                  leftSection={<IconPlus size={16} />}
-                  onClick={handleAddExternalCalendar}
+                  onClick={goToToday}
                 >
-                  {t('calendarManager.addCalendar')}
+                  {t('calendarManager.today')}
                 </Button>
               </Group>
             </Group>
 
-            {externalCalendars.length === 0 ? (
-              <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
-                <Stack gap="xs">
-                  <Text size="sm" fw={500}>{t('calendarManager.noExternalCalendars')}</Text>
-                  <Text size="xs" c="dimmed">{t('calendarManager.noExternalCalendarsDesc')}</Text>
+            {/* ✅ ОБНОВЛЕНО: улучшенные подсказки */}
+            {calendarSelectionMode && (
+              <Alert icon={<IconInfoCircle size={18} />} color="violet" variant="light">
+                <Stack gap="sm">
+                  {selectionType === 'days' ? (
+                    <>
+                      <Text size="sm" fw={600}>
+                        {t('calendarManager.selectDaysHint')}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {t('calendarManager.selectDaysDescription')}
+                      </Text>
+                      {selectedCalendarDates.length > 0 && (
+                        <Text size="xs" fw={500}>
+                          {t('calendarManager.selectedCount', { count: selectedCalendarDates.length })}
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Text size="sm" fw={600}>
+                        {t('calendarManager.selectPeriodHint')}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {!periodStart && t('calendarManager.selectPeriodDescription')}
+                        {periodStart && !periodEnd && t('calendarManager.selectPeriodEndDescription')}
+                        {periodStart && periodEnd && t('calendarManager.periodSelectedDescription', { 
+                          start: dayjs(periodStart).format('DD.MM.YYYY'),
+                          end: dayjs(periodEnd).format('DD.MM.YYYY'),
+                          days: dayjs(periodEnd).diff(dayjs(periodStart), 'day') + 1
+                        })}
+                      </Text>
+                    </>
+                  )}
+                  <Group gap="xs">
+                    <Button
+                      variant="light"
+                      color="red"
+                      size="sm"
+                      onClick={handleCancelSelection}
+                    >
+                      {t('common.cancel')}
+                    </Button>
+                    <Button
+                      variant="filled"
+                      color="violet"
+                      size="sm"
+                      onClick={handleConfirmSelection}
+                      disabled={
+                        (selectionType === 'days' && selectedCalendarDates.length === 0) ||
+                        (selectionType === 'period' && (!periodStart || !periodEnd))
+                      }
+                    >
+                      {t('common.confirm')} 
+                      {selectionType === 'days' && selectedCalendarDates.length > 0 && ` (${selectedCalendarDates.length})`}
+                    </Button>
+                  </Group>
                 </Stack>
               </Alert>
-            ) : (
-              <Stack gap="sm">
-                {externalCalendars.map((calendar) => (
-                  <Paper key={calendar.id} p="md" radius="md" withBorder>
-                    <Group justify="space-between" wrap="wrap">
-                      <Group gap="md" style={{ flex: 1 }}>
-                        <ThemeIcon
-                          size="lg"
-                          radius="md"
-                          variant="light"
-                          color={calendar.is_enabled ? 'green' : 'gray'}
-                        >
-                          {calendar.is_enabled ? (
-                            <IconCircleCheck size={20} />
-                          ) : (
-                            <IconCircleX size={20} />
-                          )}
-                        </ThemeIcon>
+            )}
 
-                        <Stack gap={4} style={{ flex: 1 }}>
-                          <Group gap="xs">
-                            <Text fw={600}>{calendar.calendar_name}</Text>
-                            {calendar.total_events > 0 && (
-                              <Badge size="sm" color="blue" variant="light">
-                                {calendar.total_events} {t('calendarManager.events')}
-                              </Badge>
-                            )}
-                            {calendar.sync_error && (
-                              <Badge size="sm" color="red" variant="light">
-                                {t('calendarManager.syncError')}
-                              </Badge>
-                            )}
-                          </Group>
+            {/* Сетка календаря */}
+            <Box>
+              <SimpleGrid cols={7} spacing={2} mb="xs">
+                {weekDays.map((day) => (
+                  <Center key={day}>
+                    <Text size="sm" fw={700} c="dimmed" tt="uppercase">
+                      {day}
+                    </Text>
+                  </Center>
+                ))}
+              </SimpleGrid>
 
-                          <Text size="xs" c="dimmed" lineClamp={1}>
-                            {calendar.ics_url}
-                          </Text>
-
-                          {calendar.last_sync_at && (
-                            <Text size="xs" c="dimmed">
-                              {t('calendarManager.lastSync')}: {dayjs(calendar.last_sync_at).format('DD.MM.YYYY HH:mm')}
-                            </Text>
-                          )}
-
-                          {calendar.sync_error && (
-                            <Text size="xs" c="red">
-                              {t('calendarManager.error')}: {calendar.sync_error}
-                            </Text>
-                          )}
-                        </Stack>
-                      </Group>
-
-                      <Group gap="xs">
-                        <Switch
-                          checked={calendar.is_enabled}
-                          onChange={(e) => handleToggleExternalCalendar(calendar.id, e.currentTarget.checked)}
-                          size={isMobile ? 'sm' : 'md'}
-                        />
-                        <ActionIcon
-                          color="red"
-                          variant="light"
-                          onClick={() => {
-                            setCalendarToDelete(calendar);
-                            openDeleteCalendarModal();
-                          }}
-                        >
-                          <IconTrash size={18} />
-                        </ActionIcon>
-                      </Group>
-                    </Group>
-                  </Paper>
+              <Stack gap={2}>
+                {calendar.map((week, weekIndex) => (
+                  <SimpleGrid key={weekIndex} cols={7} spacing={2}>
+                    {week.map((day) => renderCalendarDay(day))}
+                  </SimpleGrid>
                 ))}
               </Stack>
-            )}
+            </Box>
+
+            <CalendarLegend />
           </Stack>
         </Card>
-      )}
-
-      <Divider />
-
-      {/* Календарь */}
-      <Card shadow="sm" padding="lg" radius="md" withBorder>
-        <Stack gap="md">
-          {/* Навигация по месяцам */}
-          <Group justify="space-between" wrap="wrap">
-            <Group gap="xs">
-              <ActionIcon
-                variant="light"
-                color="violet"
-                onClick={goToPreviousMonth}
-                size="lg"
-              >
-                <IconChevronLeft size={20} />
-              </ActionIcon>
-              <Text fw={600} size="lg" style={{ minWidth: isMobile ? '140px' : '180px', textAlign: 'center' }}>
-                {getCurrentMonthName()}
-              </Text>
-              <ActionIcon
-                variant="light"
-                color="violet"
-                onClick={goToNextMonth}
-                size="lg"
-              >
-                <IconChevronRight size={20} />
-              </ActionIcon>
-            </Group>
-
-            <Group gap="xs">
-              <Button
-                variant="light"
-                color="gray"
-                size="sm"
-                onClick={goToToday}
-              >
-                {t('calendarManager.today')}
-              </Button>
-            </Group>
-          </Group>
-
-          {calendarSelectionMode && (
-            <Alert icon={<IconInfoCircle size={18} />} color="violet" variant="light">
-              <Stack gap="sm">
-                {selectionType === 'days' ? (
-                  <Text size="sm">
-                    {t('calendarManager.selectDatesOnCalendar')} {selectedCalendarDates.length > 0 && `(${selectedCalendarDates.length} ${t('calendarManager.selected')})`}
-                  </Text>
-                ) : (
-                  <Text size="sm">
-                    {!periodStart && t('calendarManager.selectPeriodStart')}
-                    {periodStart && !periodEnd && t('calendarManager.selectPeriodEnd')}
-                    {periodStart && periodEnd && t('calendarManager.periodSelected', { 
-                      start: dayjs(periodStart).format('DD.MM.YYYY'),
-                      end: dayjs(periodEnd).format('DD.MM.YYYY')
-                    })}
-                  </Text>
-                )}
-                <Group gap="xs">
-                  <Button
-                    variant="light"
-                    color="red"
-                    size="sm"
-                    onClick={handleCancelSelection}
-                  >
-                    {t('common.cancel')}
-                  </Button>
-                  <Button
-                    variant="filled"
-                    color="violet"
-                    size="sm"
-                    onClick={handleConfirmSelection}
-                    disabled={
-                      (selectionType === 'days' && selectedCalendarDates.length === 0) ||
-                      (selectionType === 'period' && (!periodStart || !periodEnd))
-                    }
-                  >
-                    {t('common.confirm')} 
-                    {selectionType === 'days' && selectedCalendarDates.length > 0 && ` (${selectedCalendarDates.length})`}
-                  </Button>
-                </Group>
-              </Stack>
-            </Alert>
-          )}
-
-          {/* Сетка календаря */}
-          <Box>
-            {/* Дни недели */}
-            <SimpleGrid cols={7} spacing={2} mb="xs">
-              {weekDays.map((day) => (
-                <Center key={day}>
-                  <Text size="sm" fw={700} c="dimmed" tt="uppercase">
-                    {day}
-                  </Text>
-                </Center>
-              ))}
-            </SimpleGrid>
-
-            {/* Дни месяца */}
-            <Stack gap={2}>
-              {calendar.map((week, weekIndex) => (
-                <SimpleGrid key={weekIndex} cols={7} spacing={2}>
-                  {week.map((day) => renderCalendarDay(day))}
-                </SimpleGrid>
-              ))}
-            </Stack>
-          </Box>
-
-          {/* Легенда */}
-          <CalendarLegend />
-        </Stack>
-      </Card>
+      </div>
 
       {/* Заблокированные периоды */}
       {periods.length > 0 && (
@@ -1670,9 +1549,124 @@ const getDateStatus = (date: dayjs.Dayjs) => {
         </Card>
       )}
 
-      {/* МОДАЛЬНЫЕ ОКНА - без изменений, копируем все как есть */}
-      
-      {/* Модальное окно выбора типа добавления */}
+      {/* ✅ НОВОЕ: Внешние календари - показываем только если есть */}
+      {!viewMode && !isCreatingMode && externalCalendars.length > 0 && (
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Stack gap="md">
+            <Group justify="space-between" wrap="wrap">
+              <Group gap="sm">
+                <ThemeIcon size="lg" radius="md" variant="light" color="cyan">
+                  <IconRefresh size={20} />
+                </ThemeIcon>
+                <div>
+                  <Text fw={600} size="md">{t('calendarManager.syncCalendars')}</Text>
+                  <Text size="xs" c="dimmed">{t('calendarManager.syncCalendarsDesc')}</Text>
+                </div>
+              </Group>
+
+              <Group gap="xs" wrap="wrap">
+                {externalCalendars.length > 1 && (
+                  <Button
+                    variant="light"
+                    color="orange"
+                    size="sm"
+                    leftSection={<IconAlertCircle size={16} />}
+                    onClick={handleAnalyzeCalendars}
+                    loading={analyzingConflicts}
+                  >
+                    {t('calendarManager.analysis')}
+                  </Button>
+                )}
+                <Button
+                  variant="light"
+                  color="teal"
+                  size="sm"
+                  leftSection={<IconRefresh size={16} />}
+                  onClick={handleSyncCalendars}
+                  loading={syncing}
+                >
+                  {t('calendarManager.synchronize')}
+                </Button>
+              </Group>
+            </Group>
+
+            <Stack gap="sm">
+              {externalCalendars.map((calendar) => (
+                <Paper key={calendar.id} p="md" radius="md" withBorder>
+                  <Group justify="space-between" wrap="wrap">
+                    <Group gap="md" style={{ flex: 1 }}>
+                      <ThemeIcon
+                        size="lg"
+                        radius="md"
+                        variant="light"
+                        color={calendar.is_enabled ? 'green' : 'gray'}
+                      >
+                        {calendar.is_enabled ? (
+                          <IconCircleCheck size={20} />
+                        ) : (
+                          <IconCircleX size={20} />
+                        )}
+                      </ThemeIcon>
+
+                      <Stack gap={4} style={{ flex: 1 }}>
+                        <Group gap="xs">
+                          <Text fw={600}>{calendar.calendar_name}</Text>
+                          {calendar.total_events > 0 && (
+                            <Badge size="sm" color="blue" variant="light">
+                              {calendar.total_events} {t('calendarManager.events')}
+                            </Badge>
+                          )}
+                          {calendar.sync_error && (
+                            <Badge size="sm" color="red" variant="light">
+                              {t('calendarManager.syncError')}
+                            </Badge>
+                          )}
+                        </Group>
+
+                        <Text size="xs" c="dimmed" lineClamp={1}>
+                          {calendar.ics_url}
+                        </Text>
+
+                        {calendar.last_sync_at && (
+                          <Text size="xs" c="dimmed">
+                            {t('calendarManager.lastSync')}: {dayjs(calendar.last_sync_at).format('DD.MM.YYYY HH:mm')}
+                          </Text>
+                        )}
+
+                        {calendar.sync_error && (
+                          <Text size="xs" c="red">
+                            {t('calendarManager.error')}: {calendar.sync_error}
+                          </Text>
+                        )}
+                      </Stack>
+                    </Group>
+
+                    <Group gap="xs">
+                      <Switch
+                        checked={calendar.is_enabled}
+                        onChange={(e) => handleToggleExternalCalendar(calendar.id, e.currentTarget.checked)}
+                        size={isMobile ? 'sm' : 'md'}
+                      />
+                      <ActionIcon
+                        color="red"
+                        variant="light"
+                        onClick={() => {
+                          setCalendarToDelete(calendar);
+                          openDeleteCalendarModal();
+                        }}
+                      >
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Group>
+                  </Group>
+                </Paper>
+              ))}
+            </Stack>
+          </Stack>
+        </Card>
+      )}
+
+      {/* ✅ ОБНОВЛЕННОЕ: модальное окно выбора типа добавления - теперь с 3 вариантами */}
       <Modal
         opened={addOccupancyModalOpened}
         onClose={closeAddOccupancyModal}
@@ -1737,11 +1731,41 @@ const getDateStatus = (date: dayjs.Dayjs) => {
                 </Stack>
               </Group>
             </Paper>
+
+            {/* ✅ НОВЫЙ БЛОК: Добавить синхронизацию */}
+            {!isCreatingMode && (
+              <Paper
+                p="lg"
+                radius="md"
+                withBorder
+                style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                onClick={handleSelectSync}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--mantine-color-cyan-6)';
+                  e.currentTarget.style.backgroundColor = 'var(--mantine-color-cyan-0)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '';
+                  e.currentTarget.style.backgroundColor = '';
+                }}
+              >
+                <Group gap="md">
+                  <ThemeIcon size="xl" radius="md" variant="light" color="cyan">
+                    <IconCalendarBolt size={24} />
+                  </ThemeIcon>
+                  <Stack gap={4} style={{ flex: 1 }}>
+                    <Text fw={600} size="md">{t('calendarManager.addSync')}</Text>
+                    <Text size="xs" c="dimmed">{t('calendarManager.addSyncDesc')}</Text>
+                  </Stack>
+                </Group>
+              </Paper>
+            )}
           </Stack>
         </Stack>
       </Modal>
 
-      {/* Модальное окно добавления блокировки */}
+      {/* Остальные модальные окна остаются без изменений */}
+      
       <Modal
         opened={blockModalOpened}
         onClose={() => {
@@ -1859,7 +1883,6 @@ const getDateStatus = (date: dayjs.Dayjs) => {
         </Stack>
       </Modal>
 
-      {/* Модальное окно добавления внешнего календаря */}
       <Modal
         opened={externalCalendarModalOpened}
         onClose={() => {
@@ -2022,7 +2045,6 @@ const getDateStatus = (date: dayjs.Dayjs) => {
         </Stack>
       </Modal>
 
-      {/* Модальное окно анализа конфликтов */}
       <Modal
         opened={analysisModalOpened}
         onClose={closeAnalysisModal}
@@ -2126,7 +2148,6 @@ const getDateStatus = (date: dayjs.Dayjs) => {
         )}
       </Modal>
 
-      {/* Модальное окно информации об ICS */}
       <Modal
         opened={icsInfoModalOpened}
         onClose={closeIcsInfoModal}
@@ -2227,7 +2248,6 @@ const getDateStatus = (date: dayjs.Dayjs) => {
         )}
       </Modal>
 
-      {/* Модальное окно удаления периода */}
       <Modal
         opened={deleteModalOpened}
         onClose={() => {
@@ -2267,7 +2287,6 @@ const getDateStatus = (date: dayjs.Dayjs) => {
         </Stack>
       </Modal>
 
-      {/* Модальное окно удаления календаря */}
       <Modal
         opened={deleteCalendarModalOpened}
         onClose={() => {

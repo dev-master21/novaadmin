@@ -720,6 +720,15 @@
     "filtersTab": "Фильтры"
   },
 "calendarManager": {
+  "addSync": "Добавить синхронизацию",
+  "addSyncDesc": "Подключите календари с внешних платформ (Airbnb, Booking.com и др.)",
+  "selectDaysHint": "Выберите даты для блокировки",
+  "selectDaysDescription": "Нажимайте на даты в календаре, которые хотите заблокировать. Вы можете выбрать любое количество дат",
+  "selectPeriodHint": "Выберите период для блокировки",
+  "selectPeriodDescription": "Сначала нажмите на дату начала периода, затем на дату окончания",
+  "selectPeriodEndDescription": "Теперь выберите дату окончания периода",
+  "periodSelectedDescription": "Выбран период с {{start}} по {{end}} ({{days}} дн.)",
+  "selectedCount": "Выбрано: {{count}} дат",
   "calendarModalTitle": "Календарь занятости",
   "noCalendarData": "Нет данных календаря",
   "noCalendarDataDesc": "У этого объекта пока нет заблокированных дат или бронирований",
