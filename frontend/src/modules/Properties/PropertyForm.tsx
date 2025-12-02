@@ -1,5 +1,5 @@
 // frontend/src/modules/Properties/PropertyForm.tsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Card,
   Stack,
@@ -127,10 +127,12 @@ interface TempVRPanorama {
 }
 
 interface TempBlockedDate {
-  start_date: string;
-  end_date: string;
-  reason?: string;
+  blocked_date: string;
+  reason: string | null;
+  is_check_in?: number | boolean;
+  is_check_out?: number | boolean;
 }
+
 
 interface PropertyFormProps {
   viewMode?: boolean;
@@ -186,6 +188,10 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
   const [showAllRentalFeatures, setShowAllRentalFeatures] = useState(false);
   const [showAllLocationFeatures, setShowAllLocationFeatures] = useState(false);
   const [showAllViews, setShowAllViews] = useState(false);
+
+  // ✅ ИСПРАВЛЕНО: Добавлен ref для защиты от параллельных сохранений
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const isSavingRef = useRef(false);
 
   const isEdit = !!id;
   const isViewMode = viewMode;
@@ -418,6 +424,67 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
 
   const progress = calculateProgress();
 
+  // ✅ ИСПРАВЛЕНО: Обновленная функция автосохранения с защитой от параллельных вызовов
+  const handleAutoSave = async () => {
+    // Защита от параллельных сохранений
+    if (!isEdit || isViewMode || loading || isAutoSaving || isSavingRef.current) {
+      return;
+    }
+
+    try {
+      isSavingRef.current = true;
+      setIsAutoSaving(true);
+
+      const propertyData = {
+        ...form.values,
+        sale_price: dealType === 'rent' ? null : form.values.sale_price,
+        year_price: dealType === 'sale' ? null : form.values.year_price,
+        year_pricing_mode: dealType === 'sale' ? null : form.values.year_pricing_mode,
+        year_commission_type: dealType === 'sale' ? null : form.values.year_commission_type,
+        year_commission_value: dealType === 'sale' ? null : form.values.year_commission_value,
+        features: {
+          property: form.values.features.property,
+          outdoor: form.values.features.outdoor,
+          rental: form.values.features.rental,
+          location: form.values.features.location,
+          views: form.values.features.views
+        },
+        monthlyPricing: dealType === 'sale' ? [] : form.values.monthlyPricing,
+        seasonalPricing: dealType === 'sale' ? [] : form.values.seasonalPricing,
+        translations: form.values.translations,
+        distance_to_beach: form.values.distance_to_beach,
+        renovation_date: form.values.renovation_date 
+          ? dayjs(form.values.renovation_date).format('YYYY-MM-01')
+          : null,
+        propertyFeatures: form.values.features?.property || [],
+        outdoorFeatures: form.values.features?.outdoor || [],
+        rentalFeatures: form.values.features?.rental || [],
+        locationFeatures: form.values.features?.location || [],
+        views: form.values.features?.views || [],
+        blockedDates: aiTempData.blockedDates || [],
+        photosFromGoogleDrive: aiTempData.photosFromGoogleDrive || null
+      };
+
+      await propertiesApi.update(Number(id), propertyData);
+
+    } catch (error: any) {
+      console.error('Auto-save error:', error);
+      notifications.show({
+        title: t('errors.autoSave') || 'Ошибка автосохранения',
+        message: error.response?.data?.message || t('properties.messages.autoSaveError') || 'Не удалось автоматически сохранить изменения',
+        color: 'orange',
+        icon: <IconAlertCircle size={18} />,
+        autoClose: 5000,
+      });
+    } finally {
+      setIsAutoSaving(false);
+      isSavingRef.current = false;
+    }
+  };
+
+  // ✅ УДАЛЕНО: Проблемный useEffect для автосохранения при смене activeStep
+  // Теперь автосохранение вызывается только вручную при переходах между вкладками
+
   const uploadAllMedia = async (propertyId: number) => {
     setIsUploadingMedia(true);
     
@@ -562,29 +629,30 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
         });
       }
 
-      if (tempBlockedDates.length > 0) {
-        setUploadProgress(prev => ({
-          ...prev,
-          currentType: t('properties.calendar.blockedDates') || 'Заблокированные даты'
-        }));
+if (tempBlockedDates.length > 0) {
+  setUploadProgress(prev => ({
+    ...prev,
+    currentType: t('properties.calendar.blockedDates') || 'Заблокированные даты'
+  }));
 
-        for (let i = 0; i < tempBlockedDates.length; i++) {
-          const blockedDate = tempBlockedDates[i];
-          currentItem++;
-          
-          setUploadProgress(prev => ({
-            ...prev,
-            current: currentItem,
-            currentItem: `${i + 1}/${tempBlockedDates.length}`,
-            percentage: Math.round((currentItem / totalItems) * 100)
-          }));
+  for (let i = 0; i < tempBlockedDates.length; i++) {
+    const blockedDate = tempBlockedDates[i];
+    currentItem++;
+    
+    setUploadProgress(prev => ({
+      ...prev,
+      current: currentItem,
+      currentItem: `${i + 1}/${tempBlockedDates.length}`,
+      percentage: Math.round((currentItem / totalItems) * 100)
+    }));
 
-          await propertiesApi.addBlockedPeriod(propertyId, {
-            start_date: blockedDate.start_date,
-            end_date: blockedDate.end_date,
-            reason: blockedDate.reason || ''
-          });
-        }
+    // ✅ ИСПРАВЛЕНО: Используем blocked_date (одна дата), а не период
+    await propertiesApi.addBlockedPeriod(propertyId, {
+      start_date: blockedDate.blocked_date,
+      end_date: blockedDate.blocked_date,
+      reason: blockedDate.reason || ''
+    });
+  }
 
         notifications.show({
           title: t('common.success'),
@@ -649,6 +717,10 @@ useEffect(() => {
       setHasCoordinatesForCurrentLink(true);
     }
   }, [form.values.google_maps_link, form.values.latitude, form.values.longitude]);
+
+const handleBlockedDatesChange = useCallback((dates: TempBlockedDate[]) => {
+  setTempBlockedDates(dates);
+}, []);
 
   useEffect(() => {
     if (propertyData) {
@@ -1074,8 +1146,16 @@ useEffect(() => {
         withCloseButton: false
       });
 
+      // ✅ ИСПРАВЛЕНО: Конвертируем данные от AI в правильный формат
+      const aiBlockedDates = (propertyData.blockedDates || []).map((date: any) => ({
+        blocked_date: date.start_date || date.blocked_date, // Поддержка обоих форматов
+        reason: date.reason || null,
+        is_check_in: date.is_check_in || false,
+        is_check_out: date.is_check_out || false
+      }));
+      
       const tempData: any = {
-        blockedDates: propertyData.blockedDates || [],
+        blockedDates: aiBlockedDates,
         photosFromGoogleDrive: propertyData.photosFromGoogleDrive || null
       };
       
@@ -1351,7 +1431,6 @@ const handleSaveClick = async () => {
       });
       await loadProperty();
       
-      // ✅ НОВОЕ: Открываем модальное окно после успешного редактирования
       openAfterSaveModal();
     } else {
       setIsCreatingProperty(true);
@@ -1422,27 +1501,58 @@ const handleSaveClick = async () => {
   }
 };
 
-  const nextStep = () => {
-    if (activeStep < steps.length - 1) {
+  // ✅ ИСПРАВЛЕНО: nextStep с проверкой isSavingRef
+  const nextStep = async () => {
+    if (activeStep < steps.length - 1 && !isSavingRef.current) {
       const nextStepIndex = activeStep + 1;
       if (!steps[nextStepIndex].disabled) {
+        // Автосохранение перед переходом в режиме редактирования
+        if (isEdit && !isViewMode) {
+          await handleAutoSave();
+        }
         setActiveStep(nextStepIndex);
         scrollIntoView();
       }
     }
   };
 
-  const prevStep = () => {
-    if (activeStep > 0) {
+  // ✅ ИСПРАВЛЕНО: prevStep с проверкой isSavingRef
+  const prevStep = async () => {
+    if (activeStep > 0 && !isSavingRef.current) {
+      // Автосохранение перед переходом в режиме редактирования
+      if (isEdit && !isViewMode) {
+        await handleAutoSave();
+      }
       setActiveStep(activeStep - 1);
       scrollIntoView();
+    }
+  };
+
+  // ✅ ИСПРАВЛЕНО: handleTabChange с проверкой isSavingRef
+  const handleTabChange = async (value: string | null) => {
+    if (value === null || isSavingRef.current) return;
+    
+    const targetStep = Number(value);
+    if (!steps[targetStep].disabled && activeStep !== targetStep) {
+      // Автосохранение перед переходом в режиме редактирования
+      if (isEdit && !isViewMode) {
+        await handleAutoSave();
+      }
+      setActiveStep(targetStep);
     }
   };
 
   const ProgressIndicator = () => (
     <Paper shadow="sm" p="md" radius="md" withBorder mb="lg">
       <Group justify="space-between" mb="xs">
-        <Text size="sm" fw={500}>{t('properties.form.completionProgress') || 'Прогресс заполнения'}</Text>
+        <Group gap="xs">
+          <Text size="sm" fw={500}>{t('properties.form.completionProgress') || 'Прогресс заполнения'}</Text>
+          {isAutoSaving && (
+            <Badge size="sm" variant="dot" color="blue">
+              {t('common.saving') || 'Сохранение...'}
+            </Badge>
+          )}
+        </Group>
         <Text size="sm" c="dimmed">{progress}%</Text>
       </Group>
       <Progress value={progress} size="lg" radius="md" />
@@ -2530,7 +2640,7 @@ const handleSaveClick = async () => {
       );
     }
 
-    if (steps[activeStep].key === 'calendar') {
+if (steps[activeStep].key === 'calendar') {
       return (
         <CalendarManager 
           propertyId={Number(id) || 0} 
@@ -2540,7 +2650,7 @@ const handleSaveClick = async () => {
               ? undefined
               : (aiTempData.blockedDates || [])
           }
-          onChange={(dates: any) => setTempBlockedDates(dates as TempBlockedDate[])}
+          onChange={handleBlockedDatesChange}
         />
       );
     }
@@ -2804,7 +2914,15 @@ const handleSaveClick = async () => {
                             display: 'flex',
                             alignItems: 'center'
                           }}
-                          onClick={() => !isDisabled && setActiveStep(index)}
+                          onClick={async () => {
+                            // ✅ ИСПРАВЛЕНО: Проверка isSavingRef перед переходом
+                            if (!isDisabled && !isSavingRef.current) {
+                              if (isEdit && !isViewMode && activeStep !== index) {
+                                await handleAutoSave();
+                              }
+                              setActiveStep(index);
+                            }
+                          }}
                           onTouchStart={(e) => {
                             if (!isDisabled) e.currentTarget.style.transform = 'scale(0.98)';
                           }}
@@ -2903,8 +3021,9 @@ const handleSaveClick = async () => {
                       variant="light"
                       leftSection={<IconChevronLeft size={18} />}
                       onClick={prevStep}
-                      disabled={activeStep === 0}
+                      disabled={activeStep === 0 || isAutoSaving || isSavingRef.current}
                       size="md"
+                      loading={isAutoSaving}
                     >
                       {t('common.previous')}
                     </Button>
@@ -2912,8 +3031,9 @@ const handleSaveClick = async () => {
                       <Button
                         rightSection={<IconChevronRight size={18} />}
                         onClick={nextStep}
-                        disabled={steps[activeStep + 1]?.disabled}
+                        disabled={steps[activeStep + 1]?.disabled || isAutoSaving || isSavingRef.current}
                         size="md"
+                        loading={isAutoSaving}
                       >
                         {t('common.next')}
                       </Button>
@@ -2921,7 +3041,7 @@ const handleSaveClick = async () => {
                       <Button
                         leftSection={<IconDeviceFloppy size={18} />}
                         onClick={handleSaveClick}
-                        loading={loading || fillingFromAI || isUploadingMedia || isCreatingProperty}
+                        loading={loading || fillingFromAI || isUploadingMedia || isCreatingProperty || isAutoSaving}
                         size="md"
                       >
                         {isEdit ? t('common.save') : t('common.create')}
@@ -2932,12 +3052,7 @@ const handleSaveClick = async () => {
               )}
             </Stack>
           ) : (
-            <Tabs value={activeStep.toString()} onChange={(value) => {
-              const targetStep = Number(value);
-              if (!steps[targetStep].disabled) {
-                setActiveStep(targetStep);
-              }
-            }}>
+            <Tabs value={activeStep.toString()} onChange={handleTabChange}>
               <Tabs.List grow={isTablet}>
                 {steps.map((step) => {
                   const StepIcon = step.icon;
@@ -2982,7 +3097,7 @@ const handleSaveClick = async () => {
                   leftSection={<IconDeviceFloppy size={18} />}
                   size="lg"
                   onClick={handleSaveClick}
-                  loading={loading || fillingFromAI || isUploadingMedia || isCreatingProperty}
+                  loading={loading || fillingFromAI || isUploadingMedia || isCreatingProperty || isAutoSaving}
                   radius="xl"
                 >
                   {isEdit ? t('common.save') : t('common.create')}
@@ -3015,83 +3130,157 @@ const handleSaveClick = async () => {
         <Text>{t('properties.complexInfoText')}</Text>
       </Modal>
 
-{/* ✅ ИСПРАВЛЕНО: Модальное окно после успешного редактирования */}
-      <Modal
-        opened={afterSaveModalOpened}
-        onClose={closeAfterSaveModal}
-        title={t('properties.afterSave.title') || 'Выберите дальнейшие действия'}
-        size="md"
-        centered
-      >
-        <Stack gap="md">
-          <Button
-            fullWidth
-            size="lg"
-            leftSection={<IconExternalLink size={20} />}
-            variant="light"
-            color="blue"
-            onClick={async () => {
-              try {
-                setIsGeneratingPreview(true);
-                
-                // Запрашиваем preview URL с токеном
-                const response = await propertiesApi.getPreviewUrl(Number(id));
-                
-     if (response.data?.success) {
-        // ИСПРАВЛЕНИЕ: response.data.data.previewUrl вместо response.data.previewUrl
-        window.open(response.data.data.previewUrl, '_blank');
-        closeAfterSaveModal();
-      } else {
-        notifications.show({
-          title: t('errors.generic'),
-          message: t('properties.messages.previewUrlError'),
-          color: 'red',
-          icon: <IconX size={18} />
-        });
-      }
-    } catch (error) {
-      console.error('Error generating preview:', error);
-      notifications.show({
-        title: t('errors.generic'),
-        message: t('properties.messages.previewUrlError'),
-        color: 'red',
-        icon: <IconX size={18} />
-      });
-    } finally {
-      setIsGeneratingPreview(false);
-    }
-  }}
-  loading={isGeneratingPreview}
-  disabled={isGeneratingPreview}
+<Modal
+  opened={afterSaveModalOpened}
+  onClose={closeAfterSaveModal}
+  title={t('properties.afterSave.title') || 'Выберите дальнейшие действия'}
+  size="md"
+  centered
 >
-  {t('properties.afterSave.viewOnSite')}
-</Button>
+  <Stack gap="md">
+    <Button
+      fullWidth
+      size="lg"
+      leftSection={<IconExternalLink size={20} />}
+      variant="light"
+      color="blue"
+      onClick={async () => {
+        try {
+          setIsGeneratingPreview(true);
+          
+          // ✅ ИСПРАВЛЕНО: Открываем окно сразу синхронно при клике
+          const newWindow = window.open('about:blank', '_blank');
+          
+          if (!newWindow) {
+            // Если браузер всё равно заблокировал окно
+            notifications.show({
+              title: t('properties.messages.popupBlocked') || 'Всплывающие окна заблокированы',
+              message: t('properties.messages.popupBlockedDescription') || 'Пожалуйста, разрешите всплывающие окна для этого сайта',
+              color: 'orange',
+              icon: <IconAlertCircle size={18} />
+            });
+            setIsGeneratingPreview(false);
+            return;
+          }
+          
+          // Показываем загрузку в новом окне
+          newWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${t('common.loading') || 'Загрузка...'}</title>
+                <style>
+                  body {
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                  }
+                  .loader {
+                    text-align: center;
+                  }
+                  .spinner {
+                    width: 50px;
+                    height: 50px;
+                    border: 5px solid rgba(255, 255, 255, 0.3);
+                    border-top-color: white;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 20px;
+                  }
+                  @keyframes spin {
+                    to { transform: rotate(360deg); }
+                  }
+                  h2 {
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                  }
+                  p {
+                    margin: 10px 0 0;
+                    font-size: 14px;
+                    opacity: 0.9;
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="loader">
+                  <div class="spinner"></div>
+                  <h2>${t('common.loading') || 'Загрузка...'}</h2>
+                  <p>${t('properties.messages.generatingPreview') || 'Генерируем ссылку для просмотра...'}</p>
+                </div>
+              </body>
+            </html>
+          `);
+          
+          const response = await propertiesApi.getPreviewUrl(Number(id));
+          
+          if (response.data?.success) {
+            // ✅ Перенаправляем уже открытое окно на нужный URL
+            newWindow.location.href = response.data.data.previewUrl;
+            closeAfterSaveModal();
+          } else {
+            newWindow.close();
+            notifications.show({
+              title: t('errors.generic'),
+              message: t('properties.messages.previewUrlError'),
+              color: 'red',
+              icon: <IconX size={18} />
+            });
+          }
+        } catch (error) {
+          console.error('Error generating preview:', error);
+        
+          
+          notifications.show({
+            title: t('errors.generic'),
+            message: t('properties.messages.previewUrlError'),
+            color: 'red',
+            icon: <IconX size={18} />
+          });
+        } finally {
+          setIsGeneratingPreview(false);
+        }
+      }}
+      loading={isGeneratingPreview}
+      disabled={isGeneratingPreview}
+    >
+      {t('properties.afterSave.viewOnSite')}
+    </Button>
 
-          <Button
-            fullWidth
-            size="lg"
-            leftSection={<IconList size={20} />}
-            variant="light"
-            color="green"
-            onClick={() => {
-              window.location.href = 'https://admin.novaestate.company/properties';
-            }}
-          >
-            {t('properties.afterSave.goToList') || 'К списку всех объектов'}
-          </Button>
+    <Button
+      fullWidth
+      size="lg"
+      leftSection={<IconList size={20} />}
+      variant="light"
+      color="green"
+      onClick={() => {
+        navigate('/properties');
+        closeAfterSaveModal();
+      }}
+    >
+      {t('properties.afterSave.goToList') || 'К списку всех объектов'}
+    </Button>
 
-          <Button
-            fullWidth
-            size="lg"
-            leftSection={<IconPencil size={20} />}
-            variant="light"
-            color="gray"
-            onClick={closeAfterSaveModal}
-          >
-            {t('properties.afterSave.continueEditing') || 'Продолжить редактирование'}
-          </Button>
-        </Stack>
-      </Modal>
+    <Button
+      fullWidth
+      size="lg"
+      leftSection={<IconPencil size={20} />}
+      variant="light"
+      color="gray"
+      onClick={closeAfterSaveModal}
+    >
+      {t('properties.afterSave.continueEditing') || 'Продолжить редактирование'}
+    </Button>
+  </Stack>
+</Modal>
     </Box>
   );
 };

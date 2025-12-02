@@ -1,5 +1,5 @@
 // frontend/src/modules/Properties/components/CalendarManager.tsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Card,
   Stack,
@@ -87,17 +87,22 @@ interface CalendarManagerProps {
     blocked_date: string;
     reason: string;
   }>;
-  onChange?: (dates: BlockedDate[]) => void; // ✅ НОВОЕ: Колбэк для передачи данных
+  onChange?: (dates: BlockedDate[]) => void;
 }
 
 const CalendarManager = ({ 
   propertyId, 
   viewMode = false,
   initialBlockedDates = [],
-  onChange // ✅ НОВОЕ
+  onChange
 }: CalendarManagerProps) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // ✅ НОВОЕ: Refs для контроля инициализации
+  const isInitialMount = useRef(true);
+  const hasLoadedData = useRef(false);
+  const initialDatesRef = useRef(initialBlockedDates);
 
   // Состояния
   const [tempBlockedDates, setTempBlockedDates] = useState<BlockedDate[]>(initialBlockedDates || []);
@@ -151,27 +156,58 @@ const CalendarManager = ({
   const [periodStart, setPeriodStart] = useState<string | null>(null);
   const [periodEnd, setPeriodEnd] = useState<string | null>(null);
 
-  // ✅ НОВОЕ: Эффект для передачи данных через колбэк
+  // ✅ ИСПРАВЛЕНО: Эффект для передачи данных через колбэк БЕЗ onChange в зависимостях
   useEffect(() => {
     if (isCreatingMode && onChange) {
-      onChange(tempBlockedDates);
+      // Используем таймаут чтобы не вызывать onChange синхронно
+      const timeoutId = setTimeout(() => {
+        onChange(tempBlockedDates);
+      }, 0);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [tempBlockedDates, isCreatingMode, onChange]);
+  }, [tempBlockedDates, isCreatingMode]); // onChange НЕ в зависимостях!
 
+  // ✅ ИСПРАВЛЕНО: Инициализация только один раз
   useEffect(() => {
-    if (isCreatingMode && initialBlockedDates && initialBlockedDates.length > 0) {
-      setTempBlockedDates(initialBlockedDates);
-      loadCalendarData();
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      
+      if (isCreatingMode) {
+        // В режиме создания просто устанавливаем initial даты
+        if (initialDatesRef.current.length > 0) {
+          setTempBlockedDates(initialDatesRef.current);
+          loadCalendarData();
+        }
+      } else {
+        // В режиме редактирования загружаем данные ПОСЛЕДОВАТЕЛЬНО
+        loadAllData();
+      }
     }
-  }, [initialBlockedDates]);
+  }, []); // Пустой массив - вызывается только при монтировании
 
-  useEffect(() => {
-    if (!isCreatingMode) {
-      loadCalendarData();
-      loadICSInfo();
-      loadExternalCalendars();
+  // ✅ НОВОЕ: Последовательная загрузка данных вместо параллельной
+  const loadAllData = async () => {
+    if (hasLoadedData.current) return; // Защита от повторных вызовов
+    
+    setLoading(true);
+    hasLoadedData.current = true;
+    
+    try {
+      // Загружаем последовательно, чтобы не блокировать БД
+      await loadCalendarData();
+      await new Promise(resolve => setTimeout(resolve, 100)); // Небольшая задержка
+      
+      await loadICSInfo();
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      await loadExternalCalendars();
+    } catch (error) {
+      console.error('Error loading calendar data:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [propertyId]);
+  };
 
   const loadCalendarData = async () => {
     if (isCreatingMode) {
@@ -184,7 +220,7 @@ const CalendarManager = ({
       return;
     }
 
-    setLoading(true);
+    // ✅ ИСПРАВЛЕНО: Не устанавливаем loading здесь, это делает loadAllData
     try {
       const { data } = await propertiesApi.getCalendar(propertyId);
       const blocked = data.data.blocked_dates || [];
@@ -204,8 +240,6 @@ const CalendarManager = ({
         color: 'red',
         icon: <IconX size={18} />
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -224,6 +258,17 @@ const CalendarManager = ({
       setExternalCalendars(data.data || []);
     } catch (error) {
       console.error('Failed to load external calendars:', error);
+    }
+  };
+
+  // ✅ НОВОЕ: Функция перезагрузки данных
+  const reloadCalendarData = async () => {
+    if (isCreatingMode) {
+      await loadCalendarData();
+    } else {
+      // Перезагружаем только календарь и ICS, не external calendars
+      await loadCalendarData();
+      await loadICSInfo();
     }
   };
 
@@ -367,7 +412,7 @@ const CalendarManager = ({
         setSelectedCalendarDates([]);
         setCalendarSelectionMode(false);
         setReason('');
-        loadCalendarData();
+        await loadCalendarData();
         return;
       }
 
@@ -397,8 +442,7 @@ const CalendarManager = ({
         setSelectedCalendarDates([]);
         setCalendarSelectionMode(false);
         setReason('');
-        loadCalendarData();
-        loadICSInfo();
+        await reloadCalendarData(); // ✅ Используем reloadCalendarData
       } catch (error: any) {
         notifications.show({
           title: t('errors.generic'),
@@ -459,7 +503,7 @@ const CalendarManager = ({
         setPeriodEnd(null);
         setCalendarSelectionMode(false);
         setReason('');
-        loadCalendarData();
+        await loadCalendarData();
         return;
       }
 
@@ -488,8 +532,7 @@ const CalendarManager = ({
         setPeriodEnd(null);
         setCalendarSelectionMode(false);
         setReason('');
-        loadCalendarData();
-        loadICSInfo();
+        await reloadCalendarData(); // ✅ Используем reloadCalendarData
       } catch (error: any) {
         notifications.show({
           title: t('errors.generic'),
@@ -517,7 +560,7 @@ const CalendarManager = ({
         color: 'green',
         icon: <IconCheck size={18} />
       });
-      loadCalendarData();
+      await loadCalendarData(); // Только локальная перезагрузка
       return;
     }
 
@@ -529,8 +572,7 @@ const CalendarManager = ({
         color: 'green',
         icon: <IconCheck size={18} />
       });
-      loadCalendarData();
-      loadICSInfo();
+      await reloadCalendarData(); // ✅ Используем reloadCalendarData
     } catch (error: any) {
       notifications.show({
         title: t('errors.generic'),
@@ -604,9 +646,15 @@ const CalendarManager = ({
       });
       closeDeleteCalendarModal();
       setCalendarToDelete(null);
-      loadExternalCalendars();
-      loadCalendarData();
-      loadICSInfo();
+      
+      // ✅ ИСПРАВЛЕНО: Последовательная загрузка с задержками
+      await loadExternalCalendars();
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      await loadCalendarData();
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      await loadICSInfo();
     } catch (error: any) {
       notifications.show({
         title: t('errors.generic'),
@@ -706,9 +754,15 @@ const CalendarManager = ({
         });
       }
 
-      loadExternalCalendars();
-      loadCalendarData();
-      loadICSInfo();
+      // ✅ ИСПРАВЛЕНО: Последовательная загрузка с задержками
+      await loadExternalCalendars();
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      await loadCalendarData();
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      await loadICSInfo();
+      
       closeAnalysisModal();
       
       setTimeout(() => {
@@ -1160,7 +1214,7 @@ const CalendarManager = ({
             </SimpleGrid>
           )}
 
-          {/* ✅ НОВОЕ: Alert о временном хранении */}
+          {/* Alert о временном хранении */}
           {isCreatingMode && tempBlockedDates.length > 0 && (
             <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
               <Text size="sm">
@@ -1475,8 +1529,7 @@ const CalendarManager = ({
         </Card>
       )}
 
-      {/* Модальные окна - остальной код без изменений... */}
-      {/* Для экономии места не буду повторять все модальные окна, они идентичны оригиналу */}
+      {/* Модальные окна */}
       
       {/* Модальное окно выбора типа добавления */}
       <Modal
@@ -1665,7 +1718,7 @@ const CalendarManager = ({
         </Stack>
       </Modal>
 
-{/* Модальное окно добавления внешнего календаря */}
+      {/* Модальное окно добавления внешнего календаря */}
       <Modal
         opened={externalCalendarModalOpened}
         onClose={() => {
