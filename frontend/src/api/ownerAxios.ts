@@ -27,6 +27,51 @@ const processQueue = (error: any = null, token: string | null = null) => {
   failedQueue = [];
 };
 
+// ✅ Функция для получения токена из store
+const getOwnerAccessToken = (): string | null => {
+  try {
+    const storageData = localStorage.getItem('owner-auth-storage');
+    if (!storageData) return null;
+    
+    const parsed = JSON.parse(storageData);
+    return parsed?.state?.accessToken || null;
+  } catch (error) {
+    console.error('Error parsing owner storage:', error);
+    return null;
+  }
+};
+
+// ✅ Функция для получения refresh token из store
+const getOwnerRefreshToken = (): string | null => {
+  try {
+    const storageData = localStorage.getItem('owner-auth-storage');
+    if (!storageData) return null;
+    
+    const parsed = JSON.parse(storageData);
+    return parsed?.state?.refreshToken || null;
+  } catch (error) {
+    console.error('Error parsing owner storage:', error);
+    return null;
+  }
+};
+
+// ✅ Функция для обновления токенов в store
+const updateOwnerTokens = (accessToken: string, refreshToken: string) => {
+  try {
+    const storageData = localStorage.getItem('owner-auth-storage');
+    if (!storageData) return;
+    
+    const parsed = JSON.parse(storageData);
+    if (parsed && parsed.state) {
+      parsed.state.accessToken = accessToken;
+      parsed.state.refreshToken = refreshToken;
+      localStorage.setItem('owner-auth-storage', JSON.stringify(parsed));
+    }
+  } catch (error) {
+    console.error('Error updating owner tokens:', error);
+  }
+};
+
 const clearAuthAndRedirect = () => {
   if (isRedirecting) {
     return;
@@ -36,10 +81,8 @@ const clearAuthAndRedirect = () => {
   isRefreshing = false;
   failedQueue = [];
   
-  // Очищаем токены владельца
-  localStorage.removeItem('ownerAccessToken');
-  localStorage.removeItem('ownerRefreshToken');
-  localStorage.removeItem('owner-storage');
+  // Очищаем все токены владельца
+  localStorage.removeItem('owner-auth-storage');
   
   setTimeout(() => {
     // Получаем текущий токен из URL
@@ -64,11 +107,23 @@ ownerApi.interceptors.request.use(
       return config;
     }
     
-    // Используем ownerAccessToken вместо accessToken
-    const token = localStorage.getItem('ownerAccessToken');
+    // ✅ Получаем токен из store
+    const token = getOwnerAccessToken();
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('Owner API Request with token:', {
+        url: config.url,
+        method: config.method,
+        hasToken: true
+      });
+    } else {
+      console.warn('Owner API Request without token:', {
+        url: config.url,
+        method: config.method
+      });
     }
+    
     return config;
   },
   (error) => {
@@ -112,7 +167,8 @@ ownerApi.interceptors.response.use(
 
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem('ownerRefreshToken');
+      // ✅ Получаем refresh token из store
+      const refreshToken = getOwnerRefreshToken();
       
       if (!refreshToken) {
         console.log('No owner refresh token available, redirecting to login...');
@@ -121,6 +177,8 @@ ownerApi.interceptors.response.use(
       }
 
       try {
+        console.log('Attempting to refresh owner token...');
+        
         const { data } = await axios.post(
           '/api/property-owners/refresh',
           { refreshToken },
@@ -132,19 +190,24 @@ ownerApi.interceptors.response.use(
           }
         );
         
-        const newAccessToken = data.data.accessToken;
-        localStorage.setItem('ownerAccessToken', newAccessToken);
-        
-        if (data.data.refreshToken) {
-          localStorage.setItem('ownerRefreshToken', data.data.refreshToken);
+        if (data.success) {
+          const newAccessToken = data.data.accessToken;
+          const newRefreshToken = data.data.refreshToken;
+          
+          // ✅ Обновляем токены в store
+          updateOwnerTokens(newAccessToken, newRefreshToken);
+          
+          console.log('Owner tokens refreshed successfully');
+          
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          
+          processQueue(null, newAccessToken);
+          isRefreshing = false;
+          
+          return ownerApi(originalRequest);
+        } else {
+          throw new Error('Refresh failed');
         }
-        
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        
-        processQueue(null, newAccessToken);
-        isRefreshing = false;
-        
-        return ownerApi(originalRequest);
       } catch (refreshError: any) {
         console.log('Owner token refresh failed:', refreshError?.response?.status || refreshError?.message);
         processQueue(refreshError, null);

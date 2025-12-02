@@ -15,7 +15,9 @@ import {
   Paper,
   Box,
   Center,
-  Text
+  Text,
+  Alert,
+  Badge
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMediaQuery } from '@mantine/hooks';
@@ -23,11 +25,15 @@ import {
   IconArrowLeft,
   IconHome,
   IconCalendar,
-  IconX
+  IconX,
+  IconLock,
+  IconLockOpen,
+  IconInfoCircle
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { propertiesApi } from '@/api/properties.api';
+import { propertyOwnersApi } from '@/api/propertyOwners.api';
 import CalendarManager from '@/modules/Properties/components/CalendarManager';
+import { useOwnerStore } from '@/store/ownerStore';
 
 const OwnerCalendarPage = () => {
   const { t } = useTranslation();
@@ -38,6 +44,8 @@ const OwnerCalendarPage = () => {
   const [loading, setLoading] = useState(true);
   const [property, setProperty] = useState<any>(null);
 
+  const canEditCalendar = useOwnerStore(state => state.canEditCalendar());
+
   useEffect(() => {
     loadProperty();
   }, [propertyId]);
@@ -45,8 +53,10 @@ const OwnerCalendarPage = () => {
   const loadProperty = async () => {
     setLoading(true);
     try {
-      const { data } = await propertiesApi.getById(Number(propertyId));
-      setProperty(data.data);
+      const { data } = await propertyOwnersApi.getProperty(Number(propertyId));
+      if (data.success) {
+        setProperty(data.data);
+      }
     } catch (error: any) {
       notifications.show({
         title: t('ownerPortal.errorLoadingProperty'),
@@ -141,7 +151,6 @@ const OwnerCalendarPage = () => {
 
   return (
     <Box style={{ minHeight: '100vh' }}>
-      {/* Header */}
       <Paper
         shadow="md"
         p="md"
@@ -189,38 +198,61 @@ const OwnerCalendarPage = () => {
         </Container>
       </Paper>
 
-      {/* Content */}
       <Container size="xl" py="xl">
         <Stack gap="lg">
-          {/* Breadcrumbs */}
           <Breadcrumbs separator="›">
             {breadcrumbItems}
           </Breadcrumbs>
 
-          {/* Title Card */}
           <Card shadow="sm" padding="lg" radius="md" withBorder>
-            <Group gap="md" wrap="nowrap">
-              <ThemeIcon
-                size="xl"
-                radius="md"
-                variant="gradient"
-                gradient={{ from: 'blue', to: 'cyan' }}
+            <Group gap="md" wrap="nowrap" justify="space-between">
+              <Group gap="md" wrap="nowrap">
+                <ThemeIcon
+                  size="xl"
+                  radius="md"
+                  variant="gradient"
+                  gradient={{ from: 'blue', to: 'cyan' }}
+                >
+                  <IconCalendar size={28} stroke={1.5} />
+                </ThemeIcon>
+                <Stack gap={4} style={{ flex: 1 }}>
+                  <Title order={isMobile ? 4 : 3}>
+                    {t('ownerPortal.manageCalendar')}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    {property?.property_name || property?.property_number}
+                  </Text>
+                </Stack>
+              </Group>
+
+              <Badge
+                size="lg"
+                variant="light"
+                color={canEditCalendar ? 'green' : 'gray'}
+                leftSection={canEditCalendar ? <IconLockOpen size={14} /> : <IconLock size={14} />}
               >
-                <IconCalendar size={28} stroke={1.5} />
-              </ThemeIcon>
-              <Stack gap={4} style={{ flex: 1 }}>
-                <Title order={isMobile ? 4 : 3}>
-                  {t('ownerPortal.manageCalendar')}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  {property?.property_name || property?.property_number}
-                </Text>
-              </Stack>
+                {canEditCalendar ? t('ownerPortal.canEdit') : t('ownerPortal.viewOnly')}
+              </Badge>
             </Group>
           </Card>
 
-          {/* Calendar Manager */}
-          <CalendarManager propertyId={Number(propertyId)} viewMode={false} />
+          {!canEditCalendar && (
+            <Alert
+              icon={<IconInfoCircle size={18} />}
+              title={t('ownerPortal.readOnlyMode')}
+              color="blue"
+              variant="light"
+            >
+              <Text size="sm">
+                {t('ownerPortal.calendarReadOnlyDescription')}
+              </Text>
+            </Alert>
+          )}
+
+          <CalendarManager 
+            propertyId={Number(propertyId)} 
+            viewMode={!canEditCalendar} 
+          />
         </Stack>
       </Container>
     </Box>

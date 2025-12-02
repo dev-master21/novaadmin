@@ -16,7 +16,8 @@ import {
   Box,
   Center,
   Text,
-  Alert
+  Alert,
+  Badge
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -28,16 +29,20 @@ import {
   IconCheck,
   IconX,
   IconDeviceFloppy,
-  IconInfoCircle
+  IconInfoCircle,
+  IconLock,
+  IconLockOpen
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { propertiesApi, MonthlyPrice } from '@/api/properties.api';
+import { propertyOwnersApi } from '@/api/propertyOwners.api';
+import { MonthlyPrice } from '@/api/properties.api';
 import SalePriceForm from '@/modules/Properties/components/SalePriceForm';
 import YearPriceForm from '@/modules/Properties/components/YearPriceForm';
 import SeasonalPricing from '@/modules/Properties/components/SeasonalPricing';
 import MonthlyPricing from '@/modules/Properties/components/MonthlyPricing';
 import DepositForm from '@/modules/Properties/components/DepositForm';
 import UtilitiesForm from '@/modules/Properties/components/UtilitiesForm';
+import { useOwnerStore } from '@/store/ownerStore';
 
 const OwnerPricingPage = () => {
   const { t } = useTranslation();
@@ -50,6 +55,9 @@ const OwnerPricingPage = () => {
   const [property, setProperty] = useState<any>(null);
   const [depositType, setDepositType] = useState<'one_month' | 'two_months' | 'custom'>('one_month');
   const [depositAmount, setDepositAmount] = useState<number>(0);
+
+  // Получаем разрешение на редактирование цен из store
+  const canEditPricing = useOwnerStore(state => state.canEditPricing());
 
   const form = useForm({
     initialValues: {
@@ -87,42 +95,45 @@ const OwnerPricingPage = () => {
   const loadProperty = async () => {
     setLoading(true);
     try {
-      const { data } = await propertiesApi.getById(Number(propertyId));
-      const prop = data.data;
-      setProperty(prop);
+      const { data } = await propertyOwnersApi.getProperty(Number(propertyId));
+      
+      if (data.success) {
+        const prop = data.data;
+        setProperty(prop);
 
-      form.setValues({
-        deal_type: prop.deal_type,
-        sale_price: prop.sale_price,
-        sale_pricing_mode: prop.sale_pricing_mode || 'net',
-        sale_commission_type_new: prop.sale_commission_type_new || null,
-        sale_commission_value_new: prop.sale_commission_value_new || null,
-        sale_source_price: prop.sale_source_price || null,
-        sale_margin_amount: prop.sale_margin_amount || null,
-        sale_margin_percentage: prop.sale_margin_percentage || null,
-        
-        year_price: prop.year_price,
-        year_pricing_mode: prop.year_pricing_mode || 'net',
-        year_commission_type: prop.year_commission_type || null,
-        year_commission_value: prop.year_commission_value || null,
-        year_source_price: prop.year_source_price || null,
-        year_margin_amount: prop.year_margin_amount || null,
-        year_margin_percentage: prop.year_margin_percentage || null,
-        
-        monthlyPricing: prop.monthly_pricing || [],
-        seasonalPricing: prop.pricing || [],
-        
-        deposit_type: prop.deposit_type || '',
-        deposit_amount: prop.deposit_amount,
-        electricity_rate: prop.electricity_rate,
-        water_rate: prop.water_rate
-      });
+        form.setValues({
+          deal_type: prop.deal_type,
+          sale_price: prop.sale_price,
+          sale_pricing_mode: prop.sale_pricing_mode || 'net',
+          sale_commission_type_new: prop.sale_commission_type_new || null,
+          sale_commission_value_new: prop.sale_commission_value_new || null,
+          sale_source_price: prop.sale_source_price || null,
+          sale_margin_amount: prop.sale_margin_amount || null,
+          sale_margin_percentage: prop.sale_margin_percentage || null,
+          
+          year_price: prop.year_price,
+          year_pricing_mode: prop.year_pricing_mode || 'net',
+          year_commission_type: prop.year_commission_type || null,
+          year_commission_value: prop.year_commission_value || null,
+          year_source_price: prop.year_source_price || null,
+          year_margin_amount: prop.year_margin_amount || null,
+          year_margin_percentage: prop.year_margin_percentage || null,
+          
+          monthlyPricing: prop.monthly_pricing || [],
+          seasonalPricing: prop.seasonal_pricing || [],
+          
+          deposit_type: prop.deposit_type || '',
+          deposit_amount: prop.deposit_amount,
+          electricity_rate: prop.electricity_rate,
+          water_rate: prop.water_rate
+        });
 
-      if (prop.deposit_type) {
-        setDepositType(prop.deposit_type as 'one_month' | 'two_months' | 'custom');
-      }
-      if (prop.deposit_amount) {
-        setDepositAmount(prop.deposit_amount);
+        if (prop.deposit_type) {
+          setDepositType(prop.deposit_type as 'one_month' | 'two_months' | 'custom');
+        }
+        if (prop.deposit_amount) {
+          setDepositAmount(prop.deposit_amount);
+        }
       }
     } catch (error: any) {
       notifications.show({
@@ -138,11 +149,23 @@ const OwnerPricingPage = () => {
   };
 
   const handleSave = async () => {
+    // Блокируем сохранение если нет прав
+    if (!canEditPricing) {
+      notifications.show({
+        title: t('ownerPortal.accessDenied'),
+        message: t('ownerPortal.noEditPricingPermission'),
+        color: 'red',
+        icon: <IconLock size={18} />
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const values = form.values;
 
-      await propertiesApi.updatePricingDetails(Number(propertyId), {
+      // Сохраняем основные цены через owner API
+      await propertyOwnersApi.updatePropertyPricing(Number(propertyId), {
         sale_price: values.sale_price,
         sale_pricing_mode: values.sale_pricing_mode,
         sale_commission_type_new: values.sale_commission_type_new,
@@ -166,8 +189,12 @@ const OwnerPricingPage = () => {
         seasonalPricing: values.seasonalPricing || []
       });
 
+      // Сохраняем месячные цены если есть
       if (values.monthlyPricing && values.monthlyPricing.length > 0) {
-        await propertiesApi.updateMonthlyPricing(Number(propertyId), values.monthlyPricing);
+        await propertyOwnersApi.updatePropertyMonthlyPricing(
+          Number(propertyId), 
+          values.monthlyPricing
+        );
       }
 
       notifications.show({
@@ -342,16 +369,26 @@ const OwnerPricingPage = () => {
                   <IconCurrencyDollar size={28} stroke={1.5} />
                 </ThemeIcon>
                 <Stack gap={4} style={{ flex: 1 }}>
-                  <Title order={isMobile ? 4 : 3}>
-                    {t('ownerPortal.managePricing')}
-                  </Title>
+                  <Group gap="sm">
+                    <Title order={isMobile ? 4 : 3}>
+                      {t('ownerPortal.managePricing')}
+                    </Title>
+                    <Badge
+                      size="lg"
+                      variant="light"
+                      color={canEditPricing ? 'green' : 'gray'}
+                      leftSection={canEditPricing ? <IconLockOpen size={14} /> : <IconLock size={14} />}
+                    >
+                      {canEditPricing ? t('ownerPortal.canEdit') : t('ownerPortal.viewOnly')}
+                    </Badge>
+                  </Group>
                   <Text size="sm" c="dimmed">
                     {property?.property_name || property?.property_number}
                   </Text>
                 </Stack>
               </Group>
 
-              {!isMobile && (
+              {!isMobile && canEditPricing && (
                 <Button
                   variant="gradient"
                   gradient={{ from: 'teal', to: 'green' }}
@@ -366,14 +403,30 @@ const OwnerPricingPage = () => {
             </Group>
           </Card>
 
-          {/* Alert Info */}
-          <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
-            <Text size="sm">
-              {t('ownerPortal.pricingPageDescription') || 'Здесь вы можете управлять ценами на ваш объект недвижимости'}
-            </Text>
-          </Alert>
+          {/* Alert если нет прав на редактирование */}
+          {!canEditPricing && (
+            <Alert
+              icon={<IconInfoCircle size={18} />}
+              title={t('ownerPortal.readOnlyMode')}
+              color="blue"
+              variant="light"
+            >
+              <Text size="sm">
+                {t('ownerPortal.pricingReadOnlyDescription')}
+              </Text>
+            </Alert>
+          )}
 
-          {/* Sale Price */}
+          {/* Alert Info */}
+          {canEditPricing && (
+            <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
+              <Text size="sm">
+                {t('ownerPortal.pricingPageDescription') || 'Здесь вы можете управлять ценами на ваш объект недвижимости'}
+              </Text>
+            </Alert>
+          )}
+
+          {/* Sale Price - viewMode на основе разрешений */}
           {(dealType === 'sale' || dealType === 'both') && (
             <SalePriceForm
               propertyId={Number(propertyId) || 0}
@@ -384,7 +437,7 @@ const OwnerPricingPage = () => {
                 commission_value: property.sale_commission_value_new || null,
                 source_price: property.sale_source_price || null
               }}
-              viewMode={false}
+              viewMode={!canEditPricing}
               onChange={(data) => {
                 form.setFieldValue('sale_price', data.sale_price);
                 form.setFieldValue('sale_pricing_mode', data.sale_pricing_mode);
@@ -397,7 +450,7 @@ const OwnerPricingPage = () => {
             />
           )}
 
-          {/* Rent Prices */}
+          {/* Rent Prices - viewMode на основе разрешений */}
           {(dealType === 'rent' || dealType === 'both') && (
             <>
               <YearPriceForm
@@ -409,7 +462,7 @@ const OwnerPricingPage = () => {
                   commission_value: property.year_commission_value || null,
                   source_price: property.year_source_price || null
                 }}
-                viewMode={false}
+                viewMode={!canEditPricing}
                 onChange={(data) => {
                   form.setFieldValue('year_price', data.year_price);
                   form.setFieldValue('year_pricing_mode', data.year_pricing_mode);
@@ -424,29 +477,29 @@ const OwnerPricingPage = () => {
               <MonthlyPricing
                 propertyId={Number(propertyId) || 0}
                 initialPricing={property?.monthly_pricing || []}
-                viewMode={false}
+                viewMode={!canEditPricing}
                 onChange={(monthlyPricing) => {
                   form.setFieldValue('monthlyPricing', monthlyPricing);
                 }}
               />
 
-              <SeasonalPricing viewMode={false} form={form} />
+              <SeasonalPricing viewMode={!canEditPricing} form={form} />
 
               <DepositForm
                 dealType="rent"
-                viewMode={false}
+                viewMode={!canEditPricing}
                 depositType={depositType}
                 depositAmount={depositAmount}
                 onDepositTypeChange={setDepositType}
                 onDepositAmountChange={setDepositAmount}
               />
 
-              <UtilitiesForm viewMode={false} />
+              <UtilitiesForm viewMode={!canEditPricing} />
             </>
           )}
 
-          {/* Save Button (Mobile) */}
-          {isMobile && (
+          {/* Save Button (Mobile) - показывается только если есть права */}
+          {isMobile && canEditPricing && (
             <Paper
               p="md"
               radius="md"
@@ -479,8 +532,8 @@ const OwnerPricingPage = () => {
             </Paper>
           )}
 
-          {/* Desktop Bottom Buttons */}
-          {!isMobile && (
+          {/* Desktop Bottom Buttons - показывается только если есть права */}
+          {!isMobile && canEditPricing && (
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Group justify="flex-end" gap="md">
                 <Button

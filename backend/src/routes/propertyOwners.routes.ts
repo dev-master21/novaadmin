@@ -1,7 +1,7 @@
 // backend/src/routes/propertyOwners.routes.ts
 import { Router } from 'express';
 import propertyOwnersController from '../controllers/propertyOwners.controller';
-import { authenticate, authenticateOwner } from '../middlewares/auth.middleware';
+import { authenticate, authenticateOwner, requirePricingEditPermission, requireCalendaryEditPermission } from '../middlewares/auth.middleware';
 import { validateRequest } from '../middlewares/validation.middleware';
 
 const router = Router();
@@ -22,6 +22,15 @@ router.get(
   '/info/:ownerName',
   authenticate,
   propertyOwnersController.getOwnerInfo.bind(propertyOwnersController)
+);
+
+router.put(
+  '/permissions/:ownerName',
+  authenticate,
+  validateRequest({
+    optional: ['can_edit_calendar', 'can_edit_pricing']
+  }),
+  propertyOwnersController.updateOwnerPermissions.bind(propertyOwnersController)
 );
 
 // ========== ПУБЛИЧНЫЕ ЭНДПОИНТЫ ==========
@@ -56,6 +65,41 @@ router.use(authenticateOwner); // Все роуты ниже требуют ав
 router.get(
   '/properties',
   propertyOwnersController.getOwnerProperties.bind(propertyOwnersController)
+);
+
+// ✅ ДОБАВЬТЕ ЭТУ СТРОКУ - Получить конкретный объект
+router.get(
+  '/property/:id',
+  propertyOwnersController.getOwnerProperty.bind(propertyOwnersController)
+);
+router.put(
+  '/property/:id/pricing',
+  requirePricingEditPermission,
+  propertyOwnersController.updatePropertyPricing.bind(propertyOwnersController)
+);
+
+// Обновить месячные цены объекта (с проверкой прав)
+router.put(
+  '/property/:id/monthly-pricing',
+  requirePricingEditPermission,
+  propertyOwnersController.updatePropertyMonthlyPricing.bind(propertyOwnersController)
+);
+// Получить preview URL для объекта
+router.get(
+  '/property/:id/preview-url',
+  propertyOwnersController.getPropertyPreviewUrl.bind(propertyOwnersController)
+);
+
+router.get(
+  '/property/:id/calendar',
+  propertyOwnersController.getPropertyCalendar.bind(propertyOwnersController)
+);
+
+// Обновить календарь объекта (с проверкой прав)
+router.put(
+  '/property/:id/calendar',
+  requireCalendaryEditPermission,
+  propertyOwnersController.updatePropertyCalendar.bind(propertyOwnersController)
 );
 
 // Смена пароля

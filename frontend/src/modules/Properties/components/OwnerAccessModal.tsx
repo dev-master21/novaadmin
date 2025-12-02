@@ -18,7 +18,9 @@ import {
   CopyButton,
   Tooltip,
   Divider,
-  Timeline
+  Timeline,
+  Checkbox,
+  Switch
 } from '@mantine/core';
 import { 
   IconCopy, 
@@ -31,7 +33,10 @@ import {
   IconUserPlus,
   IconClock,
   IconExternalLink,
-  IconLock
+  IconLock,
+  IconCalendar,
+  IconCurrencyDollar,
+  IconDeviceFloppy
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { notifications } from '@mantine/notifications';
@@ -51,12 +56,21 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [savingPermissions, setSavingPermissions] = useState(false);
+  
+  // Разрешения
+  const [canEditCalendar, setCanEditCalendar] = useState(true);
+  const [canEditPricing, setCanEditPricing] = useState(true);
+  
+  // Данные доступа
   const [accessData, setAccessData] = useState<{
     access_url: string;
     password: string;
     is_active: boolean;
     last_login_at: string | null;
     created_at: string;
+    can_edit_calendar: boolean;
+    can_edit_pricing: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -71,6 +85,8 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
       const { data } = await propertyOwnersApi.getOwnerInfo(ownerName);
       if (data.success) {
         setAccessData(data.data);
+        setCanEditCalendar(data.data.can_edit_calendar);
+        setCanEditPricing(data.data.can_edit_pricing);
         setShowDisclaimer(false);
       }
     } catch (error: any) {
@@ -85,7 +101,11 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
   const handleCreateAccess = async () => {
     setLoading(true);
     try {
-      const { data } = await propertyOwnersApi.createOwnerAccess({ owner_name: ownerName });
+      const { data } = await propertyOwnersApi.createOwnerAccess({ 
+        owner_name: ownerName,
+        can_edit_calendar: canEditCalendar,
+        can_edit_pricing: canEditPricing
+      });
       
       if (data.success) {
         notifications.show({
@@ -100,7 +120,9 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
           password: data.data.password,
           is_active: true,
           last_login_at: null,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          can_edit_calendar: data.data.can_edit_calendar,
+          can_edit_pricing: data.data.can_edit_pricing
         });
         setShowDisclaimer(false);
       }
@@ -116,11 +138,56 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
     }
   };
 
+  const handleUpdatePermissions = async () => {
+    if (!accessData) return;
+    
+    setSavingPermissions(true);
+    try {
+      const { data } = await propertyOwnersApi.updateOwnerPermissions(ownerName, {
+        can_edit_calendar: canEditCalendar,
+        can_edit_pricing: canEditPricing
+      });
+      
+      if (data.success) {
+        notifications.show({
+          title: t('common.success'),
+          message: t('properties.ownerAccess.permissionsUpdated'),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
+        
+        // Обновляем локальные данные
+        setAccessData({
+          ...accessData,
+          can_edit_calendar: canEditCalendar,
+          can_edit_pricing: canEditPricing
+        });
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('properties.ownerAccess.permissionsUpdateError'),
+        color: 'red',
+        icon: <IconAlertTriangle size={18} />
+      });
+    } finally {
+      setSavingPermissions(false);
+    }
+  };
+
   const handleClose = () => {
     setShowDisclaimer(true);
     setAccessData(null);
+    setCanEditCalendar(true);
+    setCanEditPricing(true);
     onClose();
   };
+
+  // Проверка изменений в разрешениях
+  const hasPermissionsChanged = accessData && (
+    canEditCalendar !== accessData.can_edit_calendar || 
+    canEditPricing !== accessData.can_edit_pricing
+  );
 
   // Экран загрузки
   if (checking) {
@@ -149,7 +216,7 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
     );
   }
 
-  // Экран Disclaimer
+  // Экран Disclaimer для первого создания
   if (showDisclaimer && !accessData) {
     return (
       <Modal
@@ -178,6 +245,57 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
                 <Text fw={600} size="lg">{ownerName}</Text>
               </div>
             </Group>
+          </Card>
+
+          {/* Разрешения при создании */}
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Stack gap="md">
+              <Group gap="sm">
+                <ThemeIcon size="lg" radius="md" variant="light" color="violet">
+                  <IconShieldCheck size={20} stroke={1.5} />
+                </ThemeIcon>
+                <div>
+                  <Text fw={600} size="sm">{t('properties.ownerAccess.permissions')}</Text>
+                  <Text size="xs" c="dimmed">{t('properties.ownerAccess.permissionsDescription')}</Text>
+                </div>
+              </Group>
+
+              <Divider />
+
+              <Stack gap="sm">
+                <Checkbox
+                  checked={canEditCalendar}
+                  onChange={(event) => setCanEditCalendar(event.currentTarget.checked)}
+                  label={
+                    <Group gap="xs">
+                      <IconCalendar size={16} stroke={1.5} />
+                      <Text size="sm">{t('properties.ownerAccess.canEditCalendar')}</Text>
+                    </Group>
+                  }
+                  description={t('properties.ownerAccess.canEditCalendarDescription')}
+                />
+
+                <Checkbox
+                  checked={canEditPricing}
+                  onChange={(event) => setCanEditPricing(event.currentTarget.checked)}
+                  label={
+                    <Group gap="xs">
+                      <IconCurrencyDollar size={16} stroke={1.5} />
+                      <Text size="sm">{t('properties.ownerAccess.canEditPricing')}</Text>
+                    </Group>
+                  }
+                  description={t('properties.ownerAccess.canEditPricingDescription')}
+                />
+              </Stack>
+
+              {!canEditCalendar && !canEditPricing && (
+                <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
+                  <Text size="xs">
+                    {t('properties.ownerAccess.readOnlyWarning')}
+                  </Text>
+                </Alert>
+              )}
+            </Stack>
           </Card>
 
           {/* Warning Alert */}
@@ -218,10 +336,10 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
 
                 <Timeline.Item
                   bullet={<IconShieldCheck size={12} />}
-                  title={<Text size="sm" fw={500}>Ограниченный доступ</Text>}
+                  title={<Text size="sm" fw={500}>Настраиваемый доступ</Text>}
                 >
                   <Text size="xs" c="dimmed">
-                    Владелец увидит только свои объекты
+                    Владелец получит доступ согласно выбранным разрешениям
                   </Text>
                 </Timeline.Item>
               </Timeline>
@@ -260,7 +378,7 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
     );
   }
 
-  // Экран с данными доступа
+  // Экран с данными доступа и управлением разрешениями
   if (accessData) {
     return (
       <Modal
@@ -292,6 +410,98 @@ const OwnerAccessModal = ({ visible, onClose, ownerName }: OwnerAccessModalProps
               {t('properties.ownerAccess.successDescription')}
             </Text>
           </Alert>
+
+          {/* Управление разрешениями */}
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Stack gap="md">
+              <Group gap="sm" justify="space-between">
+                <Group gap="sm">
+                  <ThemeIcon size="lg" radius="md" variant="light" color="violet">
+                    <IconShieldCheck size={20} stroke={1.5} />
+                  </ThemeIcon>
+                  <div>
+                    <Text fw={600} size="sm">{t('properties.ownerAccess.permissions')}</Text>
+                    <Text size="xs" c="dimmed">{t('properties.ownerAccess.managePermissions')}</Text>
+                  </div>
+                </Group>
+                
+                {hasPermissionsChanged && (
+                  <Badge color="orange" variant="light">
+                    {t('properties.ownerAccess.unsavedChanges')}
+                  </Badge>
+                )}
+              </Group>
+
+              <Divider />
+
+              <Stack gap="md">
+                <Paper p="md" radius="md" withBorder>
+                  <Group justify="space-between" wrap="nowrap">
+                    <Group gap="sm">
+                      <ThemeIcon size="md" radius="md" variant="light" color="blue">
+                        <IconCalendar size={18} />
+                      </ThemeIcon>
+                      <div>
+                        <Text size="sm" fw={500}>{t('properties.ownerAccess.calendarPermission')}</Text>
+                        <Text size="xs" c="dimmed">{t('properties.ownerAccess.canEditCalendarDescription')}</Text>
+                      </div>
+                    </Group>
+                    <Switch
+                      checked={canEditCalendar}
+                      onChange={(event) => setCanEditCalendar(event.currentTarget.checked)}
+                      color="blue"
+                      size="md"
+                      onLabel={<IconCheck size={14} />}
+                      offLabel={<IconLock size={14} />}
+                    />
+                  </Group>
+                </Paper>
+
+                <Paper p="md" radius="md" withBorder>
+                  <Group justify="space-between" wrap="nowrap">
+                    <Group gap="sm">
+                      <ThemeIcon size="md" radius="md" variant="light" color="green">
+                        <IconCurrencyDollar size={18} />
+                      </ThemeIcon>
+                      <div>
+                        <Text size="sm" fw={500}>{t('properties.ownerAccess.pricingPermission')}</Text>
+                        <Text size="xs" c="dimmed">{t('properties.ownerAccess.canEditPricingDescription')}</Text>
+                      </div>
+                    </Group>
+                    <Switch
+                      checked={canEditPricing}
+                      onChange={(event) => setCanEditPricing(event.currentTarget.checked)}
+                      color="green"
+                      size="md"
+                      onLabel={<IconCheck size={14} />}
+                      offLabel={<IconLock size={14} />}
+                    />
+                  </Group>
+                </Paper>
+
+                {!canEditCalendar && !canEditPricing && (
+                  <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
+                    <Text size="xs">
+                      {t('properties.ownerAccess.readOnlyWarning')}
+                    </Text>
+                  </Alert>
+                )}
+
+                {hasPermissionsChanged && (
+                  <Button
+                    variant="filled"
+                    color="violet"
+                    leftSection={<IconDeviceFloppy size={18} />}
+                    onClick={handleUpdatePermissions}
+                    loading={savingPermissions}
+                    fullWidth
+                  >
+                    {t('properties.ownerAccess.savePermissions')}
+                  </Button>
+                )}
+              </Stack>
+            </Stack>
+          </Card>
 
           {/* Ссылка для владельца */}
           <Card shadow="sm" padding="lg" radius="md" withBorder>

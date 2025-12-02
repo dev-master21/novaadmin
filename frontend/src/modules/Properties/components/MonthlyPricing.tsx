@@ -1173,13 +1173,6 @@ const MonthlyPricing = ({
         ) : (
           renderGridView()
         )}
-
-        <Alert icon={<IconAlertTriangle size={16} />} color="yellow" variant="light">
-          <Text size="sm" fw={600} mb={4}>
-            {t('monthlyPricing.importantInfoTitle')}
-          </Text>
-          <Text size="sm">{t('monthlyPricing.importantInfoDescription')}</Text>
-        </Alert>
       </Stack>
 
       <Modal

@@ -26,7 +26,9 @@ import {
   Title,
   PasswordInput,
   Tooltip,
-  Tabs
+  Tabs,
+  Table,
+  ScrollArea
 } from '@mantine/core';
 import { Carousel } from '@mantine/carousel';
 import { useForm } from '@mantine/form';
@@ -50,17 +52,21 @@ import {
   IconBath,
   IconChartBar,
   IconCalendarOff,
-  IconSparkles
+  IconSparkles,
+  IconExternalLink,
+  IconAlertCircle,
+  IconCircleCheck,
+  IconLockOpen
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useOwnerStore } from '@/store/ownerStore';
-import { propertyOwnersApi, OwnerProperty } from '@/api/propertyOwners.api';
+import { propertyOwnersApi, OwnerProperty, MonthlyPriceDetail } from '@/api/propertyOwners.api';
 import dayjs from 'dayjs';
 
 const OwnerDashboard = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { isAuthenticated, clearAuth } = useOwnerStore();
+  const { isAuthenticated, clearAuth, canEditCalendar, canEditPricing } = useOwnerStore();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const [properties, setProperties] = useState<OwnerProperty[]>([]);
@@ -68,7 +74,9 @@ const OwnerDashboard = () => {
   const [changePasswordModalOpened, { open: openPasswordModal, close: closePasswordModal }] = useDisclosure(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [completenessModalOpened, { open: openCompletenessModal, close: closeCompletenessModal }] = useDisclosure(false);
+  const [monthlyPricesModalOpened, { open: openMonthlyPricesModal, close: closeMonthlyPricesModal }] = useDisclosure(false);
   const [selectedProperty, setSelectedProperty] = useState<OwnerProperty | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState<number | null>(null);
 
   const passwordForm = useForm({
     initialValues: {
@@ -135,13 +143,15 @@ const OwnerDashboard = () => {
     }
   };
 
-  const handleManageProperty = (propertyId: number, type: 'pricing' | 'calendar') => {
-    if (type === 'pricing') {
-      navigate(`/owner/property/${propertyId}/pricing`);
-    } else {
-      navigate(`/owner/property/${propertyId}/calendar`);
-    }
-  };
+const handleManageProperty = (propertyId: number, type: 'pricing' | 'calendar') => {
+  // Убираем проверку прав - просто переходим на страницу
+  // Режим просмотра будет определяться внутри компонентов
+  if (type === 'pricing') {
+    navigate(`/owner/property/${propertyId}/pricing`);
+  } else {
+    navigate(`/owner/property/${propertyId}/calendar`);
+  }
+};
 
   const handleChangePassword = async (values: any) => {
     setChangingPassword(true);
@@ -176,6 +186,41 @@ const OwnerDashboard = () => {
     setSelectedProperty(property);
     openCompletenessModal();
   };
+
+  const handleShowMonthlyPrices = (property: OwnerProperty) => {
+    setSelectedProperty(property);
+    openMonthlyPricesModal();
+  };
+
+const handleViewOnSite = async (propertyId: number) => {
+  setLoadingPreview(propertyId);
+  
+  try {
+    const response = await propertyOwnersApi.getPropertyPreviewUrl(propertyId);
+    
+    if (response.data?.success && response.data.data?.previewUrl) {
+      // Просто открываем в новой вкладке - это работает на мобильных устройствах
+      window.open(response.data.data.previewUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('ownerPortal.previewUrlError'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
+    }
+  } catch (error) {
+    console.error('Error generating preview URL:', error);
+    notifications.show({
+      title: t('errors.generic'),
+      message: t('ownerPortal.previewUrlError'),
+      color: 'red',
+      icon: <IconX size={18} />
+    });
+  } finally {
+    setLoadingPreview(null);
+  }
+};
 
   const formatRoomCount = (count: number | null | undefined): string => {
     if (count === null || count === undefined || count === 0 || count < 0) {
@@ -250,6 +295,19 @@ const OwnerDashboard = () => {
     if (completeness >= 80) return 'teal';
     if (completeness >= 50) return 'yellow';
     return 'red';
+  };
+
+  const getMonthName = (month: number): string => {
+    const months = [
+      'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+      'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+    ];
+    return months[month - 1] || `Месяц ${month}`;
+  };
+
+  const formatPrice = (price: number | null): string => {
+    if (!price) return '—';
+    return `฿${price.toLocaleString()}`;
   };
 
   const languages = [
@@ -359,7 +417,7 @@ const OwnerDashboard = () => {
   };
 
   return (
-    <Box style={{ minHeight: '100vh' }}>
+    <Box style={{ minHeight: '100vh', background: 'var(--mantine-color-dark-8)' }}>
       {/* Header */}
       <Paper
         shadow="md"
@@ -446,28 +504,53 @@ const OwnerDashboard = () => {
       {/* Content */}
       <Container size="xl" py="xl">
         <Stack gap="xl">
-          <Group justify="space-between" align="flex-start">
-            <Stack gap="xs">
-              <Title order={2}>
-                {t('ownerPortal.myProperties')}
-              </Title>
-              {!loading && properties.length > 0 && (
-                <Text size="sm" c="dimmed">
-                  {t('ownerPortal.totalProperties')}: {properties.length}
-                </Text>
+          {/* Welcome Card */}
+          <Card shadow="lg" padding="xl" radius="md" withBorder style={{ 
+            background: 'linear-gradient(135deg, var(--mantine-color-violet-9) 0%, var(--mantine-color-grape-9) 100%)' 
+          }}>
+            <Stack gap="md">
+              <Group justify="space-between" align="flex-start">
+                <Stack gap="xs">
+                  <Title order={2} c="white">
+                    {t('ownerPortal.welcome')}
+                  </Title>
+                  {!loading && properties.length > 0 && (
+                    <Text size="sm" c="rgba(255, 255, 255, 0.8)">
+                      {t('ownerPortal.totalProperties')}: {properties.length}
+                    </Text>
+                  )}
+                </Stack>
+                <Group gap="xs">
+                  <Badge
+                    size="lg"
+                    variant="white"
+                    leftSection={canEditCalendar() ? <IconLockOpen size={14} /> : <IconLock size={14} />}
+                    color={canEditCalendar() ? 'teal' : 'gray'}
+                  >
+                    {t('ownerPortal.calendar')}
+                  </Badge>
+                  <Badge
+                    size="lg"
+                    variant="white"
+                    leftSection={canEditPricing() ? <IconLockOpen size={14} /> : <IconLock size={14} />}
+                    color={canEditPricing() ? 'teal' : 'gray'}
+                  >
+                    {t('ownerPortal.pricing')}
+                  </Badge>
+                </Group>
+              </Group>
+
+              {(!canEditCalendar() || !canEditPricing()) && (
+                <Alert icon={<IconInfoCircle size={16} />} color="cyan" variant="white" styles={{
+                  root: { background: 'rgba(255, 255, 255, 0.15)', border: 'none' }
+                }}>
+                  <Text size="sm" c="white">
+                    {t('ownerPortal.limitedAccessInfo')}
+                  </Text>
+                </Alert>
               )}
             </Stack>
-            {properties.length > 0 && (
-              <Badge
-                size="lg"
-                variant="gradient"
-                gradient={{ from: 'violet', to: 'grape' }}
-                leftSection={<IconBuildingEstate size={16} />}
-              >
-                {properties.length}
-              </Badge>
-            )}
-          </Group>
+          </Card>
 
           {loading ? (
             <Card shadow="sm" padding="xl" radius="md" withBorder>
@@ -504,7 +587,7 @@ const OwnerDashboard = () => {
           ) : (
             <Grid gutter="lg">
               {properties.map((property) => (
-                <Grid.Col key={property.id} span={{ base: 12, sm: 6, md: 4 }}>
+                <Grid.Col key={property.id} span={{ base: 12, sm: 6, lg: 4 }}>
                   <Card
                     shadow="sm"
                     padding={0}
@@ -514,7 +597,6 @@ const OwnerDashboard = () => {
                       height: '100%',
                       overflow: 'hidden',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      cursor: 'pointer'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-8px)';
@@ -530,6 +612,7 @@ const OwnerDashboard = () => {
                     </Card.Section>
 
                     <Stack gap="md" p="lg">
+                      {/* Заголовок */}
                       <Stack gap="xs">
                         <Group justify="space-between" align="flex-start" wrap="nowrap">
                           <Text fw={700} size="lg" lineClamp={2} style={{ flex: 1 }}>
@@ -551,6 +634,7 @@ const OwnerDashboard = () => {
                         </Group>
                       </Stack>
 
+                      {/* Информация о комнатах */}
                       {(hasValidRoomCount(property.bedrooms) || hasValidRoomCount(property.bathrooms)) && (
                         <Group gap="md">
                           {hasValidRoomCount(property.bedrooms) && (
@@ -576,6 +660,7 @@ const OwnerDashboard = () => {
                         </Group>
                       )}
 
+                      {/* Заполненность */}
                       <Paper
                         p="sm"
                         radius="md"
@@ -623,17 +708,20 @@ const OwnerDashboard = () => {
                         </Stack>
                       </Paper>
 
+                      {/* Информация о занятости */}
                       {renderOccupancyInfo(property)}
 
                       <Divider />
 
+                      {/* Кнопки действий */}
                       <Stack gap="xs">
                         <Button
-                          variant="gradient"
-                          gradient={{ from: 'teal', to: 'green' }}
+                          variant="light"
+                          color="blue"
                           fullWidth
-                          leftSection={<IconCurrencyDollar size={18} />}
-                          onClick={() => handleManageProperty(property.id, 'pricing')}
+                          leftSection={<IconExternalLink size={18} />}
+                          onClick={() => handleViewOnSite(property.id)}
+                          loading={loadingPreview === property.id}
                           styles={{
                             root: {
                               transition: 'all 0.2s',
@@ -643,18 +731,28 @@ const OwnerDashboard = () => {
                             }
                           }}
                         >
-                          {t('ownerPortal.managePricing')}
+                          {t('ownerPortal.viewOnSite')}
                         </Button>
 
-                        <Button
-                          variant="light"
-                          color="blue"
-                          fullWidth
-                          leftSection={<IconCalendar size={18} />}
-                          onClick={() => handleManageProperty(property.id, 'calendar')}
-                        >
-                          {t('ownerPortal.manageCalendar')}
-                        </Button>
+                        <Group grow>
+                          <Button
+                            variant="gradient"
+                            gradient={{ from: 'teal', to: 'green' }}
+                            leftSection={<IconCurrencyDollar size={18} />}
+                            onClick={() => handleManageProperty(property.id, 'pricing')}
+                          >
+                            {t('ownerPortal.pricing')}
+                          </Button>
+
+                          <Button
+                            variant="light"
+                            color="blue"
+                            leftSection={<IconCalendar size={18} />}
+                            onClick={() => handleManageProperty(property.id, 'calendar')}
+                          >
+                            {t('ownerPortal.calendar')}
+                          </Button>
+                        </Group>
                       </Stack>
                     </Stack>
                   </Card>
@@ -865,21 +963,31 @@ const OwnerDashboard = () => {
                   selectedProperty.completeness_details.missing.length > 0 ? (
                     <Card shadow="sm" padding="lg" radius="md" withBorder>
                       <Timeline active={-1} bulletSize={24} lineWidth={2} color="yellow">
-                        {selectedProperty.completeness_details.missing.map((item: any, index: number) => (
-                          <Timeline.Item
-                            key={index}
-                            bullet={<IconExclamationCircle size={12} />}
-                          >
-                            <Group justify="space-between">
-                              <Text size="sm" fw={500}>
-                                {item.name}
-                              </Text>
-                              <Badge size="sm" variant="light" color="yellow">
-                                {Math.round(item.weight)}%
-                              </Badge>
-                            </Group>
-                          </Timeline.Item>
-                        ))}
+                        {selectedProperty.completeness_details.missing.map((item: any, index: number) => {
+                          const isMonthlyPrices = item.field_key === 'monthly_prices';
+                          return (
+                            <Timeline.Item
+                              key={index}
+                              bullet={<IconExclamationCircle size={12} />}
+                            >
+                              <Group justify="space-between" wrap="nowrap">
+                                <Text size="sm" fw={500} style={{ flex: 1 }}>
+                                  {item.name}
+                                </Text>
+                                {isMonthlyPrices && (
+                                  <Button
+                                    size="xs"
+                                    variant="subtle"
+                                    color="blue"
+                                    onClick={() => handleShowMonthlyPrices(selectedProperty)}
+                                  >
+                                    {t('ownerPortal.details')}
+                                  </Button>
+                                )}
+                              </Group>
+                            </Timeline.Item>
+                          );
+                        })}
                       </Timeline>
                     </Card>
                   ) : (
@@ -896,18 +1004,28 @@ const OwnerDashboard = () => {
                   selectedProperty.completeness_details.filled.length > 0 ? (
                     <Card shadow="sm" padding="lg" radius="md" withBorder>
                       <Timeline active={selectedProperty.completeness_details.filled.length} bulletSize={24} lineWidth={2} color="teal">
-                        {selectedProperty.completeness_details.filled.map((item: any, index: number) => (
-                          <Timeline.Item key={index} bullet={<IconCheck size={12} />}>
-                            <Group justify="space-between">
-                              <Text size="sm" fw={500}>
-                                {item.name}
-                              </Text>
-                              <Badge size="sm" variant="light" color="teal">
-                                {Math.round(item.weight)}%
-                              </Badge>
-                            </Group>
-                          </Timeline.Item>
-                        ))}
+                        {selectedProperty.completeness_details.filled.map((item: any, index: number) => {
+                          const isMonthlyPrices = item.field_key === 'monthly_prices';
+                          return (
+                            <Timeline.Item key={index} bullet={<IconCircleCheck size={12} />}>
+                              <Group justify="space-between" wrap="nowrap">
+                                <Text size="sm" fw={500} style={{ flex: 1 }}>
+                                  {item.name}
+                                </Text>
+                                {isMonthlyPrices && (
+                                  <Button
+                                    size="xs"
+                                    variant="subtle"
+                                    color="blue"
+                                    onClick={() => handleShowMonthlyPrices(selectedProperty)}
+                                  >
+                                    {t('ownerPortal.details')}
+                                  </Button>
+                                )}
+                              </Group>
+                            </Timeline.Item>
+                          );
+                        })}
                       </Timeline>
                     </Card>
                   ) : (
@@ -942,6 +1060,84 @@ const OwnerDashboard = () => {
                 </Button>
               )}
             </Group>
+          </Stack>
+        )}
+      </Modal>
+
+      {/* Monthly Prices Details Modal */}
+      <Modal
+        opened={monthlyPricesModalOpened}
+        onClose={closeMonthlyPricesModal}
+        title={
+          <Group gap="sm">
+            <ThemeIcon size="lg" radius="md" variant="light" color="blue">
+              <IconCalendar size={20} stroke={1.5} />
+            </ThemeIcon>
+            <div>
+              <Text fw={600}>{t('ownerPortal.monthlyPricesDetails')}</Text>
+              {selectedProperty && (
+                <Text size="xs" c="dimmed">
+                  {selectedProperty.property_name || selectedProperty.property_number}
+                </Text>
+              )}
+            </div>
+          </Group>
+        }
+        size={isMobile ? 'full' : 'lg'}
+        centered
+      >
+        {selectedProperty?.completeness_details?.monthly_prices && (
+          <Stack gap="lg">
+            <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
+              <Text size="sm">
+                {t('ownerPortal.monthlyPricesDescription')}
+              </Text>
+            </Alert>
+
+            <ScrollArea>
+              <Table striped highlightOnHover withTableBorder>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>{t('ownerPortal.month')}</Table.Th>
+                    <Table.Th>{t('ownerPortal.sourcePrice')}</Table.Th>
+                    <Table.Th>{t('ownerPortal.status')}</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {selectedProperty.completeness_details.monthly_prices.map((monthData: MonthlyPriceDetail) => (
+                    <Table.Tr key={monthData.month}>
+                      <Table.Td>
+                        <Text fw={500}>{getMonthName(monthData.month)}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text c={monthData.is_filled ? 'teal' : 'dimmed'}>
+                          {formatPrice(monthData.source_price)}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        {monthData.is_filled ? (
+                          <Badge color="teal" variant="light" leftSection={<IconCheck size={12} />}>
+                            {t('ownerPortal.filled')}
+                          </Badge>
+                        ) : (
+                          <Badge color="yellow" variant="light" leftSection={<IconAlertCircle size={12} />}>
+                            {t('ownerPortal.notFilled')}
+                          </Badge>
+                        )}
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </ScrollArea>
+
+            <Button
+              variant="subtle"
+              onClick={closeMonthlyPricesModal}
+              fullWidth
+            >
+              {t('common.close')}
+            </Button>
           </Stack>
         )}
       </Modal>

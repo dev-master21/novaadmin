@@ -226,9 +226,9 @@ export const authenticateOwner = async (
       return;
     }
 
-    // Получаем информацию о владельце
+    // Получаем информацию о владельце с разрешениями
     const owner = await db.queryOne<any>(
-      `SELECT id, owner_name, is_active 
+      `SELECT id, owner_name, is_active, can_edit_calendar, can_edit_pricing 
        FROM property_owners 
        WHERE id = ? AND is_active = 1`,
       [decoded.id]
@@ -242,8 +242,14 @@ export const authenticateOwner = async (
       return;
     }
 
-    // Добавляем информацию о владельце в request
-    (req as any).owner = owner;
+    // Добавляем информацию о владельце с разрешениями в request
+    (req as any).owner = {
+      id: owner.id,
+      owner_name: owner.owner_name,
+      can_edit_calendar: !!owner.can_edit_calendar,
+      can_edit_pricing: !!owner.can_edit_pricing
+    };
+
     next();
   } catch (error) {
     res.status(500).json({
@@ -251,6 +257,69 @@ export const authenticateOwner = async (
       message: 'Ошибка аутентификации'
     });
   }
+};
+
+/**
+ * Middleware для проверки разрешения владельца на редактирование календаря
+ */
+export const requireCalendarEditPermission = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  const owner = (req as any).owner;
+  
+  if (!owner || !owner.can_edit_calendar) {
+    res.status(403).json({
+      success: false,
+      message: 'У вас нет разрешения на редактирование календаря'
+    });
+    return;
+  }
+  
+  next();
+};
+
+/**
+ * Middleware для проверки разрешения владельца на редактирование цен
+ */
+export const requirePricingEditPermission = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  const owner = (req as any).owner;
+  
+  if (!owner || !owner.can_edit_pricing) {
+    res.status(403).json({
+      success: false,
+      message: 'У вас нет разрешения на редактирование цен'
+    });
+    return;
+  }
+  
+  next();
+};
+
+/**
+ * Middleware для проверки разрешения владельца на редактирование календаря
+ */
+export const requireCalendaryEditPermission = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  const owner = (req as any).owner;
+  
+  if (!owner || !owner.can_edit_calendar) {
+    res.status(403).json({
+      success: false,
+      message: 'У вас нет разрешения на редактирование календаря'
+    });
+    return;
+  }
+  
+  next();
 };
 
 /**

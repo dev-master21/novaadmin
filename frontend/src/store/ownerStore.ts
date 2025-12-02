@@ -7,51 +7,71 @@ interface Owner {
   owner_name: string;
   access_token: string;
   properties_count: number;
+  can_edit_calendar: boolean;
+  can_edit_pricing: boolean;
 }
 
 interface OwnerState {
   owner: Owner | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
+  
   setAuth: (owner: Owner, accessToken: string, refreshToken: string) => void;
   clearAuth: () => void;
-  updatePropertiesCount: (count: number) => void;
+  updateTokens: (accessToken: string, refreshToken: string) => void;
+  canEditCalendar: () => boolean;
+  canEditPricing: () => boolean;
 }
 
 export const useOwnerStore = create<OwnerState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       owner: null,
+      accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
 
       setAuth: (owner, accessToken, refreshToken) => {
-        // Сохраняем токены в localStorage
-        localStorage.setItem('ownerAccessToken', accessToken);
-        localStorage.setItem('ownerRefreshToken', refreshToken);
-        
         set({
           owner,
+          accessToken,
+          refreshToken,
           isAuthenticated: true
         });
       },
 
       clearAuth: () => {
-        // Очищаем токены из localStorage
-        localStorage.removeItem('ownerAccessToken');
-        localStorage.removeItem('ownerRefreshToken');
-        
         set({
           owner: null,
+          accessToken: null,
+          refreshToken: null,
           isAuthenticated: false
         });
       },
 
-      updatePropertiesCount: (count) =>
-        set((state) => ({
-          owner: state.owner ? { ...state.owner, properties_count: count } : null
-        }))
+      updateTokens: (accessToken, refreshToken) => {
+        set({ accessToken, refreshToken });
+      },
+
+      canEditCalendar: () => {
+        const { owner } = get();
+        return owner?.can_edit_calendar ?? false;
+      },
+
+      canEditPricing: () => {
+        const { owner } = get();
+        return owner?.can_edit_pricing ?? false;
+      }
     }),
     {
-      name: 'owner-storage'
+      name: 'owner-auth-storage',
+      partialize: (state) => ({
+        owner: state.owner,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        isAuthenticated: state.isAuthenticated
+      })
     }
   )
 );
