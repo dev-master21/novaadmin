@@ -1163,6 +1163,17 @@ async updatePropertyPricing(req: AuthRequest, res: Response): Promise<void> {
     const ownerName = (req as any).owner?.owner_name;
     const canEditPricing = (req as any).owner?.can_edit_pricing;
 
+    // ✅ ЛОГИРОВАНИЕ 1: Проверяем что приходит на бэкенд
+    logger.info('=== UPDATE PROPERTY PRICING REQUEST ===');
+    logger.info('propertyId:', propertyId);
+    logger.info('ownerName:', ownerName);
+    logger.info('canEditPricing:', canEditPricing);
+    logger.info('seasonalPricing in body:', req.body.seasonalPricing ? 'YES' : 'NO');
+    if (req.body.seasonalPricing) {
+      logger.info('seasonalPricing length:', Array.isArray(req.body.seasonalPricing) ? req.body.seasonalPricing.length : 'NOT ARRAY');
+      logger.info('seasonalPricing data:', JSON.stringify(req.body.seasonalPricing, null, 2));
+    }
+
     if (!ownerName) {
       res.status(401).json({
         success: false,
@@ -1260,13 +1271,26 @@ async updatePropertyPricing(req: AuthRequest, res: Response): Promise<void> {
       ]
     );
 
+    // ✅ ЛОГИРОВАНИЕ 2: Проверяем условие
+    logger.info('=== CHECKING SEASONAL PRICING CONDITION ===');
+    logger.info('seasonalPricing exists:', !!seasonalPricing);
+    logger.info('seasonalPricing is array:', Array.isArray(seasonalPricing));
+    logger.info('Condition result:', seasonalPricing && Array.isArray(seasonalPricing));
+
     // Обновляем сезонные цены если есть
     if (seasonalPricing && Array.isArray(seasonalPricing)) {
-      // Удаляем старые цены
-      await db.query('DELETE FROM property_pricing WHERE property_id = ?', [propertyId]);
+      logger.info('✅ ENTERING SEASONAL PRICING UPDATE BLOCK');
+      
+      // ✅ ЛОГИРОВАНИЕ 3: Удаляем старые цены
+      logger.info('Deleting old seasonal pricing for property:', propertyId);
+      const deleteResult = await db.query('DELETE FROM property_pricing WHERE property_id = ?', [propertyId]);
+      logger.info('Delete result:', deleteResult);
 
       // Добавляем новые
+      logger.info('Inserting new seasonal pricing, count:', seasonalPricing.length);
       for (const pricing of seasonalPricing) {
+        logger.info('Inserting pricing:', JSON.stringify(pricing));
+        
         await db.query(
           `INSERT INTO property_pricing 
            (property_id, season_type, start_date_recurring, end_date_recurring, 
@@ -1291,16 +1315,19 @@ async updatePropertyPricing(req: AuthRequest, res: Response): Promise<void> {
           ]
         );
       }
+      logger.info('✅ Seasonal pricing inserted successfully');
+    } else {
+      logger.warn('⚠️ SKIPPING SEASONAL PRICING UPDATE - condition not met');
     }
 
-    logger.info(`Property pricing updated for property ${propertyId} by owner ${ownerName}`);
+    logger.info(`✅ Property pricing updated for property ${propertyId} by owner ${ownerName}`);
 
     res.json({
       success: true,
       message: 'Цены успешно обновлены'
     });
   } catch (error) {
-    logger.error('Update property pricing error:', error);
+    logger.error('❌ Update property pricing error:', error);
     res.status(500).json({
       success: false,
       message: 'Ошибка обновления цен'

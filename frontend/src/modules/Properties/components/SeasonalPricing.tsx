@@ -238,60 +238,69 @@ const SeasonalPricing = ({
   };
 
   // ✅ НОВАЯ ФУНКЦИЯ: Автоматическое сохранение через API
-  const saveToBackend = async (updatedPeriods: PricingPeriod[]) => {
-    if (!propertyId || !autoSave) return;
+const saveToBackend = async (updatedPeriods: PricingPeriod[]) => {
+  if (!propertyId || !autoSave) {
+    console.log('⚠️ saveToBackend skipped:', { propertyId, autoSave });
+    return;
+  }
 
-    try {
-      setSaving(true);
+  try {
+    setSaving(true);
 
-      // Подготавливаем данные для отправки (удаляем временные id)
-      const seasonalPricingData = updatedPeriods.map(period => ({
-        season_type: period.season_type,
-        start_date_recurring: period.start_date_recurring,
-        end_date_recurring: period.end_date_recurring,
-        price_per_night: period.price_per_night,
-        source_price_per_night: period.source_price_per_night,
-        source_price: period.source_price_per_night, // ✅ Добавляем для backend
-        minimum_nights: period.minimum_nights,
-        pricing_type: period.pricing_type || 'per_night',
-        pricing_mode: period.pricing_mode || 'net',
-        commission_type: period.commission_type,
-        commission_value: period.commission_value,
-        margin_amount: period.margin_amount,
-        margin_percentage: period.margin_percentage
-      }));
+    // Подготавливаем данные для отправки
+    const seasonalPricingData = updatedPeriods.map(period => ({
+      season_type: period.season_type,
+      start_date_recurring: period.start_date_recurring,
+      end_date_recurring: period.end_date_recurring,
+      price_per_night: period.price_per_night,
+      source_price_per_night: period.source_price_per_night,
+      source_price: period.source_price_per_night,
+      minimum_nights: period.minimum_nights,
+      pricing_type: period.pricing_type || 'per_night',
+      pricing_mode: period.pricing_mode || 'net',
+      commission_type: period.commission_type,
+      commission_value: period.commission_value,
+      margin_amount: period.margin_amount,
+      margin_percentage: period.margin_percentage
+    }));
 
-      console.log('=== SAVING SEASONAL PRICING ===');
-      console.log('propertyId:', propertyId);
-      console.log('isOwnerMode:', isOwnerMode);
-      console.log('seasonalPricing:', JSON.stringify(seasonalPricingData, null, 2));
+    console.log('=== SAVING SEASONAL PRICING ===');
+    console.log('propertyId:', propertyId);
+    console.log('isOwnerMode:', isOwnerMode);
+    console.log('updatedPeriods count:', updatedPeriods.length);
+    console.log('seasonalPricing to send:', JSON.stringify(seasonalPricingData, null, 2));
 
-      if (isOwnerMode) {
-        // Owner Portal - используем owner API
-        await propertyOwnersApi.updatePropertyPricing(propertyId, {
-          seasonalPricing: seasonalPricingData
-        });
-      } else {
-        // Admin Panel - используем admin API
-        await propertiesApi.update(propertyId, {
-          seasonalPricing: seasonalPricingData
-        });
-      }
-
-      console.log('✅ Seasonal pricing saved successfully');
-    } catch (error: any) {
-      console.error('❌ Save seasonal pricing error:', error);
-      notifications.show({
-        title: t('errors.generic'),
-        message: error.response?.data?.message || t('seasonalPricing.errorSaving'),
-        color: 'red',
-        icon: <IconX size={16} />
+    if (isOwnerMode) {
+      // Owner Portal - используем owner API
+      console.log('Using Owner API...');
+      const response = await propertyOwnersApi.updatePropertyPricing(propertyId, {
+        seasonalPricing: seasonalPricingData
       });
-      throw error;
-    } finally {
-      setSaving(false);
+      console.log('✅ Owner API response:', response.data);
+    } else {
+      // Admin Panel - используем admin API
+      console.log('Using Admin API...');
+      const response = await propertiesApi.update(propertyId, {
+        seasonalPricing: seasonalPricingData
+      });
+      console.log('✅ Admin API response:', response.data);
     }
-  };
+
+    console.log('✅ Seasonal pricing saved successfully');
+  } catch (error: any) {
+    console.error('❌ Save seasonal pricing error:', error);
+    console.error('Error response:', error.response?.data);
+    notifications.show({
+      title: t('errors.generic'),
+      message: error.response?.data?.message || t('seasonalPricing.errorSaving'),
+      color: 'red',
+      icon: <IconX size={16} />
+    });
+    throw error;
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleStepChange = (newStep: number) => {
     setTimeout(() => {
@@ -457,6 +466,9 @@ const handleDelete = (id: number) => {
 const confirmDelete = async () => {
   if (!deletingPeriodId) return;
   
+  // Сохраняем текущее состояние для возможного отката
+  const previousPeriods = [...periods];
+  
   const updated = periods.filter(p => p.id !== deletingPeriodId);
   setPeriods(updated);
   
@@ -475,7 +487,14 @@ const confirmDelete = async () => {
         icon: <IconCheck size={16} />
       });
     } catch (error) {
-      // Ошибка уже показана в saveToBackend
+      // ✅ ОТКАТЫВАЕМ ИЗМЕНЕНИЯ если сохранение не удалось
+      console.error('Failed to save after delete, rolling back:', error);
+      setPeriods(previousPeriods);
+      if (parentForm) {
+        parentForm.setFieldValue('seasonalPricing', previousPeriods);
+      }
+      // ✅ НЕ закрываем модальное окно при ошибке
+      return;
     }
   } else {
     notifications.show({
@@ -486,6 +505,7 @@ const confirmDelete = async () => {
     });
   }
   
+  // Закрываем модальное окно только если сохранение успешно (или autoSave=false)
   setDeleteModalOpened(false);
   setDeletingPeriodId(null);
 };

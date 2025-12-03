@@ -1208,7 +1208,7 @@ async update(req: AuthRequest, res: Response): Promise<void> {
     if (req.body.seasonalPricing !== undefined) {
       await connection.query('DELETE FROM property_pricing WHERE property_id = ?', [id]);
 
-      if (Array.isArray(req.body.seasonalPricing) && req.body.seasonalPricing.length > 0) {
+      if (Array.isArray(req.body.seasonalPricing)) {
         for (const price of req.body.seasonalPricing) {
           await connection.query(
             `INSERT INTO property_pricing (
