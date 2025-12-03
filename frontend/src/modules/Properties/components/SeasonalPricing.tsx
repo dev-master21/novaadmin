@@ -237,7 +237,6 @@ const SeasonalPricing = ({
     }
   };
 
-  // ✅ НОВАЯ ФУНКЦИЯ: Автоматическое сохранение через API
 const saveToBackend = async (updatedPeriods: PricingPeriod[]) => {
   if (!propertyId || !autoSave) {
     console.log('⚠️ saveToBackend skipped:', { propertyId, autoSave });
@@ -268,21 +267,38 @@ const saveToBackend = async (updatedPeriods: PricingPeriod[]) => {
     console.log('propertyId:', propertyId);
     console.log('isOwnerMode:', isOwnerMode);
     console.log('updatedPeriods count:', updatedPeriods.length);
-    console.log('seasonalPricing to send:', JSON.stringify(seasonalPricingData, null, 2));
+    console.log('seasonalPricing IS ARRAY:', Array.isArray(seasonalPricingData));
+    console.log('seasonalPricing TYPE:', typeof seasonalPricingData);
+    console.log('seasonalPricing to send:', seasonalPricingData); // ✅ БЕЗ JSON.stringify
+    console.log('seasonalPricing JSON:', JSON.stringify(seasonalPricingData, null, 2));
 
     if (isOwnerMode) {
       // Owner Portal - используем owner API
       console.log('Using Owner API...');
-      const response = await propertyOwnersApi.updatePropertyPricing(propertyId, {
+      
+      // ✅ ПРОВЕРЯЕМ ДАННЫЕ ПЕРЕД ОТПРАВКОЙ
+      const ownerPayload = {
         seasonalPricing: seasonalPricingData
-      });
+      };
+      console.log('Owner payload TYPE:', typeof ownerPayload.seasonalPricing);
+      console.log('Owner payload IS ARRAY:', Array.isArray(ownerPayload.seasonalPricing));
+      
+      const response = await propertyOwnersApi.updatePropertyPricing(propertyId, ownerPayload);
       console.log('✅ Owner API response:', response.data);
     } else {
       // Admin Panel - используем admin API
       console.log('Using Admin API...');
-      const response = await propertiesApi.update(propertyId, {
+      
+      // ✅ ПРОВЕРЯЕМ ДАННЫЕ ПЕРЕД ОТПРАВКОЙ
+      const adminPayload = {
         seasonalPricing: seasonalPricingData
-      });
+      };
+      console.log('Admin payload:', adminPayload);
+      console.log('Admin payload TYPE:', typeof adminPayload.seasonalPricing);
+      console.log('Admin payload IS ARRAY:', Array.isArray(adminPayload.seasonalPricing));
+      console.log('Admin payload stringified:', JSON.stringify(adminPayload));
+      
+      const response = await propertiesApi.update(propertyId, adminPayload);
       console.log('✅ Admin API response:', response.data);
     }
 
@@ -1329,154 +1345,161 @@ const confirmDelete = async () => {
         </Stack>
       </Modal>
 
-      <Modal
-        opened={detailsModalOpened}
-        onClose={() => setDetailsModalOpened(false)}
-        title={
-          <Group gap="sm">
-            <ThemeIcon size="lg" radius="md" variant="light" color="blue">
-              <IconInfoCircle size={20} />
-            </ThemeIcon>
-            <Text fw={600} size="lg">{t('seasonalPricing.seasonDetails')}</Text>
-          </Group>
-        }
-        centered
-        size="md"
-      >
-        {selectedPeriod && (() => {
-          const seasonConfig = getSeasonConfig(selectedPeriod.season_type);
-          const SeasonIcon = seasonConfig.icon;
+<Modal
+  opened={detailsModalOpened}
+  onClose={() => setDetailsModalOpened(false)}
+  title={
+    <Group gap="sm">
+      <ThemeIcon size="lg" radius="md" variant="light" color="blue">
+        <IconInfoCircle size={20} />
+      </ThemeIcon>
+      <Text fw={600} size="lg">{t('seasonalPricing.seasonDetails')}</Text>
+    </Group>
+  }
+  centered
+  size="md"
+>
+  {selectedPeriod && (() => {
+    const seasonConfig = getSeasonConfig(selectedPeriod.season_type);
+    const SeasonIcon = seasonConfig.icon;
 
-          const displayData = {
-            finalPrice: selectedPeriod.price_per_night,
-            sourcePrice: selectedPeriod.source_price_per_night || selectedPeriod.price_per_night,
-            marginAmount: selectedPeriod.margin_amount || 0,
-            marginPercentage: selectedPeriod.margin_percentage || 0
-          };
+    // ✅ ИСПРАВЛЕНО: Безопасное преобразование в числа с проверками
+    const safeNumber = (value: any, fallback: number = 0): number => {
+      if (value === null || value === undefined || value === '') return fallback;
+      const parsed = typeof value === 'string' ? parseFloat(value) : Number(value);
+      return isNaN(parsed) ? fallback : parsed;
+    };
 
-          return (
-            <Stack gap="md">
-              <Paper p="md" radius="md" withBorder>
-                <Stack gap="md">
-                  <Group gap="sm">
-                    <ThemeIcon size="lg" radius="md" variant="gradient" gradient={{ from: seasonConfig.color, to: `${seasonConfig.color}.9` }}>
-                      <SeasonIcon size={20} />
-                    </ThemeIcon>
-                    <div>
-                      <Text fw={600}>{seasonConfig.label}</Text>
-                      <Text size="xs" c="dimmed">
-                        {selectedPeriod.start_date_recurring} — {selectedPeriod.end_date_recurring}
-                      </Text>
-                    </div>
-                  </Group>
+    const displayData = {
+      finalPrice: safeNumber(selectedPeriod.price_per_night),
+      sourcePrice: safeNumber(selectedPeriod.source_price_per_night) || safeNumber(selectedPeriod.price_per_night),
+      marginAmount: safeNumber(selectedPeriod.margin_amount, 0),
+      marginPercentage: safeNumber(selectedPeriod.margin_percentage, 0)
+    };
 
-                  <Divider />
+    return (
+      <Stack gap="md">
+        <Paper p="md" radius="md" withBorder>
+          <Stack gap="md">
+            <Group gap="sm">
+              <ThemeIcon size="lg" radius="md" variant="gradient" gradient={{ from: seasonConfig.color, to: `${seasonConfig.color}.9` }}>
+                <SeasonIcon size={20} />
+              </ThemeIcon>
+              <div>
+                <Text fw={600}>{seasonConfig.label}</Text>
+                <Text size="xs" c="dimmed">
+                  {selectedPeriod.start_date_recurring} — {selectedPeriod.end_date_recurring}
+                </Text>
+              </div>
+            </Group>
 
-                  {displayData && displayData.marginAmount > 0 ? (
-                    <Paper p="md" radius="md" withBorder style={{ background: 'var(--mantine-color-dark-7)' }}>
-                      <Stack gap="sm">
-                        <Text size="sm" fw={600} c="dimmed">{t('seasonalPricing.calculation')}</Text>
-                        
-                        {selectedPeriod.pricing_mode === 'net' ? (
-                          <Stack gap="xs">
-                            <Group justify="space-between">
-                              <Text size="xs" c="dimmed">{t('seasonalPricing.sourcePriceNet')}</Text>
-                              <Text size="lg" fw={600}>{displayData.sourcePrice.toLocaleString()} ฿</Text>
-                            </Group>
-                            
-                            <Group justify="space-between">
-                              <Group gap="xs">
-                                <IconArrowRight size={16} style={{ opacity: 0.5 }} />
-                                <Text size="xs" c="green">{t('seasonalPricing.commissionAdd')}</Text>
-                              </Group>
-                              <Text size="lg" fw={600} c="green">
-                                +{displayData.marginAmount.toLocaleString()} ฿ ({displayData.marginPercentage.toFixed(2)}%)
-                              </Text>
-                            </Group>
+            <Divider />
 
-                            <Divider style={{ borderStyle: 'dashed' }} />
-
-                            <Group justify="space-between">
-                              <Text size="sm" fw={700}>{t('seasonalPricing.finalPriceClient')}</Text>
-                              <Text size="xl" fw={700} c={seasonConfig.color}>
-                                {displayData.finalPrice.toLocaleString()} ฿
-                              </Text>
-                            </Group>
-                          </Stack>
-                        ) : (
-                          <Stack gap="xs">
-                            <Group justify="space-between">
-                              <Text size="sm" fw={700}>{t('seasonalPricing.clientPriceGross')}</Text>
-                              <Text size="xl" fw={700}>{displayData.finalPrice.toLocaleString()} ฿</Text>
-                            </Group>
-
-                            <Divider style={{ borderStyle: 'dashed' }} />
-
-                            <Group justify="space-between">
-                              <Group gap="xs">
-                                <IconArrowRight size={16} style={{ opacity: 0.5 }} />
-                                <Text size="xs" c="green">{t('seasonalPricing.ourMargin')}</Text>
-                              </Group>
-                              <Text size="lg" fw={600} c="green">
-                                {displayData.marginAmount.toLocaleString()} ฿ ({displayData.marginPercentage.toFixed(2)}%)
-                              </Text>
-                            </Group>
-                            
-                            <Group justify="space-between">
-                              <Text size="xs" c="dimmed">{t('seasonalPricing.ownerPrice')}</Text>
-                              <Text size="lg" fw={600}>{displayData.sourcePrice.toLocaleString()} ฿</Text>
-                            </Group>
-                          </Stack>
-                        )}
-                      </Stack>
-                    </Paper>
-                  ) : (
-                    <Paper p="md" radius="md" withBorder style={{ background: 'var(--mantine-color-dark-7)' }}>
+            {displayData.marginAmount > 0 ? (
+              <Paper p="md" radius="md" withBorder style={{ background: 'var(--mantine-color-dark-7)' }}>
+                <Stack gap="sm">
+                  <Text size="sm" fw={600} c="dimmed">{t('seasonalPricing.calculation')}</Text>
+                  
+                  {selectedPeriod.pricing_mode === 'net' ? (
+                    <Stack gap="xs">
                       <Group justify="space-between">
-                        <Text size="xs" c="dimmed">{t('seasonalPricing.priceForClient')}</Text>
-                        <Text size="xl" fw={700} c={seasonConfig.color}>
-                          {selectedPeriod.price_per_night.toLocaleString()} ฿
+                        <Text size="xs" c="dimmed">{t('seasonalPricing.sourcePriceNet')}</Text>
+                        <Text size="lg" fw={600}>{displayData.sourcePrice.toLocaleString()} ฿</Text>
+                      </Group>
+                      
+                      <Group justify="space-between">
+                        <Group gap="xs">
+                          <IconArrowRight size={16} style={{ opacity: 0.5 }} />
+                          <Text size="xs" c="green">{t('seasonalPricing.commissionAdd')}</Text>
+                        </Group>
+                        <Text size="lg" fw={600} c="green">
+                          +{displayData.marginAmount.toLocaleString()} ฿ ({displayData.marginPercentage.toFixed(2)}%)
                         </Text>
                       </Group>
-                    </Paper>
+
+                      <Divider style={{ borderStyle: 'dashed' }} />
+
+                      <Group justify="space-between">
+                        <Text size="sm" fw={700}>{t('seasonalPricing.finalPriceClient')}</Text>
+                        <Text size="xl" fw={700} c={seasonConfig.color}>
+                          {displayData.finalPrice.toLocaleString()} ฿
+                        </Text>
+                      </Group>
+                    </Stack>
+                  ) : (
+                    <Stack gap="xs">
+                      <Group justify="space-between">
+                        <Text size="sm" fw={700}>{t('seasonalPricing.clientPriceGross')}</Text>
+                        <Text size="xl" fw={700}>{displayData.finalPrice.toLocaleString()} ฿</Text>
+                      </Group>
+
+                      <Divider style={{ borderStyle: 'dashed' }} />
+
+                      <Group justify="space-between">
+                        <Group gap="xs">
+                          <IconArrowRight size={16} style={{ opacity: 0.5 }} />
+                          <Text size="xs" c="green">{t('seasonalPricing.ourMargin')}</Text>
+                        </Group>
+                        <Text size="lg" fw={600} c="green">
+                          {displayData.marginAmount.toLocaleString()} ฿ ({displayData.marginPercentage.toFixed(2)}%)
+                        </Text>
+                      </Group>
+                      
+                      <Group justify="space-between">
+                        <Text size="xs" c="dimmed">{t('seasonalPricing.ownerPrice')}</Text>
+                        <Text size="lg" fw={600}>{displayData.sourcePrice.toLocaleString()} ฿</Text>
+                      </Group>
+                    </Stack>
                   )}
-
-                  <Grid gutter="md">
-                    <Grid.Col span={6}>
-                      <Stack gap={4}>
-                        <Text size="xs" c="dimmed">{t('seasonalPricing.minimumNights')}</Text>
-                        <Text size="lg" fw={600}>
-                          {selectedPeriod.minimum_nights || '—'}
-                        </Text>
-                      </Stack>
-                    </Grid.Col>
-
-                    <Grid.Col span={6}>
-                      <Stack gap={4}>
-                        <Text size="xs" c="dimmed">{t('seasonalPricing.pricingType')}</Text>
-                        <Text size="lg" fw={600}>
-                          {selectedPeriod.pricing_type === 'per_period' 
-                            ? t('properties.pricing.forWholePeriod')
-                            : t('properties.pricing.perNight')
-                          }
-                        </Text>
-                      </Stack>
-                    </Grid.Col>
-                  </Grid>
                 </Stack>
               </Paper>
+            ) : (
+              <Paper p="md" radius="md" withBorder style={{ background: 'var(--mantine-color-dark-7)' }}>
+                <Group justify="space-between">
+                  <Text size="xs" c="dimmed">{t('seasonalPricing.priceForClient')}</Text>
+                  <Text size="xl" fw={700} c={seasonConfig.color}>
+                    {displayData.finalPrice.toLocaleString()} ฿
+                  </Text>
+                </Group>
+              </Paper>
+            )}
 
-              <Button
-                fullWidth
-                variant="light"
-                onClick={() => setDetailsModalOpened(false)}
-              >
-                {t('common.close')}
-              </Button>
-            </Stack>
-          );
-        })()}
-      </Modal>
+            <Grid gutter="md">
+              <Grid.Col span={6}>
+                <Stack gap={4}>
+                  <Text size="xs" c="dimmed">{t('seasonalPricing.minimumNights')}</Text>
+                  <Text size="lg" fw={600}>
+                    {selectedPeriod.minimum_nights || '—'}
+                  </Text>
+                </Stack>
+              </Grid.Col>
+
+              <Grid.Col span={6}>
+                <Stack gap={4}>
+                  <Text size="xs" c="dimmed">{t('seasonalPricing.pricingType')}</Text>
+                  <Text size="lg" fw={600}>
+                    {selectedPeriod.pricing_type === 'per_period' 
+                      ? t('properties.pricing.forWholePeriod')
+                      : t('properties.pricing.perNight')
+                    }
+                  </Text>
+                </Stack>
+              </Grid.Col>
+            </Grid>
+          </Stack>
+        </Paper>
+
+        <Button
+          fullWidth
+          variant="light"
+          onClick={() => setDetailsModalOpened(false)}
+        >
+          {t('common.close')}
+        </Button>
+      </Stack>
+    );
+  })()}
+</Modal>
         {/* Delete Confirmation Modal */}
       <Modal
         opened={deleteModalOpened}

@@ -1204,39 +1204,50 @@ async update(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // Обновляем сезонные цены только если они переданы
-    if (req.body.seasonalPricing !== undefined) {
-      await connection.query('DELETE FROM property_pricing WHERE property_id = ?', [id]);
+// Обновляем сезонные цены только если они переданы
+if (req.body.seasonalPricing !== undefined) {
+  // ✅ ЛОГИРОВАНИЕ
+  logger.info('=== ADMIN: UPDATING SEASONAL PRICING ===');
+  logger.info('Property ID:', id);
+  logger.info('seasonalPricing data:', JSON.stringify(req.body.seasonalPricing, null, 2));
+  
+  await connection.query('DELETE FROM property_pricing WHERE property_id = ?', [id]);
 
-      if (Array.isArray(req.body.seasonalPricing)) {
-        for (const price of req.body.seasonalPricing) {
-          await connection.query(
-            `INSERT INTO property_pricing (
-              property_id, season_type, start_date_recurring, end_date_recurring, 
-              price_per_night, source_price_per_night, minimum_nights, pricing_type,
-              pricing_mode, commission_type, commission_value,
-              source_price, margin_amount, margin_percentage
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-              id,
-              price.season_type || 'custom',
-              price.start_date_recurring,
-              price.end_date_recurring,
-              price.price_per_night,
-              price.source_price_per_night || null,
-              price.minimum_nights || null,
-              price.pricing_type || 'per_night',
-              price.pricing_mode || 'net',
-              emptyToNull(price.commission_type),
-              emptyToNull(price.commission_value),
-              emptyToNull(price.source_price),
-              emptyToNull(price.margin_amount),
-              emptyToNull(price.margin_percentage)
-            ]
-          );
-        }
-      }
+  if (Array.isArray(req.body.seasonalPricing)) {
+    logger.info('Inserting seasonal pricing, count:', req.body.seasonalPricing.length);
+    
+    for (const price of req.body.seasonalPricing) {
+      logger.info('Inserting price:', JSON.stringify(price));
+      
+      // ✅ ИСПРАВЛЕНО: Порядок полей теперь совпадает с Owner контроллером
+      await connection.query(
+        `INSERT INTO property_pricing (
+          property_id, season_type, start_date_recurring, end_date_recurring, 
+          price_per_night, pricing_mode, pricing_type, minimum_nights,
+          commission_type, commission_value, source_price, margin_amount, margin_percentage, source_price_per_night
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          price.season_type || 'custom',
+          price.start_date_recurring,
+          price.end_date_recurring,
+          price.price_per_night,
+          price.pricing_mode || 'net',              // ✅ Изменён порядок
+          price.pricing_type || 'per_night',        // ✅ Изменён порядок
+          price.minimum_nights || null,             // ✅ Изменён порядок
+          emptyToNull(price.commission_type),
+          emptyToNull(price.commission_value),
+          emptyToNull(price.source_price),
+          emptyToNull(price.margin_amount),
+          emptyToNull(price.margin_percentage),
+          price.source_price_per_night || null      // ✅ Добавлено в конец
+        ]
+      );
     }
+    
+    logger.info('✅ Admin: Seasonal pricing inserted successfully');
+  }
+}
 
     // Обновляем месячные цены только если они переданы
     if (req.body.monthlyPricing !== undefined) {

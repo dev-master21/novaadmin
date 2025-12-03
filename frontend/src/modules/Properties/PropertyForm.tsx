@@ -2686,7 +2686,13 @@ const PropertyForm = ({ viewMode = false }: PropertyFormProps) => {
                 }}
               />
 
-              <SeasonalPricing viewMode={isViewMode} form={form} autoSave={true}/>
+              <SeasonalPricing 
+                viewMode={isViewMode} 
+                form={form} 
+                propertyId={Number(id)}
+                isOwnerMode={false}
+                autoSave={true}
+              />
 
               <DepositForm
                 dealType="rent"
