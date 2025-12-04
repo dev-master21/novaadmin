@@ -1,50 +1,48 @@
 // frontend/src/pages/Profile/Profile.tsx
 import React, { useState } from 'react';
-import { Card, Tabs } from 'antd';
-import { UserOutlined, ApiOutlined } from '@ant-design/icons';
+import { Container, Tabs } from '@mantine/core';
+import { IconUser, IconApi } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
+import { useMediaQuery } from '@mantine/hooks';
 import IntegrationsTab from './components/IntegrationsTab';
 import ProfileInfoTab from './components/ProfileInfoTab';
-import './Profile.css';
 
 const Profile: React.FC = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('profile');
-
-  const tabItems = [
-    {
-      key: 'profile',
-      label: (
-        <span>
-          <UserOutlined />
-          <span style={{ marginLeft: 8 }}>{t('profile.tabs.profile')}</span>
-        </span>
-      ),
-      children: <ProfileInfoTab />,
-    },
-    {
-      key: 'integrations',
-      label: (
-        <span>
-          <ApiOutlined />
-          <span style={{ marginLeft: 8 }}>{t('profile.tabs.integrations')}</span>
-        </span>
-      ),
-      children: <IntegrationsTab />,
-    },
-  ];
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [activeTab, setActiveTab] = useState<string | null>('profile');
 
   return (
-    <div className="profile-page">
-      <Card className="profile-card">
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
-          size="large"
-        />
-      </Card>
-    </div>
+    <Container size="xl" py="xl">
+      <Tabs
+        value={activeTab}
+        onChange={setActiveTab}
+        variant="default"
+      >
+        <Tabs.List grow={isMobile}>
+          <Tabs.Tab
+            value="profile"
+            leftSection={<IconUser size={20} />}
+          >
+            {t('profile.tabs.profile')}
+          </Tabs.Tab>
+          <Tabs.Tab
+            value="integrations"
+            leftSection={<IconApi size={20} />}
+          >
+            {t('profile.tabs.integrations')}
+          </Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value="profile" pt="xl">
+          <ProfileInfoTab />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="integrations" pt="xl">
+          <IntegrationsTab />
+        </Tabs.Panel>
+      </Tabs>
+    </Container>
   );
 };
 

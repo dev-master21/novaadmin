@@ -1,30 +1,33 @@
 // frontend/src/pages/Profile/components/Beds24Integration.tsx
 import React, { useState, useEffect } from 'react';
 import {
-  Form,
-  Input,
+  Stack,
+  PasswordInput,
   Button,
-  Space,
   Alert,
   Divider,
-  Typography,
-  Spin,
-  message,
-  Steps,
-  Modal,
+  Title,
+  Text,
+  Center,
+  Loader,
+  Stepper,
   Progress,
-} from 'antd';
+  Group
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
+import { useMediaQuery } from '@mantine/hooks';
 import {
-  CheckCircleOutlined,
-  DeleteOutlined,
-  SyncOutlined,
-} from '@ant-design/icons';
+  IconCheck,
+  IconTrash,
+  IconRefresh,
+  IconInfoCircle,
+  IconAlertCircle,
+  IconX
+} from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { integrationsApi, Beds24Property, MyProperty } from '../../../api/integrations.api';
 import Beds24PropertySelector from './Beds24PropertySelector';
-import './Beds24Integration.css';
-
-const { Title, Text, Paragraph } = Typography;
 
 interface Props {
   onClose: () => void;
@@ -32,8 +35,10 @@ interface Props {
 
 const Beds24Integration: React.FC<Props> = ({ onClose }) => {
   const { t } = useTranslation();
-  const [form] = Form.useForm();
+  const isMobile = useMediaQuery('(max-width: 768px)');
   
+  const [apiKeyV1, setApiKeyV1] = useState('');
+  const [apiKeyV2, setApiKeyV2] = useState('');
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -41,8 +46,6 @@ const Beds24Integration: React.FC<Props> = ({ onClose }) => {
   const [beds24Properties, setBeds24Properties] = useState<Beds24Property[]>([]);
   const [myProperties, setMyProperties] = useState<MyProperty[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(false);
-
-  // ✅ НОВОЕ: Состояние для прогресса
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('');
 
@@ -57,10 +60,8 @@ const Beds24Integration: React.FC<Props> = ({ onClose }) => {
       
       if (response.data.success && response.data.data) {
         setIntegration(response.data.data);
-        form.setFieldsValue({
-          api_key_v1: response.data.data.api_key_v1,
-          api_key_v2: response.data.data.api_key_v2,
-        });
+        setApiKeyV1(response.data.data.api_key_v1 || '');
+        setApiKeyV2(response.data.data.api_key_v2 || '');
         
         if (response.data.data.is_verified) {
           setCurrentStep(1);
@@ -80,7 +81,6 @@ const Beds24Integration: React.FC<Props> = ({ onClose }) => {
       setLoadingProgress(0);
       setLoadingMessage(t('integrations.beds24.loadingData'));
 
-      // Загружаем наши объекты
       setLoadingProgress(20);
       const myPropsResponse = await integrationsApi.getMyProperties();
       
@@ -88,7 +88,6 @@ const Beds24Integration: React.FC<Props> = ({ onClose }) => {
         setMyProperties(myPropsResponse.data.data);
       }
 
-      // Загружаем объекты из Beds24
       setLoadingProgress(40);
       setLoadingMessage(t('integrations.beds24.loadingBeds24Properties'));
 
@@ -101,14 +100,18 @@ const Beds24Integration: React.FC<Props> = ({ onClose }) => {
       setLoadingProgress(100);
       setLoadingMessage(t('integrations.beds24.loadingComplete'));
 
-      // Скрываем прогресс через 1 секунду
       setTimeout(() => {
         setLoadingProgress(0);
         setLoadingMessage('');
       }, 1000);
 
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('integrations.beds24.errorLoadingProperties'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('integrations.beds24.errorLoadingProperties'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
       setLoadingProgress(0);
       setLoadingMessage('');
     } finally {
@@ -116,55 +119,70 @@ const Beds24Integration: React.FC<Props> = ({ onClose }) => {
     }
   };
 
-  const handleSaveKeys = async (values: any) => {
+  const handleSaveKeys = async () => {
     try {
       setLoading(true);
       
       const response = await integrationsApi.saveIntegration('beds24', {
-        api_key_v1: values.api_key_v1,
-        api_key_v2: values.api_key_v2,
+        api_key_v1: apiKeyV1,
+        api_key_v2: apiKeyV2,
       });
 
       if (response.data.success) {
-        message.success(t('integrations.beds24.keysSaved'));
-        setIntegration({ ...integration, ...values });
+        notifications.show({
+          title: t('common.success'),
+          message: t('integrations.beds24.keysSaved'),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
+        setIntegration({ ...integration, api_key_v1: apiKeyV1, api_key_v2: apiKeyV2 });
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('common.error'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('common.error'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerify = async () => {
-    try {
-      const apiKey = form.getFieldValue('api_key_v1');
-      
-      if (!apiKey) {
-        message.warning(t('integrations.beds24.enterApiKey'));
-        return;
-      }
+    if (!apiKeyV1) {
+      notifications.show({
+        title: t('common.warning'),
+        message: t('integrations.beds24.enterApiKey'),
+        color: 'orange',
+        icon: <IconAlertCircle size={18} />
+      });
+      return;
+    }
 
+    try {
       setVerifying(true);
       setLoadingProgress(0);
       setLoadingMessage(t('integrations.beds24.verifying'));
 
-      // Сначала сохраняем ключи
       setLoadingProgress(30);
-      await handleSaveKeys(form.getFieldsValue());
+      await handleSaveKeys();
 
-      // Затем проверяем
       setLoadingProgress(60);
-      const response = await integrationsApi.verifyBeds24(apiKey);
+      const response = await integrationsApi.verifyBeds24(apiKeyV1);
 
       setLoadingProgress(100);
 
       if (response.data.success) {
-        message.success(t('integrations.beds24.keyVerified'));
+        notifications.show({
+          title: t('common.success'),
+          message: t('integrations.beds24.keyVerified'),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
         setCurrentStep(1);
         setIntegration({ ...integration, is_verified: true });
         
-        // Небольшая задержка перед загрузкой свойств
         setTimeout(() => {
           setLoadingProgress(0);
           setLoadingMessage('');
@@ -172,7 +190,12 @@ const Beds24Integration: React.FC<Props> = ({ onClose }) => {
         }, 500);
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('integrations.beds24.keyInvalid'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('integrations.beds24.keyInvalid'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
       setLoadingProgress(0);
       setLoadingMessage('');
     } finally {
@@ -189,11 +212,21 @@ const Beds24Integration: React.FC<Props> = ({ onClose }) => {
       });
 
       if (response.data.success) {
-        message.success(t('integrations.beds24.linked'));
+        notifications.show({
+          title: t('common.success'),
+          message: t('integrations.beds24.linked'),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
         loadProperties();
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('common.error'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('common.error'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
     }
   };
 
@@ -202,227 +235,268 @@ const Beds24Integration: React.FC<Props> = ({ onClose }) => {
       const response = await integrationsApi.unlinkProperty(propertyId);
 
       if (response.data.success) {
-        message.success(t('integrations.beds24.unlinked'));
+        notifications.show({
+          title: t('common.success'),
+          message: t('integrations.beds24.unlinked'),
+          color: 'green',
+          icon: <IconCheck size={18} />
+        });
         loadProperties();
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('common.error'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('common.error'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
     }
   };
 
   const handleDelete = () => {
-    Modal.confirm({
+    modals.openConfirmModal({
       title: t('integrations.beds24.deleteConfirmTitle'),
-      content: t('integrations.beds24.deleteConfirmContent'),
-      okText: t('common.delete'),
-      okType: 'danger',
-      cancelText: t('common.cancel'),
-      onOk: async () => {
+      children: (
+        <Text size="sm">
+          {t('integrations.beds24.deleteConfirmContent')}
+        </Text>
+      ),
+      labels: {
+        confirm: t('common.delete'),
+        cancel: t('common.cancel')
+      },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
         try {
           await integrationsApi.deleteIntegration('beds24');
-          message.success(t('integrations.beds24.deleted'));
+          notifications.show({
+            title: t('common.success'),
+            message: t('integrations.beds24.deleted'),
+            color: 'green',
+            icon: <IconCheck size={18} />
+          });
           onClose();
         } catch (error: any) {
-          message.error(error.response?.data?.message || t('common.error'));
+          notifications.show({
+            title: t('errors.generic'),
+            message: error.response?.data?.message || t('common.error'),
+            color: 'red',
+            icon: <IconX size={18} />
+          });
         }
-      },
+      }
     });
   };
 
   if (loading && !integration) {
-    return <Spin />;
+    return (
+      <Center py={60}>
+        <Stack align="center" gap="md">
+          <Loader size="lg" />
+          <Text size="sm" c="dimmed">
+            {t('common.loading')}
+          </Text>
+        </Stack>
+      </Center>
+    );
   }
 
   return (
-    <div className="beds24-integration">
-      <Steps
-        current={currentStep}
-        items={[
-          {
-            title: t('integrations.beds24.step1'),
-            icon: currentStep > 0 ? <CheckCircleOutlined /> : undefined,
-          },
-          {
-            title: t('integrations.beds24.step2'),
-          },
-        ]}
-        style={{ marginBottom: 32 }}
-      />
+    <Stack gap="xl">
+      <Stepper
+        active={currentStep}
+        onStepClick={setCurrentStep}
+        allowNextStepsSelect={false}
+      >
+        <Stepper.Step
+          label={t('integrations.beds24.step1')}
+          description={t('integrations.beds24.step1Description') || undefined}
+          icon={currentStep > 0 ? <IconCheck size={18} /> : undefined}
+        />
+        <Stepper.Step
+          label={t('integrations.beds24.step2')}
+          description={t('integrations.beds24.step2Description') || undefined}
+        />
+      </Stepper>
 
-      {/* ✅ НОВОЕ: Глобальный прогресс-бар */}
       {(verifying || loadingProperties) && loadingProgress > 0 && (
-        <div style={{ marginBottom: 24 }}>
+        <Stack gap="xs">
           <Progress 
-            percent={loadingProgress} 
-            status="active"
-            strokeColor={{
-              '0%': '#108ee9',
-              '100%': '#87d068',
-            }}
+            value={loadingProgress} 
+            animated
+            color="blue"
           />
           {loadingMessage && (
-            <div style={{ textAlign: 'center', marginTop: 8, color: '#666', fontSize: 14 }}>
+            <Text size="sm" c="dimmed" ta="center">
               {loadingMessage}
-            </div>
+            </Text>
           )}
-        </div>
+        </Stack>
       )}
 
       {currentStep === 0 && (
-        <div>
+        <Stack gap="lg">
           <Alert
-            message={t('integrations.beds24.apiKeyInfo')}
-            description={
+            icon={<IconInfoCircle size={18} />}
+            title={t('integrations.beds24.apiKeyInfo')}
+            color="blue"
+          >
+            <Stack gap="xs">
+              <Text size="sm">
+                {t('integrations.beds24.apiKeyDescription')}
+              </Text>
               <div>
-                <Paragraph>
-                  {t('integrations.beds24.apiKeyDescription')}
-                </Paragraph>
-                <Paragraph>
-                  <Text strong>{t('integrations.beds24.whereToFind')}:</Text>
-                  <br />
+                <Text size="sm" fw={600}>
+                  {t('integrations.beds24.whereToFind')}:
+                </Text>
+                <Text size="sm">
                   1. {t('integrations.beds24.loginToBeds24')}
-                  <br />
+                </Text>
+                <Text size="sm">
                   2. {t('integrations.beds24.goToSettings')}
-                  <br />
+                </Text>
+                <Text size="sm">
                   3. {t('integrations.beds24.findApiSection')}
-                  <br />
+                </Text>
+                <Text size="sm">
                   4. {t('integrations.beds24.copyKey')}
-                </Paragraph>
+                </Text>
               </div>
-            }
-            type="info"
-            showIcon
-            style={{ marginBottom: 24 }}
+            </Stack>
+          </Alert>
+
+          <PasswordInput
+            label={t('integrations.beds24.apiKeyV1')}
+            placeholder={t('integrations.beds24.enterApiKeyV1')}
+            value={apiKeyV1}
+            onChange={(e) => setApiKeyV1(e.target.value)}
+            required
+            size={isMobile ? 'sm' : 'md'}
+            disabled={verifying}
+            styles={{
+              input: { fontSize: '16px' }
+            }}
           />
 
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSaveKeys}
-          >
-            <Form.Item
-              label={t('integrations.beds24.apiKeyV1')}
-              name="api_key_v1"
-              rules={[
-                { required: true, message: t('integrations.beds24.apiKeyRequired') },
-              ]}
+          <PasswordInput
+            label={t('integrations.beds24.apiKeyV2')}
+            description={t('integrations.beds24.apiKeyV2Optional')}
+            placeholder={t('integrations.beds24.enterApiKeyV2')}
+            value={apiKeyV2}
+            onChange={(e) => setApiKeyV2(e.target.value)}
+            size={isMobile ? 'sm' : 'md'}
+            disabled={verifying}
+            styles={{
+              input: { fontSize: '16px' }
+            }}
+          />
+
+          <Group gap="xs" wrap="wrap">
+            <Button
+              leftSection={<IconCheck size={18} />}
+              onClick={handleVerify}
+              loading={verifying}
+              disabled={verifying || !apiKeyV1}
+              size={isMobile ? 'sm' : 'md'}
             >
-              <Input.Password
-                placeholder={t('integrations.beds24.enterApiKeyV1')}
-                size="large"
-                disabled={verifying}
-              />
-            </Form.Item>
+              {t('integrations.beds24.verify')}
+            </Button>
 
-            <Form.Item
-              label={t('integrations.beds24.apiKeyV2')}
-              name="api_key_v2"
-              extra={t('integrations.beds24.apiKeyV2Optional')}
+            <Button
+              variant="light"
+              onClick={onClose}
+              disabled={verifying}
+              size={isMobile ? 'sm' : 'md'}
             >
-              <Input.Password
-                placeholder={t('integrations.beds24.enterApiKeyV2')}
-                size="large"
-                disabled={verifying}
-              />
-            </Form.Item>
+              {t('common.cancel')}
+            </Button>
 
-            <Space>
+            {integration && (
               <Button
-                type="primary"
-                size="large"
-                onClick={handleVerify}
-                loading={verifying}
-                icon={<CheckCircleOutlined />}
+                color="red"
+                variant="light"
+                leftSection={<IconTrash size={18} />}
+                onClick={handleDelete}
                 disabled={verifying}
+                size={isMobile ? 'sm' : 'md'}
               >
-                {t('integrations.beds24.verify')}
+                {t('common.delete')}
               </Button>
-
-              <Button
-                size="large"
-                onClick={onClose}
-                disabled={verifying}
-              >
-                {t('common.cancel')}
-              </Button>
-
-              {integration && (
-                <Button
-                  danger
-                  size="large"
-                  icon={<DeleteOutlined />}
-                  onClick={handleDelete}
-                  disabled={verifying}
-                >
-                  {t('common.delete')}
-                </Button>
-              )}
-            </Space>
-          </Form>
-        </div>
+            )}
+          </Group>
+        </Stack>
       )}
 
       {currentStep === 1 && (
-        <div>
+        <Stack gap="lg">
           <Alert
-            message={t('integrations.beds24.verifiedSuccess')}
-            type="success"
-            showIcon
-            icon={<CheckCircleOutlined />}
-            style={{ marginBottom: 24 }}
+            icon={<IconCheck size={18} />}
+            title={t('integrations.beds24.verifiedSuccess')}
+            color="green"
           />
 
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <div>
-              <Title level={5}>{t('integrations.beds24.linkProperties')}</Title>
-              <Text type="secondary">{t('integrations.beds24.linkPropertiesDescription')}</Text>
-            </div>
+          <div>
+            <Title order={5}>{t('integrations.beds24.linkProperties')}</Title>
+            <Text size="sm" c="dimmed" mt={4}>
+              {t('integrations.beds24.linkPropertiesDescription')}
+            </Text>
+          </div>
 
-            {loadingProperties && loadingProgress === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                <Spin size="large" />
-              </div>
-            ) : (
-              <Beds24PropertySelector
-                beds24Properties={beds24Properties}
-                myProperties={myProperties}
-                onLink={handleLink}
-                onUnlink={handleUnlink}
-              />
-            )}
+          {loadingProperties && loadingProgress === 0 ? (
+            <Center py={60}>
+              <Stack align="center" gap="md">
+                <Loader size="lg" />
+                <Text size="sm" c="dimmed">
+                  {t('common.loading')}
+                </Text>
+              </Stack>
+            </Center>
+          ) : (
+            <Beds24PropertySelector
+              beds24Properties={beds24Properties}
+              myProperties={myProperties}
+              onLink={handleLink}
+              onUnlink={handleUnlink}
+            />
+          )}
 
-            <Divider />
+          <Divider />
 
-            <Space>
-              <Button
-                icon={<SyncOutlined />}
-                onClick={loadProperties}
-                loading={loadingProperties}
-                disabled={loadingProperties}
-              >
-                {t('common.refresh')}
-              </Button>
+          <Group gap="xs" wrap="wrap">
+            <Button
+              variant="light"
+              leftSection={<IconRefresh size={18} />}
+              onClick={loadProperties}
+              loading={loadingProperties}
+              disabled={loadingProperties}
+              size={isMobile ? 'sm' : 'md'}
+            >
+              {t('common.refresh')}
+            </Button>
 
-              <Button
-                onClick={() => setCurrentStep(0)}
-                disabled={loadingProperties}
-              >
-                {t('integrations.beds24.backToKeys')}
-              </Button>
+            <Button
+              variant="light"
+              onClick={() => setCurrentStep(0)}
+              disabled={loadingProperties}
+              size={isMobile ? 'sm' : 'md'}
+            >
+              {t('integrations.beds24.backToKeys')}
+            </Button>
 
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleDelete}
-                disabled={loadingProperties}
-              >
-                {t('integrations.beds24.deleteIntegration')}
-              </Button>
-            </Space>
-          </Space>
-        </div>
+            <Button
+              color="red"
+              variant="light"
+              leftSection={<IconTrash size={18} />}
+              onClick={handleDelete}
+              disabled={loadingProperties}
+              size={isMobile ? 'sm' : 'md'}
+            >
+              {t('integrations.beds24.deleteIntegration')}
+            </Button>
+          </Group>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 };
 

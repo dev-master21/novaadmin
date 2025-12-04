@@ -2,35 +2,45 @@
 import { useState, useEffect } from 'react';
 import {
   Modal,
-  Input,
+  TextInput,
   Button,
-  Space,
   Card,
-  message,
   Select,
   Table,
   Tooltip,
-  Typography,
-  Tag,
-  Popconfirm
-} from 'antd';
+  Text,
+  Badge,
+  Stack,
+  Group,
+  Divider,
+  ActionIcon,
+  Box,
+  ThemeIcon,
+  useMantineColorScheme
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
+import { useMediaQuery } from '@mantine/hooks';
 import {
-  PlusOutlined,
-  DeleteOutlined,
-  CopyOutlined,
-  ReloadOutlined,
-  EditOutlined,
-  CheckOutlined,
-  ClockCircleOutlined,
-  BellOutlined
-} from '@ant-design/icons';
+  IconPlus,
+  IconTrash,
+  IconCopy,
+  IconRefresh,
+  IconEdit,
+  IconCheck,
+  IconClock,
+  IconBell,
+  IconX,
+  IconUserCheck,
+  IconSignature,
+  IconLink,
+  IconUserPlus,
+  IconChecks,
+  IconAlertTriangle,
+  IconSparkles
+} from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { agreementsApi, AgreementParty, AgreementSignature } from '@/api/agreements.api';
-import type { ColumnsType } from 'antd/es/table';
-import './SignaturesModal.css';
-
-const { Option } = Select;
-const { Text } = Typography;
 
 interface SignaturesModalProps {
   visible: boolean;
@@ -63,6 +73,9 @@ const SignaturesModal = ({
   requestUuid
 }: SignaturesModalProps) => {
   const { t } = useTranslation();
+  const { colorScheme } = useMantineColorScheme();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
   const [loading, setLoading] = useState(false);
   const [signers, setSigners] = useState<SignerData[]>([]);
   const [showExisting, setShowExisting] = useState(existingSignatures.length > 0);
@@ -70,18 +83,9 @@ const SignaturesModal = ({
   const [step, setStep] = useState<'create' | 'links'>('create');
   const [editingSignature, setEditingSignature] = useState<number | null>(null);
   const [editingData, setEditingData] = useState<EditingData | null>(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const partyRoles = [...new Set(parties.map(p => p.role))];
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isDark = colorScheme === 'dark';
 
   useEffect(() => {
     if (visible) {
@@ -127,15 +131,30 @@ const SignaturesModal = ({
 
   const handleNotifyAgent = async () => {
     if (!requestUuid) {
-      message.error(t('signaturesModal.errors.cannotNotify'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('signaturesModal.errors.cannotNotify'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
       return;
     }
 
     try {
       await agreementsApi.notifyAgent(agreementId, requestUuid);
-      message.success(t('signaturesModal.messages.agentNotified'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('signaturesModal.messages.agentNotified'),
+        color: 'green',
+        icon: <IconCheck size={16} />
+      });
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('signaturesModal.errors.notificationFailed'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('signaturesModal.errors.notificationFailed'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
     }
   };
 
@@ -149,7 +168,12 @@ const SignaturesModal = ({
     if (roles.length !== roleSet.size) {
       const duplicates = roles.filter((role, index) => roles.indexOf(role) !== index);
       const uniqueDuplicates = [...new Set(duplicates)];
-      message.error(t('signaturesModal.errors.duplicateRole', { role: uniqueDuplicates[0] }));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('signaturesModal.errors.duplicateRole', { role: uniqueDuplicates[0] }),
+        color: 'red',
+        icon: <IconAlertTriangle size={16} />
+      });
       return false;
     }
 
@@ -157,7 +181,12 @@ const SignaturesModal = ({
     const conflictingRoles = roles.filter(role => existingRoles.includes(role));
     
     if (conflictingRoles.length > 0) {
-      message.error(t('signaturesModal.errors.roleAlreadyExists', { role: conflictingRoles[0] }));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('signaturesModal.errors.roleAlreadyExists', { role: conflictingRoles[0] }),
+        color: 'red',
+        icon: <IconAlertTriangle size={16} />
+      });
       return false;
     }
 
@@ -170,7 +199,12 @@ const SignaturesModal = ({
     );
 
     if (invalidSigners.length > 0) {
-      message.error(t('signaturesModal.errors.fillAllFields'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('signaturesModal.errors.fillAllFields'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
       return;
     }
 
@@ -194,9 +228,19 @@ const SignaturesModal = ({
 
       setGeneratedLinks(response.data.data.signatureLinks);
       setStep('links');
-      message.success(t('signaturesModal.messages.signaturesCreated'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('signaturesModal.messages.signaturesCreated'),
+        color: 'green',
+        icon: <IconChecks size={16} />
+      });
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('signaturesModal.errors.createFailed'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('signaturesModal.errors.createFailed'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
     } finally {
       setLoading(false);
     }
@@ -204,22 +248,42 @@ const SignaturesModal = ({
 
   const copyLink = (link: string) => {
     navigator.clipboard.writeText(link);
-    message.success(t('signaturesModal.messages.linkCopied'));
+    notifications.show({
+      title: t('common.success'),
+      message: t('signaturesModal.messages.linkCopied'),
+      color: 'green',
+      icon: <IconCopy size={16} />
+    });
   };
 
   const handleUpdateSignature = async (id: number) => {
     if (!editingData) {
-      message.error(t('signaturesModal.errors.noDataToSave'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('signaturesModal.errors.noDataToSave'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
       return;
     }
 
     if (!editingData.signer_name.trim()) {
-      message.error(t('signaturesModal.errors.enterSignerName'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('signaturesModal.errors.enterSignerName'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
       return;
     }
 
     if (!editingData.signer_role.trim()) {
-      message.error(t('signaturesModal.errors.selectRole'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('signaturesModal.errors.selectRole'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
       return;
     }
 
@@ -227,7 +291,12 @@ const SignaturesModal = ({
     const roleExists = otherSignatures.some(s => s.signer_role === editingData.signer_role);
     
     if (roleExists) {
-      message.error(t('signaturesModal.errors.roleUsedByOther', { role: editingData.signer_role }));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('signaturesModal.errors.roleUsedByOther', { role: editingData.signer_role }),
+        color: 'red',
+        icon: <IconAlertTriangle size={16} />
+      });
       return;
     }
 
@@ -237,34 +306,108 @@ const SignaturesModal = ({
         signer_role: editingData.signer_role.trim()
       });
       
-      message.success(t('signaturesModal.messages.signatureUpdated'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('signaturesModal.messages.signatureUpdated'),
+        color: 'green',
+        icon: <IconCheck size={16} />
+      });
       setEditingSignature(null);
       setEditingData(null);
       onSuccess();
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('signaturesModal.errors.updateFailed'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('signaturesModal.errors.updateFailed'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
     }
   };
 
   const handleRegenerateLink = async (id: number) => {
     try {
       const response = await agreementsApi.regenerateSignatureLink(id);
-      message.success(t('signaturesModal.messages.linkRegenerated'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('signaturesModal.messages.linkRegenerated'),
+        color: 'green',
+        icon: <IconRefresh size={16} />
+      });
       copyLink(response.data.data.public_url);
       onSuccess();
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('signaturesModal.errors.regenerateFailed'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('signaturesModal.errors.regenerateFailed'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
     }
   };
 
   const handleDeleteSignature = async (id: number) => {
     try {
       await agreementsApi.deleteSignature(id);
-      message.success(t('signaturesModal.messages.signatureDeleted'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('signaturesModal.messages.signatureDeleted'),
+        color: 'green',
+        icon: <IconCheck size={16} />
+      });
       onSuccess();
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('signaturesModal.errors.deleteFailed'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('signaturesModal.errors.deleteFailed'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
     }
+  };
+
+  const openRegenerateConfirm = (id: number) => {
+    modals.openConfirmModal({
+      title: (
+        <Group gap="xs">
+          <ThemeIcon size="sm" color="blue" variant="light">
+            <IconRefresh size={16} />
+          </ThemeIcon>
+          <Text fw={600}>{t('signaturesModal.confirm.regenerateTitle')}</Text>
+        </Group>
+      ),
+      children: (
+        <Text size="sm">
+          {t('signaturesModal.confirm.regenerateDescription')}
+        </Text>
+      ),
+      labels: { confirm: t('common.yes'), cancel: t('common.no') },
+      confirmProps: { color: 'blue', leftSection: <IconCheck size={16} /> },
+      cancelProps: { variant: 'subtle' },
+      onConfirm: () => handleRegenerateLink(id)
+    });
+  };
+
+  const openDeleteConfirm = (id: number) => {
+    modals.openConfirmModal({
+      title: (
+        <Group gap="xs">
+          <ThemeIcon size="sm" color="red" variant="light">
+            <IconTrash size={16} />
+          </ThemeIcon>
+          <Text fw={600}>{t('signaturesModal.confirm.deleteTitle')}</Text>
+        </Group>
+      ),
+      children: (
+        <Text size="sm">
+          {t('signaturesModal.confirm.deleteDescription')}
+        </Text>
+      ),
+      labels: { confirm: t('common.delete'), cancel: t('common.cancel') },
+      confirmProps: { color: 'red', leftSection: <IconTrash size={16} /> },
+      cancelProps: { variant: 'subtle' },
+      onConfirm: () => handleDeleteSignature(id)
+    });
   };
 
   const getAvailableRoles = (currentSignerId: string) => {
@@ -283,265 +426,295 @@ const SignaturesModal = ({
     const isEditing = editingSignature === record.id;
 
     return (
-      <Card key={record.id} size="small" className="signature-mobile-card">
-        <div className="signature-mobile-header">
-          <div className="signature-mobile-info">
-            {isEditing ? (
-              <Input 
-                size="small" 
-                placeholder={t('signaturesModal.fields.name')}
-                defaultValue={record.signer_name}
-                onChange={(e) => {
-                  setEditingData(prev => ({
-                    signer_name: e.target.value,
-                    signer_role: prev?.signer_role || record.signer_role
-                  }));
-                }}
-                style={{ marginBottom: 8 }}
-              />
-            ) : (
-              <>
-                <div className="signature-mobile-name">{record.signer_name}</div>
-                {record.first_visit_at && (
-                  <div className="signature-mobile-visit">
-                    <ClockCircleOutlined /> {t('signaturesModal.fields.visited')} {new Date(record.first_visit_at).toLocaleString('ru-RU')}
-                  </div>
-                )}
-              </>
-            )}
+      <Card 
+        key={record.id} 
+        p="md" 
+        mb="sm"
+        withBorder
+        style={{
+          borderColor: isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'
+        }}
+      >
+        <Stack gap="md">
+          {/* Информация о подписанте */}
+          <Group justify="space-between" wrap="nowrap" align="flex-start">
+            <Box style={{ flex: 1 }}>
+              {isEditing ? (
+                <Stack gap="xs">
+                  <TextInput
+                    size="sm"
+                    placeholder={t('signaturesModal.fields.name')}
+                    defaultValue={record.signer_name}
+                    onChange={(e) => {
+                      setEditingData(prev => ({
+                        signer_name: e.target.value,
+                        signer_role: prev?.signer_role || record.signer_role
+                      }));
+                    }}
+                    leftSection={<IconUserCheck size={16} />}
+                    styles={{ input: { fontSize: '16px' } }}
+                  />
+                  <Select
+                    size="sm"
+                    placeholder={t('signaturesModal.placeholders.selectRole')}
+                    defaultValue={record.signer_role}
+                    data={partyRoles
+                      .filter(role => {
+                        return role === record.signer_role || !existingSignatures.some(s => s.id !== record.id && s.signer_role === role);
+                      })
+                      .map(role => ({ value: role, label: role }))
+                    }
+                    onChange={(value) => {
+                      if (value) {
+                        setEditingData(prev => ({
+                          signer_name: prev?.signer_name || record.signer_name,
+                          signer_role: value
+                        }));
+                      }
+                    }}
+                    leftSection={<IconSignature size={16} />}
+                    styles={{ input: { fontSize: '16px' } }}
+                  />
+                </Stack>
+              ) : (
+                <>
+                  <Group gap="xs" mb={4}>
+                    <ThemeIcon size="sm" variant="light" color="blue">
+                      <IconUserCheck size={14} />
+                    </ThemeIcon>
+                    <Text fw={600} size="sm">{record.signer_name}</Text>
+                  </Group>
+                  {record.first_visit_at && (
+                    <Group gap={4} mt={6}>
+                      <IconClock size={12} style={{ opacity: 0.6 }} />
+                      <Text size="xs" c="dimmed">
+                        {t('signaturesModal.fields.visited')} {new Date(record.first_visit_at).toLocaleString('ru-RU')}
+                      </Text>
+                    </Group>
+                  )}
+                  <Badge size="sm" variant="light" color="blue" mt={8} leftSection={<IconSignature size={12} />}>
+                    {record.signer_role}
+                  </Badge>
+                </>
+              )}
+            </Box>
             
-            {isEditing ? (
-              <Select 
-                size="small" 
-                placeholder={t('signaturesModal.placeholders.selectRole')}
-                defaultValue={record.signer_role}
-                onChange={(value) => {
-                  setEditingData(prev => ({
-                    signer_name: prev?.signer_name || record.signer_name,
-                    signer_role: value
-                  }));
-                }}
-                style={{ width: '100%', marginTop: 8 }}
-              >
-                {partyRoles
-                  .filter(role => {
-                    return role === record.signer_role || !existingSignatures.some(s => s.id !== record.id && s.signer_role === role);
-                  })
-                  .map(role => (
-                    <Option key={role} value={role}>{role}</Option>
-                  ))
-                }
-              </Select>
-            ) : (
-              <Tag color="blue" className="signature-mobile-role">{record.signer_role}</Tag>
-            )}
-          </div>
-          
-          <div className="signature-mobile-status">
-            <Space direction="vertical" size={2}>
-              <Tag 
-                color={record.is_signed ? 'success' : 'default'} 
-                icon={record.is_signed ? <CheckOutlined /> : null}
+            {/* Статус */}
+            <Stack gap={4} align="flex-end">
+              <Badge 
+                size="sm"
+                color={record.is_signed ? 'green' : 'gray'}
+                variant="light"
+                leftSection={record.is_signed ? <IconCheck size={12} /> : <IconClock size={12} />}
               >
                 {record.is_signed ? t('signaturesModal.status.signed') : t('signaturesModal.status.waiting')}
-              </Tag>
+              </Badge>
               {record.is_signed && record.signed_at && (
-                <Text type="secondary" style={{ fontSize: 11 }}>
+                <Text size="xs" c="dimmed">
                   {new Date(record.signed_at).toLocaleDateString('ru-RU')}
                 </Text>
               )}
-            </Space>
-          </div>
-        </div>
+            </Stack>
+          </Group>
 
-        <div className="signature-mobile-actions">
-          {isEditing ? (
-            <>
-              <Button 
-                type="primary"
-                size="small"
-                icon={<CheckOutlined />}
-                onClick={() => handleUpdateSignature(record.id)}
-              >
-                {t('common.save')}
-              </Button>
-              <Button 
-                size="small"
-                onClick={() => {
-                  setEditingSignature(null);
-                  setEditingData(null);
-                }}
-              >
-                {t('common.cancel')}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button 
-                size="small" 
-                icon={<CopyOutlined />}
-                onClick={() => copyLink(`https://agreement.novaestate.company/sign/${record.signature_link}`)}
-              >
-                {t('signaturesModal.actions.copy')}
-              </Button>
-              <Button 
-                size="small" 
-                icon={<EditOutlined />}
-                onClick={() => {
-                  setEditingData({
-                    signer_name: record.signer_name,
-                    signer_role: record.signer_role
-                  });
-                  setEditingSignature(record.id);
-                }}
-              >
-                {t('signaturesModal.actions.edit')}
-              </Button>
-              <Popconfirm
-                title={t('signaturesModal.confirm.regenerateTitle')}
-                description={t('signaturesModal.confirm.regenerateDescription')}
-                onConfirm={() => handleRegenerateLink(record.id)}
-                okText={t('common.yes')}
-                cancelText={t('common.no')}
-              >
-                <Button 
-                  size="small" 
-                  icon={<ReloadOutlined />}
+          <Divider />
+
+          {/* Действия */}
+          <Group gap="xs" grow={isMobile}>
+            {isEditing ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="filled"
+                  color="green"
+                  leftSection={<IconCheck size={16} />}
+                  onClick={() => handleUpdateSignature(record.id)}
+                >
+                  {t('common.save')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  leftSection={<IconX size={16} />}
+                  onClick={() => {
+                    setEditingSignature(null);
+                    setEditingData(null);
+                  }}
+                >
+                  {t('common.cancel')}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="light"
+                  leftSection={<IconCopy size={16} />}
+                  onClick={() => copyLink(`https://agreement.novaestate.company/sign/${record.signature_link}`)}
+                >
+                  {t('signaturesModal.actions.copy')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  leftSection={<IconEdit size={16} />}
+                  onClick={() => {
+                    setEditingData({
+                      signer_name: record.signer_name,
+                      signer_role: record.signer_role
+                    });
+                    setEditingSignature(record.id);
+                  }}
+                >
+                  {t('signaturesModal.actions.edit')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  color="blue"
+                  leftSection={<IconRefresh size={16} />}
+                  onClick={() => openRegenerateConfirm(record.id)}
                 >
                   {t('signaturesModal.actions.update')}
                 </Button>
-              </Popconfirm>
-              <Popconfirm
-                title={t('signaturesModal.confirm.deleteTitle')}
-                description={t('signaturesModal.confirm.deleteDescription')}
-                onConfirm={() => handleDeleteSignature(record.id)}
-                okText={t('common.delete')}
-                okType="danger"
-                cancelText={t('common.cancel')}
-              >
-                <Button 
-                  size="small" 
-                  danger
-                  icon={<DeleteOutlined />}
+                <Button
+                  size="sm"
+                  variant="light"
+                  color="red"
+                  leftSection={<IconTrash size={16} />}
+                  onClick={() => openDeleteConfirm(record.id)}
                 >
                   {t('common.delete')}
                 </Button>
-              </Popconfirm>
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </Group>
+        </Stack>
       </Card>
     );
   };
 
   // Колонки для десктопной таблицы
-  const existingColumns: ColumnsType<AgreementSignature> = [
+  const existingColumns = [
     {
+      accessor: 'signer_name',
       title: t('signaturesModal.table.signer'),
-      dataIndex: 'signer_name',
-      key: 'signer_name',
       width: '25%',
-      render: (text, record) => {
+      render: (record: AgreementSignature) => {
         if (editingSignature === record.id) {
           return (
-            <Input 
-              size="small" 
+            <TextInput
+              size="sm"
               placeholder={t('signaturesModal.fields.name')}
-              defaultValue={text}
+              defaultValue={record.signer_name}
               onChange={(e) => {
                 setEditingData(prev => ({
                   signer_name: e.target.value,
                   signer_role: prev?.signer_role || record.signer_role
                 }));
               }}
+              leftSection={<IconUserCheck size={16} />}
             />
           );
         }
         return (
-          <Space direction="vertical" size={0}>
-            <Text strong>{text}</Text>
+          <Stack gap={4}>
+            <Group gap="xs">
+              <ThemeIcon size="sm" variant="light" color="blue">
+                <IconUserCheck size={14} />
+              </ThemeIcon>
+              <Text fw={600} size="sm">{record.signer_name}</Text>
+            </Group>
             {record.first_visit_at && (
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                <ClockCircleOutlined /> {t('signaturesModal.fields.visited')} {new Date(record.first_visit_at).toLocaleString('ru-RU')}
-              </Text>
+              <Group gap={4}>
+                <IconClock size={12} style={{ opacity: 0.6 }} />
+                <Text size="xs" c="dimmed">
+                  {t('signaturesModal.fields.visited')} {new Date(record.first_visit_at).toLocaleString('ru-RU')}
+                </Text>
+              </Group>
             )}
-          </Space>
+          </Stack>
         );
       }
     },
     {
+      accessor: 'signer_role',
       title: t('signaturesModal.table.role'),
-      dataIndex: 'signer_role',
-      key: 'signer_role',
       width: '20%',
-      render: (text, record) => {
+      render: (record: AgreementSignature) => {
         if (editingSignature === record.id) {
           return (
-            <Select 
-              size="small" 
+            <Select
+              size="sm"
               placeholder={t('signaturesModal.placeholders.selectRole')}
-              defaultValue={text}
-              onChange={(value) => {
-                setEditingData(prev => ({
-                  signer_name: prev?.signer_name || record.signer_name,
-                  signer_role: value
-                }));
-              }}
-              style={{ width: '100%' }}
-            >
-              {partyRoles
+              defaultValue={record.signer_role}
+              data={partyRoles
                 .filter(role => {
-                  return role === text || !existingSignatures.some(s => s.id !== record.id && s.signer_role === role);
+                  return role === record.signer_role || !existingSignatures.some(s => s.id !== record.id && s.signer_role === role);
                 })
-                .map(role => (
-                  <Option key={role} value={role}>{role}</Option>
-                ))
+                .map(role => ({ value: role, label: role }))
               }
-            </Select>
+              onChange={(value) => {
+                if (value) {
+                  setEditingData(prev => ({
+                    signer_name: prev?.signer_name || record.signer_name,
+                    signer_role: value
+                  }));
+                }
+              }}
+              leftSection={<IconSignature size={16} />}
+            />
           );
         }
-        return <Tag color="blue">{text}</Tag>;
+        return (
+          <Badge variant="light" color="blue" leftSection={<IconSignature size={12} />}>
+            {record.signer_role}
+          </Badge>
+        );
       }
     },
     {
+      accessor: 'is_signed',
       title: t('signaturesModal.table.status'),
-      dataIndex: 'is_signed',
-      key: 'is_signed',
       width: '15%',
-      render: (is_signed, record) => (
-        <Space direction="vertical" size={2}>
-          <Tag 
-            color={is_signed ? 'success' : 'default'} 
-            icon={is_signed ? <CheckOutlined /> : null}
+      render: (record: AgreementSignature) => (
+        <Stack gap={4}>
+          <Badge
+            variant="light"
+            color={record.is_signed ? 'green' : 'gray'}
+            leftSection={record.is_signed ? <IconCheck size={12} /> : <IconClock size={12} />}
           >
-            {is_signed ? t('signaturesModal.status.signed') : t('signaturesModal.status.waiting')}
-          </Tag>
-          {is_signed && record.signed_at && (
-            <Text type="secondary" style={{ fontSize: 11 }}>
+            {record.is_signed ? t('signaturesModal.status.signed') : t('signaturesModal.status.waiting')}
+          </Badge>
+          {record.is_signed && record.signed_at && (
+            <Text size="xs" c="dimmed">
               {new Date(record.signed_at).toLocaleDateString('ru-RU')}
             </Text>
           )}
-        </Space>
+        </Stack>
       )
     },
     {
+      accessor: 'actions',
       title: t('signaturesModal.table.actions'),
-      key: 'actions',
       width: '40%',
-      render: (_, record) => {
+      render: (record: AgreementSignature) => {
         if (editingSignature === record.id) {
           return (
-            <Space size="small">
-              <Button 
-                type="primary"
-                size="small"
-                icon={<CheckOutlined />}
+            <Group gap="xs">
+              <Button
+                size="sm"
+                variant="filled"
+                color="green"
+                leftSection={<IconCheck size={16} />}
                 onClick={() => handleUpdateSignature(record.id)}
               >
                 {t('common.save')}
               </Button>
-              <Button 
-                size="small"
+              <Button
+                size="sm"
+                variant="light"
+                leftSection={<IconX size={16} />}
                 onClick={() => {
                   setEditingSignature(null);
                   setEditingData(null);
@@ -549,23 +722,25 @@ const SignaturesModal = ({
               >
                 {t('common.cancel')}
               </Button>
-            </Space>
+            </Group>
           );
         }
 
         return (
-          <Space size="small" wrap>
-            <Tooltip title={t('signaturesModal.tooltips.copyLink')}>
-              <Button 
-                size="small" 
-                icon={<CopyOutlined />}
+          <Group gap="xs" wrap="nowrap">
+            <Tooltip label={t('signaturesModal.tooltips.copyLink')}>
+              <ActionIcon
+                size="lg"
+                variant="light"
                 onClick={() => copyLink(`https://agreement.novaestate.company/sign/${record.signature_link}`)}
-              />
+              >
+                <IconCopy size={18} />
+              </ActionIcon>
             </Tooltip>
-            <Tooltip title={t('signaturesModal.tooltips.edit')}>
-              <Button 
-                size="small" 
-                icon={<EditOutlined />}
+            <Tooltip label={t('signaturesModal.tooltips.edit')}>
+              <ActionIcon
+                size="lg"
+                variant="light"
                 onClick={() => {
                   setEditingData({
                     signer_name: record.signer_name,
@@ -573,39 +748,31 @@ const SignaturesModal = ({
                   });
                   setEditingSignature(record.id);
                 }}
-              />
-            </Tooltip>
-            <Tooltip title={t('signaturesModal.tooltips.regenerate')}>
-              <Popconfirm
-                title={t('signaturesModal.confirm.regenerateTitle')}
-                description={t('signaturesModal.confirm.regenerateDescription')}
-                onConfirm={() => handleRegenerateLink(record.id)}
-                okText={t('common.yes')}
-                cancelText={t('common.no')}
               >
-                <Button 
-                  size="small" 
-                  icon={<ReloadOutlined />}
-                />
-              </Popconfirm>
+                <IconEdit size={18} />
+              </ActionIcon>
             </Tooltip>
-            <Tooltip title={t('common.delete')}>
-              <Popconfirm
-                title={t('signaturesModal.confirm.deleteTitle')}
-                description={t('signaturesModal.confirm.deleteDescription')}
-                onConfirm={() => handleDeleteSignature(record.id)}
-                okText={t('common.delete')}
-                okType="danger"
-                cancelText={t('common.cancel')}
+            <Tooltip label={t('signaturesModal.tooltips.regenerate')}>
+              <ActionIcon
+                size="lg"
+                variant="light"
+                color="blue"
+                onClick={() => openRegenerateConfirm(record.id)}
               >
-                <Button 
-                  size="small" 
-                  danger
-                  icon={<DeleteOutlined />}
-                />
-              </Popconfirm>
+                <IconRefresh size={18} />
+              </ActionIcon>
             </Tooltip>
-          </Space>
+            <Tooltip label={t('common.delete')}>
+              <ActionIcon
+                size="lg"
+                variant="light"
+                color="red"
+                onClick={() => openDeleteConfirm(record.id)}
+              >
+                <IconTrash size={18} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
         );
       }
     }
@@ -613,187 +780,341 @@ const SignaturesModal = ({
 
   return (
     <Modal
-      title={t('signaturesModal.title')}
-      open={visible}
-      onCancel={onCancel}
-      width={isMobile ? '100%' : 900}
-      footer={null}
-      destroyOnClose
-      className="signatures-modal-dark"
-      style={isMobile ? { top: 0, maxWidth: '100vw', margin: 0, paddingBottom: 0 } : {}}
+      opened={visible}
+      onClose={onCancel}
+      title={
+        <Group>
+          <ThemeIcon size="lg" radius="md" variant="gradient" gradient={{ from: 'violet', to: 'grape', deg: 45 }}>
+            <IconSignature size={20} />
+          </ThemeIcon>
+          <Text size="lg" fw={700}>
+            {t('signaturesModal.title')}
+          </Text>
+        </Group>
+      }
+      size={isMobile ? '100%' : 900}
+      fullScreen={isMobile}
+      padding={isMobile ? 'sm' : 'lg'}
+      closeButtonProps={{
+        icon: <IconX size={20} />
+      }}
+      styles={{
+        header: {
+          borderBottom: `1px solid ${isDark ? 'var(--mantine-color-dark-5)' : 'var(--mantine-color-gray-3)'}`
+        }
+      }}
     >
-      {showExisting && existingSignatures.length > 0 && step === 'create' && (
-        <Card 
-          size="small" 
-          title={
-            <Space>
-              <span>{t('signaturesModal.cards.existingSignatures')}</span>
-              <Tag color="blue">
-                {t('signaturesModal.cards.signedCount', {
-                  signed: existingSignatures.filter(s => s.is_signed).length,
-                  total: existingSignatures.length
-                })}
-              </Tag>
-            </Space>
-          }
-          style={{ marginBottom: 16 }}
-        >
-          {/* Desktop Table */}
-          <div className="signatures-desktop-table">
-            <Table
-              dataSource={existingSignatures}
-              columns={existingColumns}
-              rowKey="id"
-              pagination={false}
-              size="small"
-            />
-          </div>
+      <Stack gap="md">
+        {/* Существующие подписи */}
+        {showExisting && existingSignatures.length > 0 && step === 'create' && (
+          <Card 
+            withBorder
+            p="md"
+            style={{
+              borderColor: isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'
+            }}
+          >
+            <Stack gap="md">
+              <Group justify="space-between">
+                <Group gap="xs">
+                  <ThemeIcon size="lg" radius="md" variant="light" color="blue">
+                    <IconUserCheck size={20} />
+                  </ThemeIcon>
+                  <Text fw={600} size="md">
+                    {t('signaturesModal.cards.existingSignatures')}
+                  </Text>
+                </Group>
+                <Badge variant="light" color="blue" size="lg" leftSection={<IconChecks size={14} />}>
+                  {t('signaturesModal.cards.signedCount', {
+                    signed: existingSignatures.filter(s => s.is_signed).length,
+                    total: existingSignatures.length
+                  })}
+                </Badge>
+              </Group>
 
-          {/* Mobile Cards */}
-          <div className="signatures-mobile-cards">
-            {existingSignatures.map(record => renderMobileSignatureCard(record))}
-          </div>
-        </Card>
-      )}
-
-      {step === 'create' ? (
-        <>
-          <Card size="small" title={t('signaturesModal.cards.addNewSigners')}>
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              {signers.map((signer, index) => (
-                <Card 
-                  key={signer.id} 
-                  size="small"
-                  style={{ background: '#141414' }}
-                  title={t('signaturesModal.cards.signerNumber', { number: index + 1 })}
-                  extra={
-                    signers.length > 1 && (
-                      <Button 
-                        danger 
-                        size="small"
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeSigner(signer.id!)}
-                      >
-                        {t('common.delete')}
-                      </Button>
-                    )
-                  }
-                >
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <div>
-                      <Text type="secondary" strong>{t('signaturesModal.fields.signerName')} *</Text>
-                      <Input
-                        placeholder={t('signaturesModal.placeholders.signerName')}
-                        value={signer.signer_name}
-                        onChange={(e) => updateSigner(signer.id!, { signer_name: e.target.value })}
-                        style={{ marginTop: 4 }}
-                      />
-                    </div>
-                    <div>
-                      <Text type="secondary" strong>{t('signaturesModal.fields.role')} *</Text>
-                      <Select
-                        placeholder={t('signaturesModal.placeholders.selectRole')}
-                        value={signer.signer_role || undefined}
-                        onChange={(value) => updateSigner(signer.id!, { signer_role: value })}
-                        style={{ width: '100%', marginTop: 4 }}
-                        showSearch
-                        allowClear
-                      >
-                        {getAvailableRoles(signer.id!).map(role => (
-                          <Option key={role} value={role}>{role}</Option>
+              {/* Desktop Table */}
+              {!isMobile && (
+                <Table.ScrollContainer minWidth={700}>
+                  <Table striped highlightOnHover withTableBorder>
+                    <Table.Thead>
+                      <Table.Tr>
+                        {existingColumns.map(col => (
+                          <Table.Th key={col.accessor} style={{ width: col.width }}>
+                            {col.title}
+                          </Table.Th>
                         ))}
-                      </Select>
-                      <Input
-                        placeholder={t('signaturesModal.placeholders.customRole')}
-                        value={!partyRoles.includes(signer.signer_role) ? signer.signer_role : ''}
-                        onChange={(e) => updateSigner(signer.id!, { signer_role: e.target.value })}
-                        style={{ marginTop: 8 }}
-                      />
-                    </div>
-                  </Space>
-                </Card>
-              ))}
-              
-              <Button 
-                type="dashed" 
-                icon={<PlusOutlined />}
-                onClick={addSigner}
-                block
-              >
-                {t('signaturesModal.actions.addAnotherSigner')}
-              </Button>
-            </Space>
-          </Card>
-
-          <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <Button onClick={onCancel}>{t('common.cancel')}</Button>
-              {requestUuid && existingSignatures.length > 0 && (
-                <Button 
-                  type="primary"
-                  icon={<BellOutlined />}
-                  onClick={handleNotifyAgent}
-                  style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                >
-                  {t('signaturesModal.actions.notifyAgent')}
-                </Button>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {existingSignatures.map(record => (
+                        <Table.Tr key={record.id}>
+                          {existingColumns.map(col => (
+                            <Table.Td key={col.accessor}>
+                              {col.render(record)}
+                            </Table.Td>
+                          ))}
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                </Table.ScrollContainer>
               )}
-            </div>
-            <Button 
-              type="primary" 
-              onClick={handleCreate}
-              loading={loading}
+
+              {/* Mobile Cards */}
+              {isMobile && (
+                <Stack gap="sm">
+                  {existingSignatures.map(record => renderMobileSignatureCard(record))}
+                </Stack>
+              )}
+            </Stack>
+          </Card>
+        )}
+
+        {/* Создание новых подписантов */}
+        {step === 'create' ? (
+          <>
+            <Card 
+              withBorder
+              p="md"
+              style={{
+                borderColor: isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'
+              }}
             >
-              {t('signaturesModal.actions.createSignatures')}
-            </Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <Card size="small" title={t('signaturesModal.cards.signatureLinks')}>
-            <Space direction="vertical" style={{ width: '100%' }} size="small">
-              {generatedLinks.map((link, index) => (
-                <Card key={index} size="small" style={{ background: '#f0f0f0' }}>
-                  <div style={{ marginBottom: 8 }}>
-                    <Text strong>{link.signer_name}</Text>
-                  </div>
-                  <Input.Group compact>
-                    <Input
-                      style={{ width: 'calc(100% - 100px)' }}
-                      value={link.link}
-                      readOnly
-                    />
-                    <Button 
-                      icon={<CopyOutlined />}
-                      onClick={() => copyLink(link.link)}
-                    >
-                      {t('signaturesModal.actions.copy')}
-                    </Button>
-                  </Input.Group>
-                </Card>
-              ))}
-            </Space>
-          </Card>
+              <Stack gap="md">
+                <Group gap="xs">
+                  <ThemeIcon size="lg" radius="md" variant="light" color="green">
+                    <IconUserPlus size={20} />
+                  </ThemeIcon>
+                  <Text fw={600} size="md">
+                    {t('signaturesModal.cards.addNewSigners')}
+                  </Text>
+                </Group>
 
-          <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between' }}>
-            <div>
+                <Stack gap="md">
+                  {signers.map((signer, index) => (
+                    <Card 
+                      key={signer.id} 
+                      withBorder
+                      p="md"
+                      style={{
+                        background: isDark ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-gray-0)',
+                        borderColor: isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'
+                      }}
+                    >
+                      <Stack gap="md">
+                        <Group justify="space-between">
+                          <Badge variant="light" color="violet" size="lg" leftSection={<IconSparkles size={14} />}>
+                            {t('signaturesModal.cards.signerNumber', { number: index + 1 })}
+                          </Badge>
+                          {signers.length > 1 && (
+                            <Tooltip label={t('common.delete')}>
+                              <ActionIcon
+                                color="red"
+                                variant="light"
+                                size="lg"
+                                onClick={() => removeSigner(signer.id!)}
+                              >
+                                <IconTrash size={18} />
+                              </ActionIcon>
+                            </Tooltip>
+                          )}
+                        </Group>
+
+                        <Stack gap="sm">
+                          <Box>
+                            <Text size="sm" fw={600} mb={4}>
+                              {t('signaturesModal.fields.signerName')} *
+                            </Text>
+                            <TextInput
+                              placeholder={t('signaturesModal.placeholders.signerName')}
+                              value={signer.signer_name}
+                              onChange={(e) => updateSigner(signer.id!, { signer_name: e.target.value })}
+                              leftSection={<IconUserCheck size={16} />}
+                              styles={{ input: { fontSize: '16px' } }}
+                            />
+                          </Box>
+
+                          <Box>
+                            <Text size="sm" fw={600} mb={4}>
+                              {t('signaturesModal.fields.role')} *
+                            </Text>
+                            <Select
+                              placeholder={t('signaturesModal.placeholders.selectRole')}
+                              value={signer.signer_role || null}
+                              data={getAvailableRoles(signer.id!).map(role => ({ 
+                                value: role, 
+                                label: role 
+                              }))}
+                              onChange={(value) => {
+                                if (value) {
+                                  updateSigner(signer.id!, { signer_role: value });
+                                }
+                              }}
+                              searchable
+                              clearable
+                              leftSection={<IconSignature size={16} />}
+                              styles={{ input: { fontSize: '16px' } }}
+                              mb="xs"
+                            />
+                            <TextInput
+                              placeholder={t('signaturesModal.placeholders.customRole')}
+                              value={!partyRoles.includes(signer.signer_role) ? signer.signer_role : ''}
+                              onChange={(e) => updateSigner(signer.id!, { signer_role: e.target.value })}
+                              leftSection={<IconEdit size={16} />}
+                              styles={{ input: { fontSize: '16px' } }}
+                            />
+                          </Box>
+                        </Stack>
+                      </Stack>
+                    </Card>
+                  ))}
+
+                  <Button
+                    variant="light"
+                    size="md"
+                    leftSection={<IconPlus size={18} />}
+                    onClick={addSigner}
+                    fullWidth
+                  >
+                    {t('signaturesModal.actions.addAnotherSigner')}
+                  </Button>
+                </Stack>
+              </Stack>
+            </Card>
+
+            {/* Кнопки навигации */}
+            <Group justify="space-between" pt="md" style={{
+              borderTop: `1px solid ${isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'}`
+            }}>
+              <Group gap="xs">
+                <Button variant="subtle" onClick={onCancel} leftSection={<IconX size={16} />}>
+                  {t('common.cancel')}
+                </Button>
+                {requestUuid && existingSignatures.length > 0 && (
+                  <Button
+                    variant="filled"
+                    color="green"
+                    leftSection={<IconBell size={18} />}
+                    onClick={handleNotifyAgent}
+                  >
+                    {t('signaturesModal.actions.notifyAgent')}
+                  </Button>
+                )}
+              </Group>
+              <Button
+                variant="filled"
+                color="violet"
+                size="md"
+                onClick={handleCreate}
+                loading={loading}
+                leftSection={<IconChecks size={18} />}
+              >
+                {t('signaturesModal.actions.createSignatures')}
+              </Button>
+            </Group>
+          </>
+        ) : (
+          /* Отображение сгенерированных ссылок */
+          <>
+            <Card 
+              withBorder
+              p="md"
+              style={{
+                borderColor: isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'
+              }}
+            >
+              <Stack gap="md">
+                <Group gap="xs">
+                  <ThemeIcon size="lg" radius="md" variant="light" color="teal">
+                    <IconLink size={20} />
+                  </ThemeIcon>
+                  <Text fw={600} size="md">
+                    {t('signaturesModal.cards.signatureLinks')}
+                  </Text>
+                </Group>
+
+                <Stack gap="sm">
+                  {generatedLinks.map((link, index) => (
+                    <Card 
+                      key={index} 
+                      p="md"
+                      withBorder
+                      style={{
+                        background: isDark ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-gray-0)',
+                        borderColor: isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'
+                      }}
+                    >
+                      <Stack gap="xs">
+                        <Group gap="xs">
+                          <ThemeIcon size="sm" variant="light" color="blue">
+                            <IconUserCheck size={14} />
+                          </ThemeIcon>
+                          <Text fw={600} size="sm">{link.signer_name}</Text>
+                        </Group>
+                        <Group gap={0}>
+                          <TextInput
+                            value={link.link}
+                            readOnly
+                            style={{ flex: 1 }}
+                            styles={{ 
+                              input: { 
+                                borderTopRightRadius: 0, 
+                                borderBottomRightRadius: 0,
+                                fontSize: '14px'
+                              } 
+                            }}
+                            leftSection={<IconLink size={16} />}
+                          />
+                          <Button
+                            variant="filled"
+                            leftSection={<IconCopy size={16} />}
+                            onClick={() => copyLink(link.link)}
+                            style={{
+                              borderTopLeftRadius: 0,
+                              borderBottomLeftRadius: 0
+                            }}
+                          >
+                            {t('signaturesModal.actions.copy')}
+                          </Button>
+                        </Group>
+                      </Stack>
+                    </Card>
+                  ))}
+                </Stack>
+              </Stack>
+            </Card>
+
+            {/* Кнопки завершения */}
+            <Group justify="space-between" pt="md" style={{
+              borderTop: `1px solid ${isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'}`
+            }}>
               {requestUuid && (
-                <Button 
-                  type="primary"
-                  icon={<BellOutlined />}
+                <Button
+                  variant="filled"
+                  color="green"
+                  leftSection={<IconBell size={18} />}
                   onClick={handleNotifyAgent}
-                  style={{ background: '#52c41a', borderColor: '#52c41a' }}
                 >
                   {t('signaturesModal.actions.notifyAgent')}
                 </Button>
               )}
-            </div>
-            <Button type="primary" onClick={() => { onSuccess(); onCancel(); }}>
-              {t('signaturesModal.actions.done')}
-            </Button>
-          </div>
-        </>
-      )}
+              <Button 
+                variant="filled"
+                color="violet"
+                size="md"
+                onClick={() => { 
+                  onSuccess(); 
+                  onCancel(); 
+                }}
+                ml="auto"
+                leftSection={<IconCheck size={18} />}
+              >
+                {t('signaturesModal.actions.done')}
+              </Button>
+            </Group>
+          </>
+        )}
+      </Stack>
     </Modal>
   );
 };

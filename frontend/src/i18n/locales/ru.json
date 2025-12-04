@@ -1,5 +1,7 @@
 {
   "common": {
+    "warning": "Предупреждение",
+    "inactive": "Неактивен",
     "active": "Активен",
     "save": "Сохранить",
     "confirm": "Подтвердить",
@@ -75,9 +77,14 @@
     "notConfigured": "Интеграция не настроена",
     "comingSoon": "Скоро будет доступно",
     "manage": "К настройкам",
+    "noIntegrations": "Нет доступных интеграций",
+    "noIntegrationsDescription": "Здесь будут отображаться подключенные интеграции",
     
     "beds24": {
+      "step1Description": "Введите API ключи",
+      "step2Description": "Привяжите объекты",
       "title": "Beds24",
+      "notConfigured": "Не настроено",
       "configured": "ПОДКЛЮЧЕНО",
       "step1": "API ключи",
       "step2": "Синхронизация объектов",
@@ -2066,6 +2073,42 @@
     }
   },
   "createAgreementModal": {
+        "defaultParties": "Стороны по умолчанию",
+    "rentalPeriod": "Период аренды",
+    "days": "дней",
+    "months": "месяцев",
+    "totalCost": "Общая стоимость",
+    "paymentBreakdown": "Распределение платежей",
+    "switchToIndividual": "Переключить на физлицо",
+    "switchToCompany": "Переключить на компанию",
+    "completed": "завершено",
+        "hints": {
+      "selectTemplate": "Выберите подходящий шаблон",
+      "selectTemplateDesc": "Тип договора определяет количество и роли сторон",
+      "propertyDetails": "Укажите объект недвижимости",
+      "propertyDetailsDesc": "Выберите из базы данных или введите вручную",
+      "parties": "Заполните информацию о сторонах",
+      "partiesDesc": "Можно выбрать сохраненные контакты или ввести новые",
+      "finance": "Финансовые условия договора",
+      "financeDesc": "Итоговая сумма рассчитывается автоматически",
+      "autoCalculation": "Автоматический расчет из месячной суммы",
+      "monthlyRent": "Ежемесячная сумма аренды",
+      "totalRent": "Общая сумма за весь период",
+      "deposit": "Залог возвращается по окончании",
+      "utilities": "Укажите включенные услуги",
+      "addressOverride": "Переопределить адрес из базы данных",
+      "description": "Дополнительная информация о договоре",
+      "bankName": "Название банка получателя",
+      "accountHolder": "ФИО владельца счета",
+      "accountNumber": "Номер банковского счета"
+    },
+    "stepLabel": "Шаг {{current}} из {{total}}",
+    "stepsDesc": {
+      "template": "Выберите тип",
+      "details": "Объект и даты",
+      "parties": "Участники",
+      "finance": "Платежи"
+    },
     "saveContact": "Сохранить",
     "selectSavedContact": "Выбрать из сохраненных контактов",
     "selectSavedCompany": "Выбрать из сохраненных компаний",

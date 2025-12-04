@@ -4,42 +4,50 @@ import {
   Card,
   Table,
   Button,
-  Input,
-  Space,
-  Tag,
-  Dropdown,
-  Modal,
-  message,
-  Row,
-  Col,
-  Statistic,
-  Select
-} from 'antd';
+  TextInput,
+  Grid,
+  Badge,
+  Menu,
+  Stack,
+  Group,
+  Text,
+  Title,
+  Select,
+  ActionIcon,
+  Center,
+  Loader,
+  Pagination,
+  useMantineTheme,
+  Paper
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
+import { useMediaQuery } from '@mantine/hooks';
 import {
-  PlusOutlined,
-  FileTextOutlined,
-  MoreOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  LinkOutlined,
-  DollarOutlined,
-  SearchOutlined
-} from '@ant-design/icons';
+  IconPlus,
+  IconFileText,
+  IconDots,
+  IconEdit,
+  IconTrash,
+  IconEye,
+  IconLink,
+  IconCurrencyDollar,
+  IconSearch,
+  IconCheck,
+  IconX
+} from '@tabler/icons-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { agreementsApi, Agreement } from '@/api/agreements.api';
 import CreateAgreementModal from './components/CreateAgreementModal';
-import type { ColumnsType } from 'antd/es/table';
-import './Agreements.css';
-
-const { Search } = Input;
-const { Option } = Select;
 
 const Agreements = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const theme = useMantineTheme();
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [searchParams, setSearchParams] = useSearchParams();
+  
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -90,26 +98,47 @@ const Agreements = () => {
         }));
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('agreements.messages.loadError'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('agreements.messages.loadError'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    Modal.confirm({
+    modals.openConfirmModal({
       title: t('agreements.confirm.deleteTitle'),
-      content: t('agreements.confirm.deleteDescription'),
-      okText: t('common.delete'),
-      okType: 'danger',
-      cancelText: t('common.cancel'),
-      onOk: async () => {
+      children: (
+        <Text size="sm">
+          {t('agreements.confirm.deleteDescription')}
+        </Text>
+      ),
+      labels: {
+        confirm: t('common.delete'),
+        cancel: t('common.cancel')
+      },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
         try {
           await agreementsApi.delete(id);
-          message.success(t('agreements.messages.deleted'));
+          notifications.show({
+            title: t('common.success'),
+            message: t('agreements.messages.deleted'),
+            color: 'green',
+            icon: <IconCheck size={18} />
+          });
           fetchAgreements();
         } catch (error: any) {
-          message.error(error.response?.data?.message || t('agreements.messages.deleteError'));
+          notifications.show({
+            title: t('errors.generic'),
+            message: error.response?.data?.message || t('agreements.messages.deleteError'),
+            color: 'red',
+            icon: <IconX size={18} />
+          });
         }
       }
     });
@@ -117,382 +146,463 @@ const Agreements = () => {
 
   const copyPublicLink = (link: string) => {
     navigator.clipboard.writeText(link);
-    message.success(t('agreements.messages.linkCopied'));
+    notifications.show({
+      title: t('common.success'),
+      message: t('agreements.messages.linkCopied'),
+      color: 'green',
+      icon: <IconCheck size={18} />
+    });
   };
 
   const getStatusTag = (status: string) => {
     const statusConfig: Record<string, { color: string; text: string }> = {
-      draft: { color: 'default', text: t('agreements.statuses.draft') },
-      pending_signatures: { color: 'processing', text: t('agreements.statuses.pendingSignatures') },
-      signed: { color: 'success', text: t('agreements.statuses.signed') },
-      active: { color: 'success', text: t('agreements.statuses.active') },
-      expired: { color: 'warning', text: t('agreements.statuses.expired') },
-      cancelled: { color: 'error', text: t('agreements.statuses.cancelled') }
+      draft: { color: 'gray', text: t('agreements.statuses.draft') },
+      pending_signatures: { color: 'blue', text: t('agreements.statuses.pendingSignatures') },
+      signed: { color: 'green', text: t('agreements.statuses.signed') },
+      active: { color: 'teal', text: t('agreements.statuses.active') },
+      expired: { color: 'yellow', text: t('agreements.statuses.expired') },
+      cancelled: { color: 'red', text: t('agreements.statuses.cancelled') }
     };
     
-    const config = statusConfig[status] || { color: 'default', text: status };
-    return <Tag color={config.color}>{config.text}</Tag>;
+    const config = statusConfig[status] || { color: 'gray', text: status };
+    return <Badge color={config.color} variant="light">{config.text}</Badge>;
   };
 
   const getTypeTag = (type: string) => {
     const typeConfig: Record<string, { color: string; text: string }> = {
       rent: { color: 'blue', text: t('agreements.types.rent') },
       sale: { color: 'green', text: t('agreements.types.sale') },
-      bilateral: { color: 'purple', text: t('agreements.types.bilateral') },
+      bilateral: { color: 'violet', text: t('agreements.types.bilateral') },
       trilateral: { color: 'orange', text: t('agreements.types.trilateral') },
       agency: { color: 'pink', text: t('agreements.types.agency') },
       transfer_act: { color: 'cyan', text: t('agreements.types.transferAct') }
     };
     
-    const config = typeConfig[type] || { color: 'default', text: type };
-    return <Tag color={config.color}>{config.text}</Tag>;
+    const config = typeConfig[type] || { color: 'gray', text: type };
+    return <Badge color={config.color} variant="light">{config.text}</Badge>;
   };
 
-  const columns: ColumnsType<Agreement> = [
-    {
-      title: t('agreements.table.number'),
-      dataIndex: 'agreement_number',
-      key: 'agreement_number',
-      width: 200,
-      render: (text, record) => (
-        <Button type="link" onClick={() => navigate(`/agreements/${record.id}`)}>
-          {text}
-        </Button>
-      ),
-      responsive: ['md']
-    },
-    {
-      title: t('agreements.table.type'),
-      dataIndex: 'type',
-      key: 'type',
-      width: 150,
-      render: (type) => getTypeTag(type),
-      responsive: ['lg']
-    },
-    {
-      title: t('agreements.table.status'),
-      dataIndex: 'status',
-      key: 'status',
-      width: 140,
-      render: (status) => getStatusTag(status),
-      responsive: ['md']
-    },
-    {
-      title: t('agreements.table.property'),
-      key: 'property',
-      width: 200,
-      render: (_, record) => (
-        record.property_name ? (
-          <div>
-            <div>{record.property_name}</div>
-            <div style={{ fontSize: '12px', color: '#999' }}>{record.property_number}</div>
-          </div>
-        ) : (
-          <span style={{ color: '#999' }}>{t('agreements.notSpecified')}</span>
-        )
-      ),
-      responsive: ['xl']
-    },
-    {
-      title: t('agreements.table.description'),
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-      render: (text) => text || '-',
-      responsive: ['xxl']
-    },
-    {
-      title: t('agreements.table.signatures'),
-      key: 'signatures',
-      width: 120,
-      align: 'center',
-      render: (_, record) => (
-        <span>
-          {record.signed_count || 0} / {record.signature_count || 0}
-        </span>
-      ),
-      responsive: ['lg']
-    },
-    {
-      title: t('agreements.table.created'),
-      dataIndex: 'created_at',
-      key: 'created_at',
-      width: 120,
-      render: (date) => new Date(date).toLocaleDateString('ru-RU'),
-      responsive: ['xl']
-    },
-    {
-      title: t('agreements.table.actions'),
-      key: 'actions',
-      fixed: 'right',
-      width: 100,
-      render: (_, record) => (
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: 'view',
-                icon: <EyeOutlined />,
-                label: t('agreements.actions.view'),
-                onClick: () => navigate(`/agreements/${record.id}`)
-              },
-              {
-                key: 'edit',
-                icon: <EditOutlined />,
-                label: t('agreements.actions.edit'),
-                onClick: () => navigate(`/agreements/${record.id}?edit=true`)
-              },
-              {
-                key: 'link',
-                icon: <LinkOutlined />,
-                label: t('agreements.actions.publicLink'),
-                onClick: () => copyPublicLink(record.public_link)
-              },
-              {
-                type: 'divider'
-              },
-              {
-                key: 'delete',
-                icon: <DeleteOutlined />,
-                label: t('common.delete'),
-                danger: true,
-                onClick: () => handleDelete(record.id)
-              }
-            ]
-          }}
+  const StatCard = ({ title, value, color }: { title: string; value: number; color: string }) => (
+    <Card
+      shadow="sm"
+      padding="md"
+      radius="md"
+      withBorder
+      style={{
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = theme.shadows.md;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = theme.shadows.sm;
+      }}
+    >
+      <Stack gap={4}>
+        <Text size="xs" c="dimmed" fw={500}>
+          {title}
+        </Text>
+        <Text size="xl" fw={700} c={color}>
+          {value}
+        </Text>
+      </Stack>
+    </Card>
+  );
+
+  const renderActionsMenu = (record: Agreement) => (
+    <Menu position="bottom-end" shadow="md">
+      <Menu.Target>
+        <ActionIcon variant="subtle" color="gray">
+          <IconDots size={18} />
+        </ActionIcon>
+      </Menu.Target>
+
+      <Menu.Dropdown>
+        <Menu.Item
+          leftSection={<IconEye size={16} />}
+          onClick={() => navigate(`/agreements/${record.id}`)}
         >
-          <Button type="text" icon={<MoreOutlined />} />
-        </Dropdown>
-      )
-    }
-  ];
+          {t('agreements.actions.view')}
+        </Menu.Item>
+        <Menu.Item
+          leftSection={<IconEdit size={16} />}
+          onClick={() => navigate(`/agreements/${record.id}?edit=true`)}
+        >
+          {t('agreements.actions.edit')}
+        </Menu.Item>
+        <Menu.Item
+          leftSection={<IconLink size={16} />}
+          onClick={() => copyPublicLink(record.public_link)}
+        >
+          {t('agreements.actions.publicLink')}
+        </Menu.Item>
+        <Menu.Divider />
+        <Menu.Item
+          color="red"
+          leftSection={<IconTrash size={16} />}
+          onClick={() => handleDelete(record.id)}
+        >
+          {t('common.delete')}
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
+  );
+
+  const MobileCard = ({ agreement }: { agreement: Agreement }) => (
+    <Card
+      shadow="sm"
+      padding="md"
+      radius="md"
+      withBorder
+      style={{
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        cursor: 'pointer'
+      }}
+      onClick={() => navigate(`/agreements/${agreement.id}`)}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = theme.shadows.md;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = theme.shadows.sm;
+      }}
+    >
+      <Stack gap="sm">
+        <Group justify="space-between" align="flex-start">
+          <Text fw={600} size="sm" style={{ flex: 1 }}>
+            {agreement.agreement_number}
+          </Text>
+          <Group gap={4}>
+            {getTypeTag(agreement.type)}
+            {getStatusTag(agreement.status)}
+          </Group>
+        </Group>
+
+        {agreement.property_name && (
+          <div>
+            <Text size="xs" c="dimmed">
+              {t('agreements.mobile.property')}:
+            </Text>
+            <Text size="sm" fw={500}>
+              {agreement.property_name}
+            </Text>
+          </div>
+        )}
+
+        <Group justify="space-between" mt="xs">
+          <Text size="xs" c="dimmed">
+            {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
+          </Text>
+          <Button
+            size="xs"
+            variant="light"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/agreements/${agreement.id}`);
+            }}
+          >
+            {t('agreements.mobile.view')}
+          </Button>
+        </Group>
+      </Stack>
+    </Card>
+  );
 
   return (
-    <div className="agreements-container">
-      {/* Статистика */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
-        <Col xs={12} sm={6} md={4}>
-          <Card>
-            <Statistic
-              title={t('agreements.stats.total')}
-              value={stats.total}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6} md={4}>
-          <Card>
-            <Statistic
-              title={t('agreements.stats.drafts')}
-              value={stats.draft}
-              valueStyle={{ color: '#8c8c8c' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6} md={4}>
-          <Card>
-            <Statistic
-              title={t('agreements.stats.pending')}
-              value={stats.pending}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6} md={4}>
-          <Card>
-            <Statistic
-              title={t('agreements.stats.signed')}
-              value={stats.signed}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6} md={4}>
-          <Card>
-            <Statistic
-              title={t('agreements.stats.active')}
-              value={stats.active}
-              valueStyle={{ color: '#13c2c2' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Основная карточка */}
-      <Card
-        title={
-          <Space>
-            <FileTextOutlined />
-            <span>{t('agreements.title')}</span>
-          </Space>
-        }
-        extra={
-          <Space wrap className="card-extra-actions">
-            <Button
-              type="link"
-              onClick={() => navigate('/agreements/templates')}
-              className="templates-link"
-            >
-              {t('agreements.buttons.templates')}
-            </Button>
-            <Button
-              type="default"
-              icon={<DollarOutlined />}
-              onClick={() => navigate('/financial-documents')}
-            >
-              <span className="create-button-text">{t('agreements.buttons.invoicesAndReceipts')}</span>
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setCreateModalVisible(true)}
-            >
-              <span className="create-button-text">{t('agreements.buttons.createAgreement')}</span>
-            </Button>
-          </Space>
-        }
-      >
-        {/* Фильтры и поиск */}
-        <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
-          <Row gutter={16}>
-            <Col xs={24} sm={12} md={8}>
-              <Search
-                placeholder={t('agreements.placeholders.search')}
-                allowClear
-                enterButton={<SearchOutlined />}
-                onSearch={setSearchText}
-              />
-            </Col>
-            <Col xs={12} sm={6} md={4}>
-              <Select
-                style={{ width: '100%' }}
-                placeholder={t('agreements.filters.type')}
-                allowClear
-                onChange={setFilterType}
-              >
-                <Option value="rent">{t('agreements.types.rent')}</Option>
-                <Option value="sale">{t('agreements.types.sale')}</Option>
-                <Option value="bilateral">{t('agreements.types.bilateral')}</Option>
-                <Option value="trilateral">{t('agreements.types.trilateral')}</Option>
-                <Option value="agency">{t('agreements.types.agency')}</Option>
-                <Option value="transfer_act">{t('agreements.types.transferAct')}</Option>
-              </Select>
-            </Col>
-            <Col xs={12} sm={6} md={4}>
-              <Select
-                style={{ width: '100%' }}
-                placeholder={t('agreements.filters.status')}
-                allowClear
-                onChange={setFilterStatus}
-              >
-                <Option value="draft">{t('agreements.statuses.draft')}</Option>
-                <Option value="pending_signatures">{t('agreements.statuses.pendingSignatures')}</Option>
-                <Option value="signed">{t('agreements.statuses.signed')}</Option>
-                <Option value="active">{t('agreements.statuses.active')}</Option>
-                <Option value="expired">{t('agreements.statuses.expired')}</Option>
-                <Option value="cancelled">{t('agreements.statuses.cancelled')}</Option>
-              </Select>
-            </Col>
-          </Row>
-        </Space>
-
-        {/* Таблица для десктопа */}
-        <div className="desktop-table">
-          <Table
-            columns={columns}
-            dataSource={agreements}
-            rowKey="id"
-            loading={loading}
-            pagination={{
-              ...pagination,
-              showSizeChanger: true,
-              showTotal: (total) => t('agreements.pagination.total', { total }),
-              onChange: (page, pageSize) => {
-                setPagination(prev => ({ ...prev, current: page, pageSize }));
-              }
-            }}
-            scroll={{ x: 1200 }}
+    <Stack gap="lg" p={isMobile ? 'sm' : 'md'}>
+      <Grid gutter="md">
+        <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 2.4 }}>
+          <StatCard
+            title={t('agreements.stats.total')}
+            value={stats.total}
+            color={theme.colors.blue[6]}
           />
-        </div>
+        </Grid.Col>
+        <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 2.4 }}>
+          <StatCard
+            title={t('agreements.stats.drafts')}
+            value={stats.draft}
+            color={theme.colors.gray[6]}
+          />
+        </Grid.Col>
+        <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 2.4 }}>
+          <StatCard
+            title={t('agreements.stats.pending')}
+            value={stats.pending}
+            color={theme.colors.orange[6]}
+          />
+        </Grid.Col>
+        <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 2.4 }}>
+          <StatCard
+            title={t('agreements.stats.signed')}
+            value={stats.signed}
+            color={theme.colors.green[6]}
+          />
+        </Grid.Col>
+        <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 2.4 }}>
+          <StatCard
+            title={t('agreements.stats.active')}
+            value={stats.active}
+            color={theme.colors.teal[6]}
+          />
+        </Grid.Col>
+      </Grid>
 
-        {/* Карточки для мобильных */}
-        <div className="mobile-cards">
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>{t('agreements.loading')}</div>
-          ) : agreements.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-              {t('agreements.noAgreements')}
-            </div>
+      <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Stack gap="lg">
+          <Group justify="space-between" wrap="wrap">
+            <Group gap="xs">
+              <IconFileText size={24} />
+              <Title order={4}>{t('agreements.title')}</Title>
+            </Group>
+
+            <Group gap="xs" wrap="wrap">
+              <Button
+                variant="subtle"
+                onClick={() => navigate('/agreements/templates')}
+                size={isMobile ? 'xs' : 'sm'}
+              >
+                {t('agreements.buttons.templates')}
+              </Button>
+              <Button
+                variant="light"
+                leftSection={<IconCurrencyDollar size={18} />}
+                onClick={() => navigate('/financial-documents')}
+                size={isMobile ? 'xs' : 'sm'}
+              >
+                {!isMobile && t('agreements.buttons.invoicesAndReceipts')}
+              </Button>
+              <Button
+                leftSection={<IconPlus size={18} />}
+                onClick={() => setCreateModalVisible(true)}
+                size={isMobile ? 'xs' : 'sm'}
+              >
+                {!isMobile && t('agreements.buttons.createAgreement')}
+              </Button>
+            </Group>
+          </Group>
+
+          <Grid gutter="md">
+            <Grid.Col span={{ base: 12, sm: 6, md: 6 }}>
+              <TextInput
+                placeholder={t('agreements.placeholders.search')}
+                leftSection={<IconSearch size={18} />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                styles={{
+                  input: { fontSize: '16px' }
+                }}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+              <Select
+                placeholder={t('agreements.filters.type')}
+                clearable
+                value={filterType || null}
+                onChange={(value) => setFilterType(value || '')}
+                data={[
+                  { value: 'rent', label: t('agreements.types.rent') },
+                  { value: 'sale', label: t('agreements.types.sale') },
+                  { value: 'bilateral', label: t('agreements.types.bilateral') },
+                  { value: 'trilateral', label: t('agreements.types.trilateral') },
+                  { value: 'agency', label: t('agreements.types.agency') },
+                  { value: 'transfer_act', label: t('agreements.types.transferAct') }
+                ]}
+                styles={{
+                  input: { fontSize: '16px' }
+                }}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+              <Select
+                placeholder={t('agreements.filters.status')}
+                clearable
+                value={filterStatus || null}
+                onChange={(value) => setFilterStatus(value || '')}
+                data={[
+                  { value: 'draft', label: t('agreements.statuses.draft') },
+                  { value: 'pending_signatures', label: t('agreements.statuses.pendingSignatures') },
+                  { value: 'signed', label: t('agreements.statuses.signed') },
+                  { value: 'active', label: t('agreements.statuses.active') },
+                  { value: 'expired', label: t('agreements.statuses.expired') },
+                  { value: 'cancelled', label: t('agreements.statuses.cancelled') }
+                ]}
+                styles={{
+                  input: { fontSize: '16px' }
+                }}
+              />
+            </Grid.Col>
+          </Grid>
+
+          {isMobile ? (
+            <Stack gap="md">
+              {loading ? (
+                <Center py={60}>
+                  <Stack align="center" gap="md">
+                    <Loader size="lg" />
+                    <Text size="sm" c="dimmed">
+                      {t('agreements.loading')}
+                    </Text>
+                  </Stack>
+                </Center>
+              ) : agreements.length === 0 ? (
+                <Paper p="xl" radius="md" withBorder>
+                  <Center>
+                    <Stack align="center" gap="md">
+                      <IconFileText size={48} color={theme.colors.gray[5]} />
+                      <Text size="lg" c="dimmed">
+                        {t('agreements.noAgreements')}
+                      </Text>
+                    </Stack>
+                  </Center>
+                </Paper>
+              ) : (
+                <>
+                  {agreements.map(agreement => (
+                    <MobileCard key={agreement.id} agreement={agreement} />
+                  ))}
+
+                  {pagination.total > pagination.pageSize && (
+                    <Group justify="space-between" mt="md">
+                      <Button
+                        variant="light"
+                        disabled={pagination.current === 1}
+                        onClick={() => setPagination(prev => ({ ...prev, current: prev.current - 1 }))}
+                        size="xs"
+                      >
+                        {t('agreements.pagination.back')}
+                      </Button>
+                      <Text size="xs" c="dimmed">
+                        {t('agreements.pagination.pageInfo', {
+                          current: pagination.current,
+                          total: Math.ceil(pagination.total / pagination.pageSize)
+                        })}
+                      </Text>
+                      <Button
+                        variant="light"
+                        disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+                        onClick={() => setPagination(prev => ({ ...prev, current: prev.current + 1 }))}
+                        size="xs"
+                      >
+                        {t('agreements.pagination.forward')}
+                      </Button>
+                    </Group>
+                  )}
+                </>
+              )}
+            </Stack>
           ) : (
             <>
-              {agreements.map(agreement => (
-                <Card 
-                  key={agreement.id} 
-                  size="small" 
-                  className="mobile-agreement-card"
-                  onClick={() => navigate(`/agreements/${agreement.id}`)}
-                >
-                  <div className="mobile-card-header">
-                    <div className="mobile-card-number">{agreement.agreement_number}</div>
-                    <div className="mobile-card-badges">
-                      {getTypeTag(agreement.type)}
-                      {getStatusTag(agreement.status)}
-                    </div>
-                  </div>
-                  
-                  {agreement.property_name && (
-                    <div className="mobile-card-property">
-                      <strong>{t('agreements.mobile.property')}:</strong> {agreement.property_name}
-                    </div>
+              <Table
+                striped
+                highlightOnHover
+                withTableBorder
+                withColumnBorders
+              >
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>{t('agreements.table.number')}</Table.Th>
+                    <Table.Th>{t('agreements.table.type')}</Table.Th>
+                    <Table.Th>{t('agreements.table.status')}</Table.Th>
+                    <Table.Th>{t('agreements.table.property')}</Table.Th>
+                    <Table.Th>{t('agreements.table.description')}</Table.Th>
+                    <Table.Th>{t('agreements.table.signatures')}</Table.Th>
+                    <Table.Th>{t('agreements.table.created')}</Table.Th>
+                    <Table.Th>{t('agreements.table.actions')}</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {loading ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={8}>
+                        <Center py={40}>
+                          <Loader size="lg" />
+                        </Center>
+                      </Table.Td>
+                    </Table.Tr>
+                  ) : agreements.length === 0 ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={8}>
+                        <Center py={40}>
+                          <Text c="dimmed">{t('agreements.noAgreements')}</Text>
+                        </Center>
+                      </Table.Td>
+                    </Table.Tr>
+                  ) : (
+                    agreements.map((agreement) => (
+                      <Table.Tr key={agreement.id}>
+                        <Table.Td>
+                          <Button
+                            variant="subtle"
+                            size="xs"
+                            onClick={() => navigate(`/agreements/${agreement.id}`)}
+                          >
+                            {agreement.agreement_number}
+                          </Button>
+                        </Table.Td>
+                        <Table.Td>{getTypeTag(agreement.type)}</Table.Td>
+                        <Table.Td>{getStatusTag(agreement.status)}</Table.Td>
+                        <Table.Td>
+                          {agreement.property_name ? (
+                            <div>
+                              <Text size="sm" fw={500}>
+                                {agreement.property_name}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                {agreement.property_number}
+                              </Text>
+                            </div>
+                          ) : (
+                            <Text size="sm" c="dimmed">
+                              {t('agreements.notSpecified')}
+                            </Text>
+                          )}
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" lineClamp={1}>
+                            {agreement.description || '—'}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" ta="center">
+                            {agreement.signed_count || 0} / {agreement.signature_count || 0}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm">
+                            {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          {renderActionsMenu(agreement)}
+                        </Table.Td>
+                      </Table.Tr>
+                    ))
                   )}
-                  
-                  <div className="mobile-card-footer">
-                    <div className="mobile-card-date">
-                      {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
-                    </div>
-                    <Button 
-                      type="primary" 
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/agreements/${agreement.id}`);
-                      }}
-                    >
-                      {t('agreements.mobile.view')}
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-              
-              {/* Пагинация для мобильных */}
+                </Table.Tbody>
+              </Table>
+
               {pagination.total > pagination.pageSize && (
-                <div className="mobile-pagination">
-                  <Button
-                    disabled={pagination.current === 1}
-                    onClick={() => setPagination(prev => ({ ...prev, current: prev.current - 1 }))}
-                  >
-                    {t('agreements.pagination.back')}
-                  </Button>
-                  <span className="mobile-pagination-info">
-                    {t('agreements.pagination.pageInfo', {
-                      current: pagination.current,
-                      total: Math.ceil(pagination.total / pagination.pageSize)
-                    })}
-                  </span>
-                  <Button
-                    disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                    onClick={() => setPagination(prev => ({ ...prev, current: prev.current + 1 }))}
-                  >
-                    {t('agreements.pagination.forward')}
-                  </Button>
-                </div>
+                <Group justify="space-between" mt="lg">
+                  <Text size="sm" c="dimmed">
+                    {t('agreements.pagination.total', { total: pagination.total })}
+                  </Text>
+                  <Pagination
+                    total={Math.ceil(pagination.total / pagination.pageSize)}
+                    value={pagination.current}
+                    onChange={(page) => setPagination(prev => ({ ...prev, current: page }))}
+                    size={isMobile ? 'sm' : 'md'}
+                  />
+                </Group>
               )}
             </>
           )}
-        </div>
+        </Stack>
       </Card>
 
-      {/* Модальное окно создания */}
       <CreateAgreementModal
         visible={createModalVisible}
         onCancel={() => {
@@ -501,11 +611,11 @@ const Agreements = () => {
         }}
         onSuccess={() => {
           setCreateModalVisible(false);
-          setSearchParams({}); 
+          setSearchParams({});
           fetchAgreements();
         }}
       />
-    </div>
+    </Stack>
   );
 };
 

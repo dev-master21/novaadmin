@@ -1,50 +1,86 @@
 // frontend/src/modules/Agreements/components/CreateAgreementModal.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useRef } from 'react';
 import {
   Modal,
-  Form,
-  Input,
+  TextInput,
   Select,
   Button,
-  Steps,
-  Space,
+  Stepper,
+  Stack,
   Card,
-  Row,
-  Col,
-  DatePicker,
-  message,
-  Radio,
-  Switch,
-  InputNumber,
+  Grid,
+  NumberInput,
   Divider,
-  Upload,
   Image,
   Alert,
-  Checkbox
-} from 'antd';
+  Checkbox,
+  Accordion,
+  Badge,
+  Group,
+  Text,
+  Paper,
+  Radio,
+  Switch,
+  Textarea,
+  Center,
+  Loader,
+  ActionIcon,
+  ThemeIcon,
+  FileButton,
+  Progress,
+  Tooltip,
+  Box,
+  Timeline,
+  Transition,
+  rem,
+  useMantineColorScheme
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { useMediaQuery } from '@mantine/hooks';
 import {
-  FileTextOutlined,
-  CalendarOutlined,
-  UserOutlined,
-  PlusOutlined,
-  DeleteOutlined,
-  DollarOutlined,
-  UploadOutlined,
-  FileImageOutlined,
-  InfoCircleOutlined,
-  SaveOutlined
-} from '@ant-design/icons';
-import type { UploadFile } from 'antd/es/upload/interface';
+  IconFileText,
+  IconCalendar,
+  IconUser,
+  IconPlus,
+  IconTrash,
+  IconCurrencyBaht,
+  IconUpload,
+  IconPhoto,
+  IconInfoCircle,
+  IconDeviceFloppy,
+  IconCheck,
+  IconArrowLeft,
+  IconArrowRight,
+  IconCheckupList,
+  IconX,
+  IconBuildingBank,
+  IconHome,
+  IconId,
+  IconWorld,
+  IconNumber,
+  IconBuilding,
+  IconMapPin,
+  IconUsers,
+  IconCalculator,
+  IconSparkles,
+  IconClipboardCheck,
+  IconFileDescription,
+  IconClock,
+  IconTrendingUp,
+  IconPigMoney,
+  IconReceipt,
+  IconBriefcase,
+  IconUserCheck
+} from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { agreementsApi, AgreementTemplate } from '@/api/agreements.api';
 import { requestsApi, Request } from '@/api/requests.api';
 import { contactsApi } from '@/api/contacts.api';
 import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
+import ReactDatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import './CreateAgreementModal.css';
-
-const { Option, OptGroup } = Select;
-const { TextArea } = Input;
 
 interface CreateAgreementModalProps {
   visible: boolean;
@@ -64,7 +100,7 @@ interface PartyData {
   director_name?: string;
   director_passport?: string;
   director_country?: string;
-  documents?: Array<{ file: UploadFile; preview: string; uploading?: boolean }>;
+  documents?: Array<{ file: File; preview: string; uploading?: boolean }>;
 }
 
 interface Property {
@@ -75,17 +111,48 @@ interface Property {
   address: string;
 }
 
+// Кастомный input для DatePicker без клавиатуры на мобильных
+const DatePickerInput = forwardRef<HTMLButtonElement, any>(
+  ({ value, onClick, placeholder, icon }, ref) => (
+    <Button
+      ref={ref}
+      onClick={onClick}
+      variant="default"
+      leftSection={icon}
+      fullWidth
+      justify="space-between"
+      styles={{
+        root: {
+          height: rem(42),
+          fontSize: rem(16),
+          fontWeight: 400,
+          color: value ? 'var(--mantine-color-text)' : 'var(--mantine-color-placeholder)',
+          border: '1px solid var(--mantine-color-default-border)',
+          '&:hover': {
+            backgroundColor: 'var(--mantine-color-default-hover)',
+            borderColor: 'var(--mantine-color-violet-5)'
+          }
+        }
+      }}
+    >
+      {value || placeholder}
+    </Button>
+  )
+);
+
 const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementModalProps) => {
   const { t } = useTranslation();
-  const [form] = Form.useForm();
+  const { colorScheme } = useMantineColorScheme();
   const [searchParams] = useSearchParams();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const modalContentRef = useRef<HTMLDivElement>(null);
+  
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<AgreementTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<AgreementTemplate | null>(null);
   const [parties, setParties] = useState<PartyData[]>([]);
 
-  // ✅ НОВЫЕ СОСТОЯНИЯ ДЛЯ СОХРАНЕННЫХ КОНТАКТОВ
   const [savedContacts, setSavedContacts] = useState<any[]>([]);
   const [saveContactFlags, setSaveContactFlags] = useState<Record<number, boolean>>({});
 
@@ -99,11 +166,95 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
   const [requestUuid, setRequestUuid] = useState<string | null>(null);
   const [loadingRequest, setLoadingRequest] = useState(false);
 
+  // Form state
+  const [formData, setFormData] = useState<any>({
+    template_id: null,
+    date_from: null,
+    date_to: null,
+    city: 'Phuket',
+    description: '',
+    property_id: null,
+    property_name_manual: '',
+    property_number_manual: '',
+    property_address_manual: '',
+    property_address_override: '',
+    rent_amount_monthly: null,
+    rent_amount_total: null,
+    deposit_amount: null,
+    utilities_included: '',
+    bank_name: '',
+    bank_account_name: '',
+    bank_account_number: '',
+    upon_signed_pay: null,
+    upon_checkin_pay: null,
+    upon_checkout_pay: null
+  });
+
+  // Прокрутка вверх при смене шага
+  useEffect(() => {
+    if (modalContentRef.current) {
+      modalContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentStep]);
+
+  // Вычисляем прогресс заполнения
+  const calculateProgress = () => {
+    let total = 0;
+    let filled = 0;
+
+    if (currentStep >= 0) {
+      total += 1;
+      if (selectedTemplate) filled += 1;
+    }
+
+    if (currentStep >= 1) {
+      total += 3;
+      if (formData.date_from) filled += 1;
+      if (formData.date_to) filled += 1;
+      if (manualPropertyInput ? formData.property_name_manual : formData.property_id) filled += 1;
+    }
+
+    if (currentStep >= 2) {
+      total += parties.length * 3;
+      parties.forEach(p => {
+        if (p.is_company) {
+          if (p.company_name) filled += 1;
+          if (p.company_tax_id) filled += 1;
+          if (p.director_name) filled += 1;
+        } else {
+          if (p.name) filled += 1;
+          if (p.passport_country) filled += 1;
+          if (p.passport_number) filled += 1;
+        }
+      });
+    }
+
+    if (currentStep >= 3) {
+      total += 3;
+      if (formData.rent_amount_monthly) filled += 1;
+      if (formData.deposit_amount) filled += 1;
+      if (formData.bank_name) filled += 1;
+    }
+
+    return total > 0 ? Math.round((filled / total) * 100) : 0;
+  };
+
+  // Автоматический расчет total из monthly
+  useEffect(() => {
+    if (formData.rent_amount_monthly && formData.date_from && formData.date_to) {
+      const months = dayjs(formData.date_to).diff(dayjs(formData.date_from), 'month', true);
+      if (months > 0) {
+        const calculatedTotal = Math.round(formData.rent_amount_monthly * months);
+        setFormData((prev: any) => ({ ...prev, rent_amount_total: calculatedTotal }));
+      }
+    }
+  }, [formData.rent_amount_monthly, formData.date_from, formData.date_to]);
+
   useEffect(() => {
     if (visible) {
       fetchTemplates();
       fetchProperties();
-      fetchSavedContacts(); // ✅ ДОБАВИЛИ
+      fetchSavedContacts();
       
       const uuid = searchParams.get('request_uuid');
       if (uuid) {
@@ -115,7 +266,6 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
     }
   }, [visible, searchParams]);
 
-  // ✅ ФУНКЦИЯ ЗАГРУЗКИ СОХРАНЕННЫХ КОНТАКТОВ
   const fetchSavedContacts = async () => {
     try {
       const response = await contactsApi.getAll();
@@ -125,109 +275,109 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
     }
   };
 
-
-
-const base64ToFile = (base64: string, filename: string): File => {
-  try {
-    const arr = base64.split(',');
-    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
+  const base64ToFile = (base64: string, filename: string): File => {
+    try {
+      const arr = base64.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new File([u8arr], filename, { type: mime });
+    } catch (error) {
+      console.error('Error converting base64 to file:', error);
+      return new File([], filename, { type: 'image/jpeg' });
     }
-    return new File([u8arr], filename, { type: mime });
-  } catch (error) {
-    console.error('Error converting base64 to file:', error);
-    // Возвращаем пустой файл в случае ошибки
-    return new File([], filename, { type: 'image/jpeg' });
-  }
-};
+  };
 
-// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ fillPartyFromContact
-const fillPartyFromContact = (index: number, contact: any) => {
-  const newParties = [...parties];
-  
-  if (contact.type === 'individual') {
-    newParties[index] = {
-      ...newParties[index],
-      name: contact.name,
-      passport_country: contact.passport_country,
-      passport_number: contact.passport_number,
-      is_company: false,
-      // ✅ ИСПРАВЛЕНИЕ: конвертируем base64 в File objects
-      documents: contact.documents?.map((doc: any, docIdx: number) => ({
-        file: base64ToFile(doc.document_base64, `passport_${contact.name}_${docIdx}.jpg`),
-        preview: doc.document_base64,
-        uploading: false
-      })) || []
-    };
-  } else {
-    newParties[index] = {
-      ...newParties[index],
-      company_name: contact.company_name,
-      company_address: contact.company_address,
-      company_tax_id: contact.company_tax_id,
-      director_name: contact.director_name,
-      director_passport: contact.director_passport,
-      director_country: contact.director_country,
-      is_company: true,
-      // ✅ ИСПРАВЛЕНИЕ: конвертируем base64 в File objects для компании тоже
-      documents: contact.documents?.map((doc: any, docIdx: number) => ({
-        file: base64ToFile(doc.document_base64, `company_docs_${contact.company_name}_${docIdx}.jpg`),
-        preview: doc.document_base64,
-        uploading: false
-      })) || []
-    };
-  }
-  
-  setParties(newParties);
-  message.success(t('createAgreementModal.messages.contactApplied'));
-};
-
-const saveContact = async (party: PartyData) => {
-  try {
-    console.log('💾 Saving contact...', party);
+  const fillPartyFromContact = (index: number, contact: any) => {
+    const newParties = [...parties];
     
-    // ✅ Собираем документы в нужном формате
-    const documentsToSave = party.documents?.map(doc => ({
-      document_base64: doc.preview,
-      mime_type: (doc.file as any)?.type,
-      file_size: (doc.file as any)?.size
-    })) || [];
-
-    console.log('📎 Documents to save:', documentsToSave.length);
-
-    const contactData = party.is_company ? {
-      type: 'company' as const,
-      company_name: party.company_name,
-      company_address: party.company_address,
-      company_tax_id: party.company_tax_id,
-      director_name: party.director_name,
-      director_passport: party.director_passport,
-      director_country: party.director_country,
-      documents: documentsToSave
-    } : {
-      type: 'individual' as const,
-      name: party.name,
-      passport_country: party.passport_country,
-      passport_number: party.passport_number,
-      documents: documentsToSave
-    };
-
-    console.log('📤 Sending contact data:', contactData);
-
-    const response = await contactsApi.create(contactData);
-    console.log('✅ Contact saved:', response.data);
+    if (contact.type === 'individual') {
+      newParties[index] = {
+        ...newParties[index],
+        name: contact.name,
+        passport_country: contact.passport_country,
+        passport_number: contact.passport_number,
+        is_company: false,
+        documents: contact.documents?.map((doc: any, docIdx: number) => ({
+          file: base64ToFile(doc.document_base64, `passport_${contact.name}_${docIdx}.jpg`),
+          preview: doc.document_base64,
+          uploading: false
+        })) || []
+      };
+    } else {
+      newParties[index] = {
+        ...newParties[index],
+        company_name: contact.company_name,
+        company_address: contact.company_address,
+        company_tax_id: contact.company_tax_id,
+        director_name: contact.director_name,
+        director_passport: contact.director_passport,
+        director_country: contact.director_country,
+        is_company: true,
+        documents: contact.documents?.map((doc: any, docIdx: number) => ({
+          file: base64ToFile(doc.document_base64, `company_docs_${contact.company_name}_${docIdx}.jpg`),
+          preview: doc.document_base64,
+          uploading: false
+        })) || []
+      };
+    }
     
-    await fetchSavedContacts();
-    message.success(t('createAgreementModal.messages.contactSaved'));
-  } catch (error) {
-    console.error('❌ Error saving contact:', error);
-    message.error(t('createAgreementModal.messages.contactSaveError'));
-  }
-};
+    setParties(newParties);
+    notifications.show({
+      title: t('common.success'),
+      message: t('createAgreementModal.messages.contactApplied'),
+      color: 'green',
+      icon: <IconCheck size={16} />
+    });
+  };
+
+  const saveContact = async (party: PartyData) => {
+    try {
+      const documentsToSave = party.documents?.map(doc => ({
+        document_base64: doc.preview,
+        mime_type: doc.file.type,
+        file_size: doc.file.size
+      })) || [];
+
+      const contactData = party.is_company ? {
+        type: 'company' as const,
+        company_name: party.company_name,
+        company_address: party.company_address,
+        company_tax_id: party.company_tax_id,
+        director_name: party.director_name,
+        director_passport: party.director_passport,
+        director_country: party.director_country,
+        documents: documentsToSave
+      } : {
+        type: 'individual' as const,
+        name: party.name,
+        passport_country: party.passport_country,
+        passport_number: party.passport_number,
+        documents: documentsToSave
+      };
+
+      await contactsApi.create(contactData);
+      await fetchSavedContacts();
+      notifications.show({
+        title: t('common.success'),
+        message: t('createAgreementModal.messages.contactSaved'),
+        color: 'green',
+        icon: <IconCheck size={16} />
+      });
+    } catch (error) {
+      console.error('Error saving contact:', error);
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('createAgreementModal.messages.contactSaveError'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
+    }
+  };
 
   const loadRequestData = async (uuid: string) => {
     setLoadingRequest(true);
@@ -235,12 +385,20 @@ const saveContact = async (party: PartyData) => {
       const response = await requestsApi.getRequestForAgreement(uuid);
       const request = response.data.data;
       setRequestData(request);
-      
       prefillFormFromRequest(request);
-      
-      message.success(t('createAgreementModal.messages.requestDataLoaded'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('createAgreementModal.messages.requestDataLoaded'),
+        color: 'green',
+        icon: <IconCheck size={16} />
+      });
     } catch (error: any) {
-      message.error(t('createAgreementModal.messages.requestLoadError'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('createAgreementModal.messages.requestLoadError'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
       console.error('Load request error:', error);
     } finally {
       setLoadingRequest(false);
@@ -252,8 +410,11 @@ const saveContact = async (party: PartyData) => {
       try {
         const dates = request.rental_dates.split(' - ');
         if (dates.length === 2) {
-          form.setFieldValue('date_from', dayjs(dates[0], 'DD.MM.YYYY'));
-          form.setFieldValue('date_to', dayjs(dates[1], 'DD.MM.YYYY'));
+          setFormData((prev: any) => ({
+            ...prev,
+            date_from: dayjs(dates[0], 'DD.MM.YYYY').toDate(),
+            date_to: dayjs(dates[1], 'DD.MM.YYYY').toDate()
+          }));
         }
       } catch (e) {
         console.error('Error parsing rental dates:', e);
@@ -261,8 +422,11 @@ const saveContact = async (party: PartyData) => {
     }
 
     if (request.villa_name_address) {
-      form.setFieldValue('property_address_manual', request.villa_name_address);
-      form.setFieldValue('property_name_manual', request.villa_name_address.split(',')[0] || '');
+      setFormData((prev: any) => ({
+        ...prev,
+        property_address_manual: request.villa_name_address,
+        property_name_manual: request.villa_name_address ? request.villa_name_address.split(',')[0] || '' : ''
+      }));
       setManualPropertyInput(true);
     }
 
@@ -270,7 +434,7 @@ const saveContact = async (party: PartyData) => {
       try {
         const cost = parseFloat(request.rental_cost.replace(/[^\d.]/g, ''));
         if (!isNaN(cost)) {
-          form.setFieldValue('rent_amount_monthly', cost);
+          setFormData((prev: any) => ({ ...prev, rent_amount_monthly: cost }));
         }
       } catch (e) {
         console.error('Error parsing rental cost:', e);
@@ -289,7 +453,7 @@ const saveContact = async (party: PartyData) => {
     }
 
     if (request.additional_info) {
-      form.setFieldValue('description', request.additional_info);
+      setFormData((prev: any) => ({ ...prev, description: request.additional_info }));
     }
   };
 
@@ -298,17 +462,26 @@ const saveContact = async (party: PartyData) => {
       const response = await agreementsApi.getTemplates({ active: true });
       setTemplates(response.data.data);
     } catch (error: any) {
-      message.error(t('createAgreementModal.messages.templatesLoadError'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('createAgreementModal.messages.templatesLoadError'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
     }
   };
 
   const fetchProperties = async () => {
     try {
       const response = await agreementsApi.getProperties();
-      console.log('Properties loaded:', response.data.data);
       setProperties(response.data.data);
     } catch (error: any) {
-      message.error(t('createAgreementModal.messages.propertiesLoadError'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('createAgreementModal.messages.propertiesLoadError'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
     }
   };
 
@@ -316,25 +489,73 @@ const saveContact = async (party: PartyData) => {
     setCurrentStep(0);
     setSelectedTemplate(null);
     setParties([]);
-    setSaveContactFlags({}); // ✅ ДОБАВИЛИ
+    setSaveContactFlags({});
     setSelectedComplex(null);
     setComplexProperties([]);
     setManualPropertyInput(false);
     setSelectedMainValue(null);
     setRequestData(null);
     setRequestUuid(null);
-    form.resetFields();
+    setFormData({
+      template_id: null,
+      date_from: null,
+      date_to: null,
+      city: 'Phuket',
+      description: '',
+      property_id: null,
+      property_name_manual: '',
+      property_number_manual: '',
+      property_address_manual: '',
+      property_address_override: '',
+      rent_amount_monthly: null,
+      rent_amount_total: null,
+      deposit_amount: null,
+      utilities_included: '',
+      bank_name: '',
+      bank_account_name: '',
+      bank_account_number: '',
+      upon_signed_pay: null,
+      upon_checkin_pay: null,
+      upon_checkout_pay: null
+    });
   };
 
   const getTypeLabel = (type: string) => {
     return t(`createAgreementModal.agreementTypes.${type}`, type);
   };
 
-  const handleTemplateSelect = (templateId: number) => {
-    const template = templates.find(t => t.id === templateId);
+  const getTypeColor = (type: string): string => {
+    const colors: Record<string, string> = {
+      rent: 'blue',
+      sale: 'green',
+      bilateral: 'violet',
+      trilateral: 'orange',
+      agency: 'pink',
+      transfer_act: 'teal'
+    };
+    return colors[type] || 'gray';
+  };
+
+  const getTypeIcon = (type: string) => {
+    const icons: Record<string, any> = {
+      rent: IconHome,
+      sale: IconTrendingUp,
+      bilateral: IconUsers,
+      trilateral: IconUsers,
+      agency: IconBriefcase,
+      transfer_act: IconFileDescription
+    };
+    const Icon = icons[type] || IconFileText;
+    return <Icon size={20} />;
+  };
+
+  const handleTemplateSelect = (templateId: string | null) => {
+    if (!templateId) return;
+    
+    const template = templates.find(t => t.id === Number(templateId));
     if (template) {
       setSelectedTemplate(template);
-      
+      setFormData((prev: any) => ({ ...prev, template_id: template.id }));
       if (parties.length === 0) {
         const defaultParties = getDefaultParties(template.type);
         setParties(defaultParties);
@@ -382,7 +603,7 @@ const saveContact = async (party: PartyData) => {
     setParties(newParties);
   };
 
-  const handleDocumentUpload = (index: number, file: UploadFile) => {
+  const handleDocumentUpload = (index: number, file: File) => {
     const newParties = [...parties];
     if (!newParties[index].documents) {
       newParties[index].documents = [];
@@ -398,9 +619,7 @@ const saveContact = async (party: PartyData) => {
       newParties[index].documents!.push(newDoc);
       setParties([...newParties]);
     };
-    reader.readAsDataURL(file as any);
-  
-    return false;
+    reader.readAsDataURL(file);
   };
 
   const removeDocument = (partyIndex: number, docIndex: number) => {
@@ -438,43 +657,56 @@ const saveContact = async (party: PartyData) => {
     { value: 'company', label: t('createAgreementModal.roles.company') }
   ];
 
-  const handleNext = async () => {
-    try {
-      if (currentStep === 0) {
-        await form.validateFields(['template_id']);
-        if (!selectedTemplate) {
-          message.error(t('createAgreementModal.validation.selectTemplate'));
-          return;
-        }
-      } else if (currentStep === 1) {
-        const values = form.getFieldsValue(['date_from', 'date_to', 'rent_amount_monthly']);
-        
-        if (values.rent_amount_monthly && (!values.date_from || !values.date_to)) {
-          message.error(t('createAgreementModal.validation.datesRequired'));
-          return;
-        }
-        
-        if (values.date_from && values.date_to && dayjs(values.date_to).isBefore(dayjs(values.date_from))) {
-          message.error(t('createAgreementModal.validation.dateToAfterFrom'));
-          return;
-        }
-      } else if (currentStep === 2) {
-        const hasEmptyParty = parties.some(p => {
-          if (p.is_company) {
-            return !p.company_name || !p.company_tax_id || !p.director_name;
-          }
-          return !p.name || !p.passport_country || !p.passport_number;
+  const handleNext = () => {
+    if (currentStep === 0) {
+      if (!selectedTemplate) {
+        notifications.show({
+          title: t('errors.generic'),
+          message: t('createAgreementModal.validation.selectTemplate'),
+          color: 'red',
+          icon: <IconX size={16} />
         });
-        
-        if (hasEmptyParty) {
-          message.error(t('createAgreementModal.validation.fillAllParties'));
-          return;
-        }
+        return;
       }
-      setCurrentStep(currentStep + 1);
-    } catch (error) {
-      console.error('Validation error:', error);
+    } else if (currentStep === 1) {
+      if (formData.rent_amount_monthly && (!formData.date_from || !formData.date_to)) {
+        notifications.show({
+          title: t('errors.generic'),
+          message: t('createAgreementModal.validation.datesRequired'),
+          color: 'red',
+          icon: <IconX size={16} />
+        });
+        return;
+      }
+      
+      if (formData.date_from && formData.date_to && dayjs(formData.date_to).isBefore(dayjs(formData.date_from))) {
+        notifications.show({
+          title: t('errors.generic'),
+          message: t('createAgreementModal.validation.dateToAfterFrom'),
+          color: 'red',
+          icon: <IconX size={16} />
+        });
+        return;
+      }
+    } else if (currentStep === 2) {
+      const hasEmptyParty = parties.some(p => {
+        if (p.is_company) {
+          return !p.company_name || !p.company_tax_id || !p.director_name;
+        }
+        return !p.name || !p.passport_country || !p.passport_number;
+      });
+      
+      if (hasEmptyParty) {
+        notifications.show({
+          title: t('errors.generic'),
+          message: t('createAgreementModal.validation.fillAllParties'),
+          color: 'red',
+          icon: <IconX size={16} />
+        });
+        return;
+      }
     }
+    setCurrentStep(currentStep + 1);
   };
 
   const handlePrev = () => {
@@ -484,14 +716,8 @@ const saveContact = async (party: PartyData) => {
   const handleSubmit = async () => {
     try {
       setLoading(true);
-      const values = await form.validateFields();
 
-      const propertyId = manualPropertyInput 
-        ? undefined 
-        : (values.property_id || form.getFieldValue('property_id'));
-
-      console.log('📝 Form values:', values);
-      console.log('🏠 Property ID:', propertyId);
+      const propertyId = manualPropertyInput ? undefined : formData.property_id;
 
       const partiesData = parties
         .filter(p => {
@@ -520,37 +746,33 @@ const saveContact = async (party: PartyData) => {
         template_id: selectedTemplate!.id,
         property_id: propertyId,
         request_uuid: requestUuid || undefined,
-        description: values.description || '',
-        date_from: values.date_from ? dayjs(values.date_from).format('YYYY-MM-DD') : undefined,
-        date_to: values.date_to ? dayjs(values.date_to).format('YYYY-MM-DD') : undefined,
-        city: values.city || 'Phuket',
+        description: formData.description || '',
+        date_from: formData.date_from ? dayjs(formData.date_from).format('YYYY-MM-DD') : undefined,
+        date_to: formData.date_to ? dayjs(formData.date_to).format('YYYY-MM-DD') : undefined,
+        city: formData.city || 'Phuket',
         parties: partiesData,
-        rent_amount_monthly: values.rent_amount_monthly,
-        rent_amount_total: values.rent_amount_total,
-        deposit_amount: values.deposit_amount,
-        utilities_included: values.utilities_included,
-        bank_name: values.bank_name,
-        bank_account_name: values.bank_account_name,
-        bank_account_number: values.bank_account_number,
-        property_address: manualPropertyInput ? values.property_address_manual : undefined,
-        property_address_override: manualPropertyInput ? values.property_address_manual : values.property_address_override,
-        property_name: manualPropertyInput ? values.property_name_manual : undefined,
-        property_name_manual: manualPropertyInput ? values.property_name_manual : undefined,
-        property_number: manualPropertyInput ? values.property_number_manual : undefined,
-        property_number_manual: manualPropertyInput ? values.property_number_manual : undefined,
-        upon_signed_pay: values.upon_signed_pay,
-        upon_checkin_pay: values.upon_checkin_pay,
-        upon_checkout_pay: values.upon_checkout_pay
+        rent_amount_monthly: formData.rent_amount_monthly,
+        rent_amount_total: formData.rent_amount_total,
+        deposit_amount: formData.deposit_amount,
+        utilities_included: formData.utilities_included,
+        bank_name: formData.bank_name,
+        bank_account_name: formData.bank_account_name,
+        bank_account_number: formData.bank_account_number,
+        property_address: manualPropertyInput ? formData.property_address_manual : undefined,
+        property_address_override: manualPropertyInput ? formData.property_address_manual : formData.property_address_override,
+        property_name: manualPropertyInput ? formData.property_name_manual : undefined,
+        property_name_manual: manualPropertyInput ? formData.property_name_manual : undefined,
+        property_number: manualPropertyInput ? formData.property_number_manual : undefined,
+        property_number_manual: manualPropertyInput ? formData.property_number_manual : undefined,
+        upon_signed_pay: formData.upon_signed_pay,
+        upon_checkin_pay: formData.upon_checkin_pay,
+        upon_checkout_pay: formData.upon_checkout_pay
       };
 
-      console.log('📤 Creating agreement...');
       const createResponse = await agreementsApi.create(agreementData);
       const agreementId = createResponse.data.data.id;
       const createdParties = createResponse.data.data.parties || [];
 
-      console.log('✅ Agreement created:', agreementId);
-
-      // ✅ СОХРАНЯЕМ КОНТАКТЫ ЕСЛИ СТОЯТ ГАЛОЧКИ
       for (let i = 0; i < parties.length; i++) {
         if (saveContactFlags[i]) {
           await saveContact(parties[i]);
@@ -560,21 +782,33 @@ const saveContact = async (party: PartyData) => {
       if (requestUuid) {
         try {
           await requestsApi.linkAgreementToRequest(requestUuid, agreementId);
-          console.log('✅ Agreement linked to request');
-          message.success(t('createAgreementModal.messages.createdAndLinkedWithSignatures'));
+          notifications.show({
+            title: t('common.success'),
+            message: t('createAgreementModal.messages.createdAndLinkedWithSignatures'),
+            color: 'green',
+            icon: <IconCheck size={16} />
+          });
         } catch (linkError) {
-          console.error('⚠️ Link to request failed:', linkError);
-          message.warning(t('createAgreementModal.messages.createdNotLinkedWithSignatures'));
+          console.error('Link to request failed:', linkError);
+          notifications.show({
+            title: t('common.success'),
+            message: t('createAgreementModal.messages.createdNotLinkedWithSignatures'),
+            color: 'orange',
+            icon: <IconCheck size={16} />
+          });
         }
       } else {
-        message.success(t('createAgreementModal.messages.createdWithSignatures'));
+        notifications.show({
+          title: t('common.success'),
+          message: t('createAgreementModal.messages.createdWithSignatures'),
+          color: 'green',
+          icon: <IconCheck size={16} />
+        });
       }
 
       const hasFiles = parties.some(p => p.documents && p.documents.length > 0);
       
       if (hasFiles && createdParties.length > 0) {
-        console.log('📎 Uploading documents...');
-
         const formDataToSend = new FormData();
         const partyMapping: Record<string, number> = {};
         
@@ -588,7 +822,7 @@ const saveContact = async (party: PartyData) => {
                 if (doc.file) {
                   formDataToSend.append(
                     `party_${partyIndex}_doc_${docIndex}`,
-                    doc.file as any
+                    doc.file
                   );
                 }
               });
@@ -600,9 +834,8 @@ const saveContact = async (party: PartyData) => {
 
         try {
           await agreementsApi.uploadAgreementDocuments(agreementId, formDataToSend);
-          console.log('✅ Documents uploaded successfully');
         } catch (uploadError) {
-          console.error('⚠️ Documents upload failed:', uploadError);
+          console.error('Documents upload failed:', uploadError);
         }
       }
 
@@ -610,844 +843,1630 @@ const saveContact = async (party: PartyData) => {
       resetForm();
     } catch (error: any) {
       console.error('Error creating agreement:', error);
-      message.error(error.response?.data?.message || error.message || t('createAgreementModal.messages.createError'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || error.message || t('createAgreementModal.messages.createError'),
+        color: 'red',
+        icon: <IconX size={16} />
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const mobileInputStyles = {
+    input: { fontSize: '16px' }
+  };
+
+  const isDark = colorScheme === 'dark';
+
   const steps = [
-    { title: t('createAgreementModal.steps.template'), icon: <FileTextOutlined /> },
-    { title: t('createAgreementModal.steps.details'), icon: <CalendarOutlined /> },
-    { title: t('createAgreementModal.steps.parties'), icon: <UserOutlined /> },
-    { title: t('createAgreementModal.steps.finance'), icon: <DollarOutlined /> }
+    { 
+      icon: <IconFileText size={18} />
+    },
+    { 
+      icon: <IconBuilding size={18} />
+    },
+    { 
+      icon: <IconUsers size={18} />
+    },
+    { 
+      icon: <IconCurrencyBaht size={18} />
+    }
   ];
+
+  const progress = calculateProgress();
 
   return (
     <Modal
-      title={requestData ? t('createAgreementModal.titleWithRequest', { number: requestData.request_number }) : t('createAgreementModal.title')}
-      open={visible}
-      onCancel={onCancel}
-      width={900}
-      footer={null}
-      className="create-agreement-modal dark-theme"
-      destroyOnClose
-    >
-      {loadingRequest && (
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <span>{t('createAgreementModal.messages.loadingRequest')}</span>
-        </div>
-      )}
-
-      {requestData && (
-        <Alert
-          message={t('createAgreementModal.requestAlert.title')}
-          description={
-            <div>
-              <p><strong>{t('createAgreementModal.requestAlert.request')}:</strong> {requestData.request_number}</p>
-              {requestData.client_name && <p><strong>{t('createAgreementModal.requestAlert.client')}:</strong> {requestData.client_name}</p>}
-              {requestData.rental_dates && <p><strong>{t('createAgreementModal.requestAlert.rentalDates')}:</strong> {requestData.rental_dates}</p>}
-              <p style={{ marginTop: 8, fontSize: 12, color: '#888' }}>
-                {t('createAgreementModal.requestAlert.prefilled')}
-              </p>
-            </div>
-          }
-          type="info"
-          icon={<InfoCircleOutlined />}
-          style={{ marginBottom: 24 }}
-          showIcon
-        />
-      )}
-
-      <Steps current={currentStep} items={steps} style={{ marginBottom: 24 }} />
-
-      <Form form={form} layout="vertical">
-        {/* Шаг 1: Выбор шаблона */}
-        <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
-          <Form.Item
-            name="template_id"
-            label={t('createAgreementModal.fields.template')}
-            rules={[{ required: true, message: t('createAgreementModal.validation.selectTemplate') }]}
-          >
-            <Select
-              placeholder={t('createAgreementModal.placeholders.selectTemplate')}
-              onChange={handleTemplateSelect}
-              showSearch
-              optionFilterProp="children"
-              size="large"
-            >
-              {templates.map(template => (
-                <Option key={template.id} value={template.id}>
-                  {template.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          {selectedTemplate && (
-            <Card 
-              size="small" 
-              style={{ 
-                background: '#141414', 
-                marginTop: 16,
-                border: '1px solid #303030'
-              }}
-              className="template-info-card-dark"
-            >
-              <p style={{ color: 'rgba(255, 255, 255, 0.85)', marginBottom: 8 }}>
-                <strong>{t('createAgreementModal.fields.type')}:</strong> {getTypeLabel(selectedTemplate.type)}
-              </p>
-              <p style={{ margin: 0, color: 'rgba(255, 255, 255, 0.65)' }}>
-                <strong>{t('createAgreementModal.fields.description')}:</strong> {t('createAgreementModal.templateDescription', { type: getTypeLabel(selectedTemplate.type) })}
-              </p>
-            </Card>
-          )}
-        </div>
-
-        {/* Шаг 2: Детали договора */}
-        <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
-          <Card size="small" title={t('createAgreementModal.sections.property')} style={{ marginBottom: 16 }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Radio.Group 
-                value={manualPropertyInput} 
-                onChange={(e) => {
-                  setManualPropertyInput(e.target.value);
-                  setSelectedComplex(null);
-                  setComplexProperties([]);
-                  setSelectedMainValue(null);
-                  form.setFieldValue('property_id', undefined);
-                }}
-              >
-                <Radio value={false}>{t('createAgreementModal.propertyInput.selectFromDatabase')}</Radio>
-                <Radio value={true}>{t('createAgreementModal.propertyInput.enterManually')}</Radio>
-              </Radio.Group>
-
-              {!manualPropertyInput ? (
-                <>
-                  <Form.Item label={t('createAgreementModal.fields.selectProperty')}>
-                    <Select
-                      placeholder={t('createAgreementModal.placeholders.startTyping')}
-                      allowClear
-                      showSearch
-                      value={selectedMainValue}
-                      onChange={(value) => {
-                        console.log('🔍 Selected value:', value, 'Type:', typeof value);
-                        setSelectedMainValue(value);
-                        
-                        if (typeof value === 'string') {
-                          console.log('✅ This is a COMPLEX:', value);
-                          setSelectedComplex(value);
-                          const props = properties.complexes[value] || [];
-                          console.log('📦 Complex properties:', props);
-                          setComplexProperties(props);
-                          form.setFieldValue('property_id', undefined);
-                        } 
-                        else if (typeof value === 'number') {
-                          console.log('✅ This is a STANDALONE property ID:', value);
-                          setSelectedComplex(null);
-                          setComplexProperties([]);
-                          form.setFieldValue('property_id', value);
-                        }
-                        else {
-                          console.log('🧹 Clearing selection');
-                          setSelectedComplex(null);
-                          setComplexProperties([]);
-                          form.setFieldValue('property_id', undefined);
-                        }
-                      }}
-                      onClear={() => {
-                        console.log('🧹 Clear button clicked');
-                        setSelectedMainValue(null);
-                        setSelectedComplex(null);
-                        setComplexProperties([]);
-                        form.setFieldValue('property_id', undefined);
-                      }}
-                      optionFilterProp="children"
-                      filterOption={(input, option: any) => {
-                        const label = option.children?.props?.children 
-                          ? option.children.props.children.join('') 
-                          : option.children?.toString() || '';
-                        return label.toLowerCase().includes(input.toLowerCase());
-                      }}
-                    >
-                      {Object.keys(properties.complexes).length > 0 && (
-                        <OptGroup label={t('createAgreementModal.propertyGroups.complexes')}>
-                          {Object.keys(properties.complexes).map(complexName => (
-                            <Option key={`complex-${complexName}`} value={complexName}>
-                              {complexName}
-                            </Option>
-                          ))}
-                        </OptGroup>
-                      )}
-                      
-                      {properties.standalone.length > 0 && (
-                        <OptGroup label={t('createAgreementModal.propertyGroups.standalone')}>
-                          {properties.standalone.map((prop: Property) => (
-                            <Option key={`standalone-${prop.id}`} value={prop.id}>
-                              {prop.property_name || t('createAgreementModal.propertyGroups.property')} ({prop.property_number})
-                            </Option>
-                          ))}
-                        </OptGroup>
-                      )}
-                    </Select>
-                  </Form.Item>
-                    
-                  {selectedComplex && complexProperties.length > 0 && (
-                    <Form.Item 
-                      name="property_id" 
-                      label={t('createAgreementModal.fields.propertyNumber', { complex: selectedComplex })}
-                      rules={[{ required: true, message: t('createAgreementModal.validation.selectPropertyNumber') }]}
-                    >
-                      <Select
-                        placeholder={t('createAgreementModal.placeholders.selectPropertyNumber')}
-                        showSearch
-                        optionFilterProp="children"
-                      >
-                        {complexProperties.map((prop: Property) => (
-                          <Option key={prop.id} value={prop.id}>
-                            {prop.property_number} {prop.property_name ? `- ${prop.property_name}` : ''}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  )}
-              
-                  {!selectedComplex && form.getFieldValue('property_id') && (
-                    <>
-                      <Form.Item 
-                        name="property_id" 
-                        hidden
-                        rules={[{ required: true }]}
-                      >
-                        <Input />
-                      </Form.Item>
-                      
-                      <div style={{ 
-                        padding: '8px 12px', 
-                        background: '#141414', 
-                        border: '1px solid #303030',
-                        borderRadius: '4px',
-                        marginTop: '8px'
-                      }}>
-                        <span style={{ color: '#52c41a', marginRight: '8px' }}>✓</span>
-                        <span style={{ color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.propertySelected', { id: form.getFieldValue('property_id') })}
-                        </span>
-                      </div>
-                    </>
-                  )}
-              
-                  <Form.Item name="property_address_override" label={t('createAgreementModal.fields.addressOverride')}>
-                    <TextArea rows={2} placeholder={t('createAgreementModal.placeholders.addressOverride')} />
-                  </Form.Item>
-                </>
-              ) : (
-                <>
-                  <Form.Item 
-                    name="property_name_manual" 
-                    label={t('createAgreementModal.fields.propertyName')}
-                    rules={[{ required: manualPropertyInput, message: t('createAgreementModal.validation.enterName') }]}
-                  >
-                    <Input placeholder={t('createAgreementModal.placeholders.propertyName')} />
-                  </Form.Item>
-                  <Form.Item 
-                    name="property_number_manual" 
-                    label={t('createAgreementModal.fields.propertyNumberManual')}
-                    rules={[{ required: manualPropertyInput, message: t('createAgreementModal.validation.enterNumber') }]}
-                  >
-                    <Input placeholder={t('createAgreementModal.placeholders.propertyNumber')} />
-                  </Form.Item>
-                  <Form.Item 
-                    name="property_address_manual" 
-                    label={t('createAgreementModal.fields.propertyAddress')}
-                    rules={[{ required: manualPropertyInput, message: t('createAgreementModal.validation.enterAddress') }]}
-                  >
-                    <TextArea rows={2} placeholder={t('createAgreementModal.placeholders.propertyAddress')} />
-                  </Form.Item>
-                </>
+      opened={visible}
+      onClose={onCancel}
+      title={
+        <Stack gap="xs">
+          <Group>
+            <ThemeIcon size="xl" radius="md" variant="gradient" gradient={{ from: 'violet', to: 'grape', deg: 45 }}>
+              <IconFileText size={24} />
+            </ThemeIcon>
+            <Box>
+              <Text size={isMobile ? 'sm' : 'lg'} fw={700}>
+                {requestData 
+                  ? t('createAgreementModal.titleWithRequest', { number: requestData.request_number }) 
+                  : t('createAgreementModal.title')}
+              </Text>
+              {!isMobile && (
+                <Group gap="xs" mt={4}>
+                  <Badge size="sm" variant="light" leftSection={<IconSparkles size={12} />}>
+                    {t('createAgreementModal.stepLabel', { current: currentStep + 1, total: steps.length })}
+                  </Badge>
+                  <Badge size="sm" variant="light" color="teal">
+                    {progress}% {t('createAgreementModal.completed')}
+                  </Badge>
+                </Group>
               )}
-            </Space>
-          </Card>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item name="date_from" label={t('createAgreementModal.fields.dateFrom')}>
-                <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" placeholder={t('createAgreementModal.placeholders.selectDate')} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item name="date_to" label={t('createAgreementModal.fields.dateTo')}>
-                <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" placeholder={t('createAgreementModal.placeholders.selectDate')} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="city" label={t('createAgreementModal.fields.city')} initialValue="Phuket">
-            <Input placeholder={t('createAgreementModal.placeholders.city')} />
-          </Form.Item>
-
-          <Form.Item name="description" label={t('createAgreementModal.fields.description')}>
-            <TextArea rows={3} placeholder={t('createAgreementModal.placeholders.description')} />
-          </Form.Item>
-        </div>
-
-        {/* Шаг 3: Стороны */}
-        <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            {parties.map((party, index) => (
-              <Card
-                key={index}
-                size="small"
-                title={
-                  <Space style={{ flexWrap: 'wrap' }}>
-                    <Select
-                      value={party.role}
-                      onChange={(value) => updateParty(index, 'role', value)}
-                      style={{ width: 200 }}
-                      size="small"
-                    >
-                      {availableRoles.map(role => (
-                        <Option key={role.value} value={role.value}>
-                          {role.label}
-                        </Option>
-                      ))}
-                    </Select>
-                    <Switch
-                      checked={party.is_company}
-                      onChange={(checked) => updateParty(index, 'is_company', checked)}
-                      checkedChildren={t('createAgreementModal.partyTypes.company')}
-                      unCheckedChildren={t('createAgreementModal.partyTypes.individual')}
-                      size="small"
-                    />
-                    {/* ✅ НОВЫЙ ЧЕКБОКС ДЛЯ СОХРАНЕНИЯ */}
-                    <Divider type="vertical" style={{ margin: '0 8px' }} />
-                    <Checkbox
-                      checked={saveContactFlags[index] || false}
-                      onChange={(e) => {
-                        setSaveContactFlags(prev => ({ ...prev, [index]: e.target.checked }));
-                      }}
-                    >
-                      <SaveOutlined style={{ marginRight: 4 }} />
-                      <span style={{ fontSize: '12px' }}>
-                        {t('createAgreementModal.saveContact')}
-                      </span>
-                    </Checkbox>
-                  </Space>
-                }
-                extra={
-                  parties.length > 1 && (
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => removeParty(index)}
-                      size="small"
-                    />
-                  )
-                }
-                className="party-card-dark"
-              >
-                {/* ✅ ВЫПАДАЮЩИЙ СПИСОК СОХРАНЕННЫХ КОНТАКТОВ */}
-                <Row gutter={16} style={{ marginBottom: 16 }}>
-                  <Col xs={24}>
-                    <Select
-                      placeholder={
-                        party.is_company 
-                          ? t('createAgreementModal.selectSavedCompany')
-                          : t('createAgreementModal.selectSavedContact')
-                      }
-                      style={{ width: '100%' }}
-                      allowClear
-                      showSearch
-                      optionFilterProp="children"
-                      onChange={(contactId) => {
-                        if (contactId) {
-                          const contact = savedContacts.find(c => c.id === contactId);
-                          if (contact) {
-                            fillPartyFromContact(index, contact);
-                          }
-                        }
-                      }}
-                      filterOption={(input, option: any) => {
-                        return option.children.toLowerCase().includes(input.toLowerCase());
-                      }}
-                    >
-                      {party.is_company ? (
-                        // Только компании
-                        savedContacts
-                          .filter(c => c.type === 'company')
-                          .map(contact => (
-                            <Option key={contact.id} value={contact.id}>
-                              {contact.company_name}
-                            </Option>
-                          ))
-                      ) : (
-                        // Только физ.лица
-                        savedContacts
-                          .filter(c => c.type === 'individual')
-                          .map(contact => (
-                            <Option key={contact.id} value={contact.id}>
-                              {contact.name}
-                            </Option>
-                          ))
-                      )}
-                    </Select>
-                  </Col>
-                </Row>
-
-                {!party.is_company ? (
-                  <Row gutter={16}>
-                    <Col xs={24} md={8}>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.fields.fullName')} *
-                        </label>
-                        <Input
-                          value={party.name}
-                          onChange={(e) => updateParty(index, 'name', e.target.value)}
-                          placeholder={t('createAgreementModal.placeholders.fullName')}
-                          style={{ marginTop: 4 }}
-                        />
-                      </div>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.fields.passportCountry')} *
-                        </label>
-                        <Input
-                          value={party.passport_country}
-                          onChange={(e) => updateParty(index, 'passport_country', e.target.value)}
-                          placeholder={t('createAgreementModal.placeholders.passportCountry')}
-                          style={{ marginTop: 4 }}
-                        />
-                      </div>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.fields.passportNumber')} *
-                        </label>
-                        <Input
-                          value={party.passport_number}
-                          onChange={(e) => updateParty(index, 'passport_number', e.target.value)}
-                          placeholder={t('createAgreementModal.placeholders.passportNumber')}
-                          style={{ marginTop: 4 }}
-                        />
-                      </div>
-                    </Col>
-                    
-                    <Col xs={24}>
-                      <Divider style={{ margin: '8px 0' }}>
-                        {t('createAgreementModal.sections.documents')}
-                      </Divider>
-                      
-                      {party.documents && party.documents.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
-                          <Row gutter={[8, 8]}>
-                            {party.documents.map((doc, docIndex) => (
-                              <Col key={docIndex} xs={12} sm={8} md={6}>
-                                <div style={{ 
-                                  position: 'relative',
-                                  border: '1px solid #303030',
-                                  borderRadius: '4px',
-                                  padding: '8px',
-                                  background: doc.uploading ? '#1f1f1f' : '#141414'
-                                }}>
-                                  {doc.uploading ? (
-                                    <div style={{ textAlign: 'center', padding: '20px' }}>
-                                      <div className="loading-spinner" style={{
-                                        width: '20px',
-                                        height: '20px',
-                                        border: '2px solid #303030',
-                                        borderTop: '2px solid #1890ff',
-                                        borderRadius: '50%',
-                                        animation: 'spin 1s linear infinite',
-                                        margin: '0 auto'
-                                      }} />
-                                      <div style={{ fontSize: '11px', color: '#666', marginTop: '8px' }}>
-                                        {t('createAgreementModal.uploading')}
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <Image
-                                        src={doc.preview}
-                                        alt={t('createAgreementModal.documentAlt', { number: docIndex + 1 })}
-                                        style={{ 
-                                          width: '100%', 
-                                          height: '100px', 
-                                          objectFit: 'cover',
-                                          borderRadius: '2px'
-                                        }}
-                                      />
-                                      <Button
-                                        danger
-                                        size="small"
-                                        icon={<DeleteOutlined />}
-                                        onClick={() => removeDocument(index, docIndex)}
-                                        style={{
-                                          position: 'absolute',
-                                          top: '4px',
-                                          right: '4px',
-                                          minWidth: 'auto',
-                                          padding: '4px 8px'
-                                        }}
-                                      />
-                                    </>
-                                  )}
-                                </div>
-                              </Col>
-                            ))}
-                          </Row>
-                        </div>
-                      )}
-
-                      <Upload
-                        accept="image/*,.pdf"
-                        beforeUpload={(file) => handleDocumentUpload(index, file)}
-                        showUploadList={false}
-                        maxCount={1}
-                      >
-                        <Button 
-                          icon={<UploadOutlined />} 
-                          block
-                          type={party.documents && party.documents.length > 0 ? 'dashed' : 'default'}
-                        >
-                          {party.documents && party.documents.length > 0 
-                            ? t('createAgreementModal.buttons.uploadMore') 
-                            : t('createAgreementModal.buttons.uploadPassport')}
-                        </Button>
-                      </Upload>
-                    </Col>
-                  </Row>
-                ) : (
-                  <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.fields.companyName')} *
-                        </label>
-                        <Input
-                          value={party.company_name}
-                          onChange={(e) => updateParty(index, 'company_name', e.target.value)}
-                          placeholder={t('createAgreementModal.placeholders.companyName')}
-                          style={{ marginTop: 4 }}
-                        />
-                      </div>
-                    </Col>
-                    <Col xs={24} md={12}>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.fields.taxId')} *
-                        </label>
-                        <Input
-                          value={party.company_tax_id}
-                          onChange={(e) => updateParty(index, 'company_tax_id', e.target.value)}
-                          placeholder={t('createAgreementModal.placeholders.taxId')}
-                          style={{ marginTop: 4 }}
-                        />
-                      </div>
-                    </Col>
-                    <Col xs={24}>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.fields.companyAddress')}
-                        </label>
-                        <TextArea
-                          value={party.company_address}
-                          onChange={(e) => updateParty(index, 'company_address', e.target.value)}
-                          placeholder={t('createAgreementModal.placeholders.companyAddress')}
-                          rows={2}
-                          style={{ marginTop: 4 }}
-                        />
-                      </div>
-                    </Col>
-                    <Col xs={24}>
-                      <Divider style={{ margin: '8px 0' }}>
-                        {t('createAgreementModal.sections.directorInfo')}
-                      </Divider>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.fields.directorName')} *
-                        </label>
-                        <Input
-                          value={party.director_name}
-                          onChange={(e) => updateParty(index, 'director_name', e.target.value)}
-                          placeholder={t('createAgreementModal.placeholders.directorName')}
-                          style={{ marginTop: 4 }}
-                        />
-                      </div>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.fields.directorCountry')}
-                        </label>
-                        <Input
-                          value={party.director_country}
-                          onChange={(e) => updateParty(index, 'director_country', e.target.value)}
-                          placeholder={t('createAgreementModal.placeholders.directorCountry')}
-                          style={{ marginTop: 4 }}
-                        />
-                      </div>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
-                          {t('createAgreementModal.fields.directorPassport')}
-                        </label>
-                        <Input
-                          value={party.director_passport}
-                          onChange={(e) => updateParty(index, 'director_passport', e.target.value)}
-                          placeholder={t('createAgreementModal.placeholders.directorPassport')}
-                          style={{ marginTop: 4 }}
-                        />
-                      </div>
-                    </Col>
-
-                    <Col xs={24}>
-                      <Divider style={{ margin: '8px 0' }}>
-                        {t('createAgreementModal.sections.registrationDocs')}
-                      </Divider>
-                      
-                      {party.documents && party.documents.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
-                          <Row gutter={[8, 8]}>
-                            {party.documents.map((doc, docIndex) => (
-                              <Col key={docIndex} xs={12} sm={8} md={6}>
-                                <div style={{ 
-                                  position: 'relative',
-                                  border: '1px solid #303030',
-                                  borderRadius: '4px',
-                                  padding: '8px',
-                                  background: doc.uploading ? '#1f1f1f' : '#141414'
-                                }}>
-                                  {doc.uploading ? (
-                                    <div style={{ textAlign: 'center', padding: '20px' }}>
-                                      <div className="loading-spinner" style={{
-                                        width: '20px',
-                                        height: '20px',
-                                        border: '2px solid #303030',
-                                        borderTop: '2px solid #1890ff',
-                                        borderRadius: '50%',
-                                        animation: 'spin 1s linear infinite',
-                                        margin: '0 auto'
-                                      }} />
-                                      <div style={{ fontSize: '11px', color: '#666', marginTop: '8px' }}>
-                                        {t('createAgreementModal.uploading')}
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <Image
-                                        src={doc.preview}
-                                        alt={t('createAgreementModal.documentAlt', { number: docIndex + 1 })}
-                                        style={{ 
-                                          width: '100%', 
-                                          height: '100px', 
-                                          objectFit: 'cover',
-                                          borderRadius: '2px'
-                                        }}
-                                      />
-                                      <Button
-                                        danger
-                                        size="small"
-                                        icon={<DeleteOutlined />}
-                                        onClick={() => removeDocument(index, docIndex)}
-                                        style={{
-                                          position: 'absolute',
-                                          top: '4px',
-                                          right: '4px',
-                                          minWidth: 'auto',
-                                          padding: '4px 8px'
-                                        }}
-                                      />
-                                    </>
-                                  )}
-                                </div>
-                              </Col>
-                            ))}
-                          </Row>
-                        </div>
-                      )}
-
-                      <Upload
-                        accept="image/*,.pdf"
-                        beforeUpload={(file) => handleDocumentUpload(index, file)}
-                        showUploadList={false}
-                        maxCount={1}
-                      >
-                        <Button 
-                          icon={<FileImageOutlined />} 
-                          block
-                          type={party.documents && party.documents.length > 0 ? 'dashed' : 'default'}
-                        >
-                          {party.documents && party.documents.length > 0 
-                            ? t('createAgreementModal.buttons.uploadMore') 
-                            : t('createAgreementModal.buttons.uploadCompanyDoc')}
-                        </Button>
-                      </Upload>
-                    </Col>
-                  </Row>
-                )}
-              </Card>
-            ))}
-
-            <Button
-              type="dashed"
-              icon={<PlusOutlined />}
-              onClick={addParty}
-              block
-            >
-              {t('createAgreementModal.buttons.addParty')}
-            </Button>
-          </Space>
-        </div>
-
-        {/* Шаг 4: Финансовая информация */}
-        <div style={{ display: currentStep === 3 ? 'block' : 'none' }}>
-          <Card size="small" title={t('createAgreementModal.sections.financialInfo')} style={{ marginBottom: 16 }}>
-            <Row gutter={16}>
-              <Col xs={24} md={12}>
-                <Form.Item name="rent_amount_monthly" label={t('createAgreementModal.fields.rentMonthly')}>
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    placeholder="50000"
-                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={value => value!.replace(/,/g, '')}
-                    addonAfter="THB"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item name="rent_amount_total" label={t('createAgreementModal.fields.rentTotal')}>
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    placeholder="600000"
-                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={value => value!.replace(/,/g, '')}
-                    addonAfter="THB"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item name="deposit_amount" label={t('createAgreementModal.fields.deposit')}>
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    placeholder="100000"
-                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={value => value!.replace(/,/g, '')}
-                    addonAfter="THB"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Form.Item name="utilities_included" label={t('createAgreementModal.fields.utilitiesIncluded')}>
-              <TextArea
-                rows={3}
-                placeholder={t('createAgreementModal.placeholders.utilities')}
-              />
-            </Form.Item>
-          </Card>
-
-          <Card 
-            size="small" 
-            title={
-              <Space>
-                <DollarOutlined />
-                <span>{t('createAgreementModal.paymentTerms.title')}</span>
-              </Space>
-            }
-            style={{ marginBottom: 16 }}
-          >
-            <Alert
-              message={t('createAgreementModal.paymentTerms.optionalInfo')}
-              description={t('createAgreementModal.paymentTerms.description')}
-              type="info"
-              showIcon
-              icon={<InfoCircleOutlined />}
-              style={{ marginBottom: 16 }}
+            </Box>
+          </Group>
+          
+          {isMobile && (
+            <Group gap="xs">
+              <Badge size="xs" variant="light">
+                {currentStep + 1}/{steps.length}
+              </Badge>
+              <Progress value={progress} size="sm" style={{ flex: 1 }} color="violet" />
+              <Text size="xs" c="dimmed">{progress}%</Text>
+            </Group>
+          )}
+        </Stack>
+      }
+      size={isMobile ? '100%' : 'xl'}
+      fullScreen={isMobile}
+      padding={isMobile ? 'sm' : 'lg'}
+      styles={{
+        body: isMobile ? { 
+          paddingBottom: '80px',
+          height: 'calc(100vh - 80px)',
+          overflowY: 'auto'
+        } : {},
+        header: {
+          borderBottom: `1px solid ${isDark ? 'var(--mantine-color-dark-5)' : 'var(--mantine-color-gray-3)'}`
+        }
+      }}
+      closeButtonProps={{
+        icon: <IconX size={20} />,
+        size: 'lg'
+      }}
+      scrollAreaComponent={Box}
+    >
+      <div ref={modalContentRef} style={{ height: '100%', overflowY: 'auto' }}>
+        {!isMobile && (
+          <Paper p="md" mb="lg" withBorder>
+            <Progress 
+              value={progress} 
+              size="lg" 
+              radius="xl"
+              animated
+              color="violet"
             />
-            
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item 
-                  name="upon_signed_pay" 
-                  label={t('createAgreementModal.paymentTerms.uponSigned')}
-                  tooltip={t('createAgreementModal.paymentTerms.uponSignedTooltip')}
-                >
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    placeholder="200000"
-                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    min={0}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item 
-                  name="upon_checkin_pay" 
-                  label={t('createAgreementModal.paymentTerms.uponCheckin')}
-                  tooltip={t('createAgreementModal.paymentTerms.uponCheckinTooltip')}
-                >
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    placeholder="200000"
-                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    min={0}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item 
-                  name="upon_checkout_pay" 
-                  label={t('createAgreementModal.paymentTerms.uponCheckout')}
-                  tooltip={t('createAgreementModal.paymentTerms.uponCheckoutTooltip')}
-                >
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    placeholder="200000"
-                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    min={0}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Card>
+          </Paper>
+        )}
 
-          <Card size="small" title={t('createAgreementModal.sections.bankDetails')}>
-            <Form.Item name="bank_name" label={t('createAgreementModal.fields.bankName')}>
-              <Input placeholder={t('createAgreementModal.placeholders.bankName')} />
-            </Form.Item>
-            <Form.Item name="bank_account_name" label={t('createAgreementModal.fields.accountHolder')}>
-              <Input placeholder={t('createAgreementModal.placeholders.accountHolder')} />
-            </Form.Item>
-            <Form.Item name="bank_account_number" label={t('createAgreementModal.fields.accountNumber')}>
-              <Input placeholder={t('createAgreementModal.placeholders.accountNumber')} />
-            </Form.Item>
-          </Card>
-        </div>
-      </Form>
+        {loadingRequest && (
+          <Center p="xl">
+            <Stack align="center" gap="md">
+              <Loader size="xl" variant="dots" />
+              <Text size="sm" c="dimmed">
+                {t('createAgreementModal.messages.loadingRequest')}
+              </Text>
+            </Stack>
+          </Center>
+        )}
 
-      <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>
-        <Button onClick={onCancel}>{t('common.cancel')}</Button>
-        <Space>
-          {currentStep > 0 && (
-            <Button onClick={handlePrev}>{t('createAgreementModal.buttons.back')}</Button>
+        {requestData && (
+          <Alert
+            icon={<IconInfoCircle size={20} />}
+            title={
+              <Group gap="xs">
+                <IconClipboardCheck size={18} />
+                <Text fw={600}>{t('createAgreementModal.requestAlert.title')}</Text>
+              </Group>
+            }
+            color="blue"
+            mb="lg"
+            variant="light"
+          >
+            <Stack gap={6}>
+              <Group gap="xs">
+                <IconFileText size={14} />
+                <Text size="sm">
+                  <strong>{t('createAgreementModal.requestAlert.request')}:</strong> {requestData.request_number}
+                </Text>
+              </Group>
+              {requestData.client_name && (
+                <Group gap="xs">
+                  <IconUser size={14} />
+                  <Text size="sm">
+                    <strong>{t('createAgreementModal.requestAlert.client')}:</strong> {requestData.client_name}
+                  </Text>
+                </Group>
+              )}
+              {requestData.rental_dates && (
+                <Group gap="xs">
+                  <IconCalendar size={14} />
+                  <Text size="sm">
+                    <strong>{t('createAgreementModal.requestAlert.rentalDates')}:</strong> {requestData.rental_dates}
+                  </Text>
+                </Group>
+              )}
+              <Text size="xs" c="dimmed" mt={4}>
+                <IconSparkles size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                {t('createAgreementModal.requestAlert.prefilled')}
+              </Text>
+            </Stack>
+          </Alert>
+        )}
+
+        <Stepper 
+          active={currentStep}
+          size={isMobile ? 'xs' : 'sm'}
+          mb="xl"
+          allowNextStepsSelect={false}
+          color="violet"
+        >
+          {steps.map((step, index) => (
+            <Stepper.Step 
+              key={index}
+              icon={step.icon}
+              loading={loading && index === currentStep}
+            />
+          ))}
+        </Stepper>
+
+        <Transition
+          mounted={true}
+          transition="fade"
+          duration={300}
+          timingFunction="ease"
+        >
+          {(styles) => (
+            <div style={styles}>
+              {/* Шаг 1: Выбор шаблона */}
+              {currentStep === 0 && (
+                <Stack gap="md">
+                  <Alert
+                    icon={<IconSparkles size={18} />}
+                    title={t('createAgreementModal.hints.selectTemplate')}
+                    color="violet"
+                    variant="light"
+                  >
+                    {t('createAgreementModal.hints.selectTemplateDesc')}
+                  </Alert>
+
+                  <Select
+                    label={
+                      <Group gap={6}>
+                        <ThemeIcon size="sm" variant="light" color="violet">
+                          <IconFileText size={14} />
+                        </ThemeIcon>
+                        <Text size="sm" fw={600}>{t('createAgreementModal.fields.template')}</Text>
+                      </Group>
+                    }
+                    placeholder={t('createAgreementModal.placeholders.selectTemplate')}
+                    data={templates.map(t => ({ value: String(t.id), label: t.name }))}
+                    value={formData.template_id ? String(formData.template_id) : null}
+                    onChange={handleTemplateSelect}
+                    searchable
+                    size={isMobile ? 'md' : 'lg'}
+                    styles={mobileInputStyles}
+                    required
+                    leftSection={<IconFileText size={16} />}
+                  />
+
+                  {selectedTemplate && (
+                    <Card 
+                      shadow="sm" 
+                      padding="lg" 
+                      radius="md" 
+                      withBorder
+                      style={{
+                        borderColor: isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Stack gap="md">
+                        <Group justify="space-between">
+                          <Group gap="sm">
+                            <ThemeIcon 
+                              size="xl" 
+                              radius="md" 
+                              color={getTypeColor(selectedTemplate.type)}
+                              variant="light"
+                            >
+                              {getTypeIcon(selectedTemplate.type)}
+                            </ThemeIcon>
+                            <Box>
+                              <Text size="lg" fw={700}>{selectedTemplate.name}</Text>
+                              <Badge 
+                                color={getTypeColor(selectedTemplate.type)} 
+                                variant="light"
+                                mt={4}
+                              >
+                                {getTypeLabel(selectedTemplate.type)}
+                              </Badge>
+                            </Box>
+                          </Group>
+                          <ActionIcon
+                            size="xl"
+                            variant="light"
+                            color="green"
+                            radius="xl"
+                          >
+                            <IconCheck size={24} />
+                          </ActionIcon>
+                        </Group>
+                        
+                        <Divider />
+                        
+                        <Text size="sm" c="dimmed">
+                          {t('createAgreementModal.templateDescription', { type: getTypeLabel(selectedTemplate.type) })}
+                        </Text>
+
+                        {parties.length > 0 && (
+                          <>
+                            <Divider 
+                              label={
+                                <Group gap={4}>
+                                  <IconUsers size={14} />
+                                  <Text size="xs">{t('createAgreementModal.defaultParties')}</Text>
+                                </Group>
+                              }
+                              labelPosition="center"
+                            />
+                            
+                            <Group gap="xs">
+                              {parties.map((p, idx) => (
+                                <Badge key={idx} size="lg" variant="dot" color={getTypeColor(selectedTemplate.type)}>
+                                  {t(`createAgreementModal.roles.${p.role}`)}
+                                </Badge>
+                              ))}
+                            </Group>
+                          </>
+                        )}
+                      </Stack>
+                    </Card>
+                  )}
+                </Stack>
+              )}
+
+              {/* Шаг 2: Детали договора */}
+              {currentStep === 1 && (
+                <Stack gap="lg">
+                  <Alert
+                    icon={<IconInfoCircle size={18} />}
+                    title={t('createAgreementModal.hints.propertyDetails')}
+                    color="blue"
+                    variant="light"
+                  >
+                    {t('createAgreementModal.hints.propertyDetailsDesc')}
+                  </Alert>
+
+                  <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Stack gap="md">
+                      <Group gap={6}>
+                        <ThemeIcon size="lg" color="blue" variant="light">
+                          <IconBuilding size={20} />
+                        </ThemeIcon>
+                        <Text size="md" fw={700}>{t('createAgreementModal.sections.property')}</Text>
+                      </Group>
+                      
+                      <Radio.Group
+                        value={manualPropertyInput ? 'manual' : 'database'}
+                        onChange={(value) => {
+                          setManualPropertyInput(value === 'manual');
+                          setSelectedComplex(null);
+                          setComplexProperties([]);
+                          setSelectedMainValue(null);
+                          setFormData((prev: any) => ({ ...prev, property_id: null }));
+                        }}
+                      >
+                        <Stack gap="sm">
+                          <Paper p="sm" withBorder style={{ 
+                            cursor: 'pointer',
+                            background: !manualPropertyInput ? (isDark ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-gray-0)') : 'transparent',
+                            borderColor: !manualPropertyInput ? 'var(--mantine-color-blue-6)' : (isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'),
+                            transition: 'all 0.2s ease'
+                          }}>
+                            <Radio
+                              value="database"
+                              label={
+                                <Group gap="xs">
+                                  <IconBuilding size={16} />
+                                  <Text size="sm">{t('createAgreementModal.propertyInput.selectFromDatabase')}</Text>
+                                </Group>
+                              }
+                            />
+                          </Paper>
+                          <Paper p="sm" withBorder style={{ 
+                            cursor: 'pointer',
+                            background: manualPropertyInput ? (isDark ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-gray-0)') : 'transparent',
+                            borderColor: manualPropertyInput ? 'var(--mantine-color-blue-6)' : (isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'),
+                            transition: 'all 0.2s ease'
+                          }}>
+                            <Radio
+                              value="manual"
+                              label={
+                                <Group gap="xs">
+                                  <IconFileText size={16} />
+                                  <Text size="sm">{t('createAgreementModal.propertyInput.enterManually')}</Text>
+                                </Group>
+                              }
+                            />
+                          </Paper>
+                        </Stack>
+                      </Radio.Group>
+
+                      {!manualPropertyInput ? (
+                        <Stack gap="md">
+                          <Select
+                            label={
+                              <Group gap={6}>
+                                <ThemeIcon size="sm" variant="light" color="blue">
+                                  <IconMapPin size={14} />
+                                </ThemeIcon>
+                                <Text size="sm" fw={500}>{t('createAgreementModal.fields.selectProperty')}</Text>
+                              </Group>
+                            }
+                            placeholder={t('createAgreementModal.placeholders.startTyping')}
+                            data={[
+                              ...Object.keys(properties.complexes).length > 0 ? [{
+                                group: t('createAgreementModal.propertyGroups.complexes'),
+                                items: Object.keys(properties.complexes).map(name => ({
+                                  value: name,
+                                  label: name
+                                }))
+                              }] : [],
+                              ...properties.standalone.length > 0 ? [{
+                                group: t('createAgreementModal.propertyGroups.standalone'),
+                                items: properties.standalone.map((prop: Property) => ({
+                                  value: String(prop.id),
+                                  label: `${prop.property_name || t('createAgreementModal.propertyGroups.property')} (${prop.property_number})`
+                                }))
+                              }] : []
+                            ]}
+                            value={selectedMainValue as string}
+                            onChange={(value) => {
+                              setSelectedMainValue(value);
+                              
+                              if (value && isNaN(Number(value))) {
+                                setSelectedComplex(value);
+                                const props = properties.complexes[value] || [];
+                                setComplexProperties(props);
+                                setFormData((prev: any) => ({ ...prev, property_id: null }));
+                              } else if (value) {
+                                setSelectedComplex(null);
+                                setComplexProperties([]);
+                                setFormData((prev: any) => ({ ...prev, property_id: Number(value) }));
+                              } else {
+                                setSelectedComplex(null);
+                                setComplexProperties([]);
+                                setFormData((prev: any) => ({ ...prev, property_id: null }));
+                              }
+                            }}
+                            clearable
+                            searchable
+                            size={isMobile ? 'md' : undefined}
+                            styles={mobileInputStyles}
+                            leftSection={<IconBuilding size={16} />}
+                          />
+                            
+                          {selectedComplex && complexProperties.length > 0 && (
+                            <Select
+                              label={
+                                <Group gap={6}>
+                                  <ThemeIcon size="sm" variant="light" color="blue">
+                                    <IconNumber size={14} />
+                                  </ThemeIcon>
+                                  <Text size="sm" fw={500}>{t('createAgreementModal.fields.propertyNumber', { complex: selectedComplex })}</Text>
+                                </Group>
+                              }
+                              placeholder={t('createAgreementModal.placeholders.selectPropertyNumber')}
+                              data={complexProperties.map((prop: Property) => ({
+                                value: String(prop.id),
+                                label: `${prop.property_number}${prop.property_name ? ` - ${prop.property_name}` : ''}`
+                              }))}
+                              value={formData.property_id ? String(formData.property_id) : null}
+                              onChange={(value) => value && setFormData((prev: any) => ({ ...prev, property_id: Number(value) }))}
+                              searchable
+                              size={isMobile ? 'md' : undefined}
+                              styles={mobileInputStyles}
+                              required
+                              leftSection={<IconHome size={16} />}
+                            />
+                          )}
+                  
+                          {!selectedComplex && formData.property_id && (
+                            <Alert color="green" icon={<IconCheck size={18} />} variant="light">
+                              <Group gap="xs">
+                                <IconHome size={16} />
+                                <Text size="sm">{t('createAgreementModal.propertySelected', { id: formData.property_id })}</Text>
+                              </Group>
+                            </Alert>
+                          )}
+                  
+                          <Textarea
+                            label={
+                              <Group gap={6}>
+                                <ThemeIcon size="sm" variant="light" color="gray">
+                                  <IconMapPin size={14} />
+                                </ThemeIcon>
+                                <Text size="sm" fw={500}>{t('createAgreementModal.fields.addressOverride')}</Text>
+                              </Group>
+                            }
+                            placeholder={t('createAgreementModal.placeholders.addressOverride')}
+                            rows={isMobile ? 3 : 2}
+                            value={formData.property_address_override}
+                            onChange={(e) => setFormData((prev: any) => ({ ...prev, property_address_override: e.target.value }))}
+                            styles={mobileInputStyles}
+                            description={t('createAgreementModal.hints.addressOverride')}
+                          />
+                        </Stack>
+                      ) : (
+                        <Stack gap="md">
+                          <TextInput
+                            label={
+                              <Group gap={6}>
+                                <ThemeIcon size="sm" variant="light" color="blue">
+                                  <IconHome size={14} />
+                                </ThemeIcon>
+                                <Text size="sm" fw={500}>{t('createAgreementModal.fields.propertyName')}</Text>
+                              </Group>
+                            }
+                            placeholder={t('createAgreementModal.placeholders.propertyName')}
+                            value={formData.property_name_manual}
+                            onChange={(e) => setFormData((prev: any) => ({ ...prev, property_name_manual: e.target.value }))}
+                            size={isMobile ? 'md' : undefined}
+                            styles={mobileInputStyles}
+                            required
+                            leftSection={<IconHome size={16} />}
+                          />
+                          <TextInput
+                            label={
+                              <Group gap={6}>
+                                <ThemeIcon size="sm" variant="light" color="blue">
+                                  <IconNumber size={14} />
+                                </ThemeIcon>
+                                <Text size="sm" fw={500}>{t('createAgreementModal.fields.propertyNumberManual')}</Text>
+                              </Group>
+                            }
+                            placeholder={t('createAgreementModal.placeholders.propertyNumber')}
+                            value={formData.property_number_manual}
+                            onChange={(e) => setFormData((prev: any) => ({ ...prev, property_number_manual: e.target.value }))}
+                            size={isMobile ? 'md' : undefined}
+                            styles={mobileInputStyles}
+                            required
+                            leftSection={<IconNumber size={16} />}
+                          />
+                          <Textarea
+                            label={
+                              <Group gap={6}>
+                                <ThemeIcon size="sm" variant="light" color="blue">
+                                  <IconMapPin size={14} />
+                                </ThemeIcon>
+                                <Text size="sm" fw={500}>{t('createAgreementModal.fields.propertyAddress')}</Text>
+                              </Group>
+                            }
+                            placeholder={t('createAgreementModal.placeholders.propertyAddress')}
+                            rows={isMobile ? 3 : 2}
+                            value={formData.property_address_manual}
+                            onChange={(e) => setFormData((prev: any) => ({ ...prev, property_address_manual: e.target.value }))}
+                            styles={mobileInputStyles}
+                            required
+                          />
+                        </Stack>
+                      )}
+                    </Stack>
+                  </Card>
+
+                  {/* Визуализация периода аренды */}
+                  {formData.date_from && formData.date_to && (
+                    <Paper p="md" withBorder radius="md">
+                      <Stack gap="md">
+                        <Group gap={6}>
+                          <ThemeIcon size="lg" color="teal" variant="light">
+                            <IconClock size={20} />
+                          </ThemeIcon>
+                          <Box>
+                            <Text size="sm" fw={700}>{t('createAgreementModal.rentalPeriod')}</Text>
+                            <Text size="xs" c="dimmed">
+                              {dayjs(formData.date_to).diff(dayjs(formData.date_from), 'day')} {t('createAgreementModal.days')} 
+                              {' '}({dayjs(formData.date_to).diff(dayjs(formData.date_from), 'month', true).toFixed(1)} {t('createAgreementModal.months')})
+                            </Text>
+                          </Box>
+                        </Group>
+                        
+                        <Timeline active={1} bulletSize={20} lineWidth={2} color="teal">
+                          <Timeline.Item 
+                            bullet={<IconCalendar size={12} />}
+                            title={t('createAgreementModal.fields.dateFrom')}
+                          >
+                            <Text size="sm" c="dimmed">{dayjs(formData.date_from).format('DD.MM.YYYY')}</Text>
+                          </Timeline.Item>
+                          <Timeline.Item 
+                            bullet={<IconCalendar size={12} />}
+                            title={t('createAgreementModal.fields.dateTo')}
+                          >
+                            <Text size="sm" c="dimmed">{dayjs(formData.date_to).format('DD.MM.YYYY')}</Text>
+                          </Timeline.Item>
+                        </Timeline>
+                      </Stack>
+                    </Paper>
+                  )}
+
+                  <Grid gutter="md">
+                    <Grid.Col span={{ base: 12, sm: 6 }}>
+                      <Stack gap={4}>
+                        <Group gap={6}>
+                          <ThemeIcon size="sm" variant="light" color="green">
+                            <IconCalendar size={14} />
+                          </ThemeIcon>
+                          <Text size="sm" fw={500}>{t('createAgreementModal.fields.dateFrom')}</Text>
+                        </Group>
+                        <ReactDatePicker
+                          selected={formData.date_from}
+                          onChange={(date) => setFormData((prev: any) => ({ ...prev, date_from: date }))}
+                          dateFormat="dd.MM.yyyy"
+                          placeholderText={t('createAgreementModal.placeholders.selectDate')}
+                          customInput={
+                            <DatePickerInput 
+                              icon={<IconCalendar size={16} />}
+                              placeholder={t('createAgreementModal.placeholders.selectDate')}
+                            />
+                          }
+                          popperPlacement="bottom-start"
+                        />
+                      </Stack>
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, sm: 6 }}>
+                      <Stack gap={4}>
+                        <Group gap={6}>
+                          <ThemeIcon size="sm" variant="light" color="red">
+                            <IconCalendar size={14} />
+                          </ThemeIcon>
+                          <Text size="sm" fw={500}>{t('createAgreementModal.fields.dateTo')}</Text>
+                        </Group>
+                        <ReactDatePicker
+                          selected={formData.date_to}
+                          onChange={(date) => setFormData((prev: any) => ({ ...prev, date_to: date }))}
+                          dateFormat="dd.MM.yyyy"
+                          placeholderText={t('createAgreementModal.placeholders.selectDate')}
+                          minDate={formData.date_from}
+                          customInput={
+                            <DatePickerInput 
+                              icon={<IconCalendar size={16} />}
+                              placeholder={t('createAgreementModal.placeholders.selectDate')}
+                            />
+                          }
+                          popperPlacement="bottom-start"
+                        />
+                      </Stack>
+                    </Grid.Col>
+                  </Grid>
+
+                  <TextInput
+                    label={
+                      <Group gap={6}>
+                        <ThemeIcon size="sm" variant="light" color="blue">
+                          <IconWorld size={14} />
+                        </ThemeIcon>
+                        <Text size="sm" fw={500}>{t('createAgreementModal.fields.city')}</Text>
+                      </Group>
+                    }
+                    placeholder={t('createAgreementModal.placeholders.city')}
+                    value={formData.city}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, city: e.target.value }))}
+                    size={isMobile ? 'md' : undefined}
+                    styles={mobileInputStyles}
+                    leftSection={<IconWorld size={16} />}
+                  />
+
+                  <Textarea
+                    label={
+                      <Group gap={6}>
+                        <ThemeIcon size="sm" variant="light" color="gray">
+                          <IconFileDescription size={14} />
+                        </ThemeIcon>
+                        <Text size="sm" fw={500}>{t('createAgreementModal.fields.description')}</Text>
+                      </Group>
+                    }
+                    placeholder={t('createAgreementModal.placeholders.description')}
+                    rows={isMobile ? 4 : 3}
+                    value={formData.description}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
+                    styles={mobileInputStyles}
+                    description={t('createAgreementModal.hints.description')}
+                  />
+                </Stack>
+              )}
+
+              {/* Шаг 3: Стороны */}
+              {currentStep === 2 && (
+                <Stack gap={isMobile ? 'md' : 'lg'}>
+                  <Alert
+                    icon={<IconUsers size={18} />}
+                    title={t('createAgreementModal.hints.parties')}
+                    color="cyan"
+                    variant="light"
+                  >
+                    {t('createAgreementModal.hints.partiesDesc')}
+                  </Alert>
+
+                  {parties.map((party, index) => (
+                    <Card
+                      key={index}
+                      shadow="sm"
+                      padding="lg"
+                      radius="md"
+                      withBorder
+                      style={{
+                        borderColor: party.is_company 
+                          ? (isDark ? 'var(--mantine-color-orange-9)' : 'var(--mantine-color-orange-3)') 
+                          : (isDark ? 'var(--mantine-color-blue-9)' : 'var(--mantine-color-blue-3)'),
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Stack gap="md">
+                        <Group justify="space-between" wrap="nowrap">
+                          <Group gap="sm" style={{ flex: 1 }}>
+                            <ThemeIcon 
+                              size="xl" 
+                              radius="md" 
+                              color={party.is_company ? 'orange' : 'blue'}
+                              variant="light"
+                            >
+                              {party.is_company ? <IconBriefcase size={24} /> : <IconUser size={24} />}
+                            </ThemeIcon>
+                            
+                            <Box style={{ flex: 1, minWidth: 0 }}>
+                              <Select
+                                data={availableRoles}
+                                value={party.role}
+                                onChange={(value) => value && updateParty(index, 'role', value)}
+                                size={isMobile ? 'sm' : 'md'}
+                                styles={{ 
+                                  input: { 
+                                    fontSize: '16px',
+                                    fontWeight: 600
+                                  }
+                                }}
+                                leftSection={<IconUserCheck size={16} />}
+                              />
+                              
+                              {isMobile && (
+                                <Group gap="xs" mt="xs">
+                                  <Badge size="xs" color={party.is_company ? 'orange' : 'blue'} variant="light">
+                                    {party.is_company ? t('createAgreementModal.partyTypes.company') : t('createAgreementModal.partyTypes.individual')}
+                                  </Badge>
+                                  <Switch
+                                    checked={party.is_company}
+                                    onChange={(e) => updateParty(index, 'is_company', e.currentTarget.checked)}
+                                    size="xs"
+                                  />
+                                </Group>
+                              )}
+                            </Box>
+                          </Group>
+                          
+                          {!isMobile && (
+                            <Group gap="xs">
+                              <Tooltip label={party.is_company ? t('createAgreementModal.switchToIndividual') : t('createAgreementModal.switchToCompany')}>
+                                <Switch
+                                  checked={party.is_company}
+                                  onChange={(e) => updateParty(index, 'is_company', e.currentTarget.checked)}
+                                  onLabel={<IconBriefcase size={14} />}
+                                  offLabel={<IconUser size={14} />}
+                                  size="lg"
+                                  color={party.is_company ? 'orange' : 'blue'}
+                                />
+                              </Tooltip>
+                              
+                              {parties.length > 1 && (
+                                <Tooltip label={t('common.delete')}>
+                                  <ActionIcon
+                                    color="red"
+                                    variant="light"
+                                    size="lg"
+                                    onClick={() => removeParty(index)}
+                                  >
+                                    <IconTrash size={18} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              )}
+                            </Group>
+                          )}
+                        </Group>
+
+                        <Divider />
+
+                        <Group grow={isMobile}>
+                          <Checkbox
+                            checked={saveContactFlags[index] || false}
+                            onChange={(e) => setSaveContactFlags(prev => ({ ...prev, [index]: e.currentTarget.checked }))}
+                            label={
+                              <Group gap={6}>
+                                <IconDeviceFloppy size={14} />
+                                <Text size="xs" fw={500}>{t('createAgreementModal.saveContact')}</Text>
+                              </Group>
+                            }
+                            size="sm"
+                          />
+                          {isMobile && parties.length > 1 && (
+                            <Button
+                              color="red"
+                              variant="light"
+                              leftSection={<IconTrash size={16} />}
+                              onClick={() => removeParty(index)}
+                              fullWidth
+                              size="xs"
+                            >
+                              {t('common.delete')}
+                            </Button>
+                          )}
+                        </Group>
+
+                        <Select
+                          placeholder={
+                            party.is_company 
+                              ? t('createAgreementModal.selectSavedCompany')
+                              : t('createAgreementModal.selectSavedContact')
+                          }
+                          data={party.is_company 
+                            ? savedContacts
+                                .filter(c => c.type === 'company')
+                                .map(contact => ({
+                                  value: String(contact.id),
+                                  label: contact.company_name
+                                }))
+                            : savedContacts
+                                .filter(c => c.type === 'individual')
+                                .map(contact => ({
+                                  value: String(contact.id),
+                                  label: contact.name
+                                }))
+                          }
+                          onChange={(value) => {
+                            if (value) {
+                              const contact = savedContacts.find(c => c.id === Number(value));
+                              if (contact) {
+                                fillPartyFromContact(index, contact);
+                              }
+                            }
+                          }}
+                          clearable
+                          searchable
+                          size={isMobile ? 'md' : undefined}
+                          styles={mobileInputStyles}
+                          leftSection={<IconFileText size={16} />}
+                        />
+
+                        {!party.is_company ? (
+                          <Grid gutter="md">
+                            <Grid.Col span={{ base: 12, sm: 4 }}>
+                              <TextInput
+                                label={
+                                  <Group gap={6}>
+                                    <IconUser size={14} />
+                                    <Text size="sm">{t('createAgreementModal.fields.fullName')} *</Text>
+                                  </Group>
+                                }
+                                placeholder={t('createAgreementModal.placeholders.fullName')}
+                                value={party.name}
+                                onChange={(e) => updateParty(index, 'name', e.target.value)}
+                                size={isMobile ? 'md' : undefined}
+                                styles={mobileInputStyles}
+                                required
+                                leftSection={<IconUser size={16} />}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={{ base: 12, sm: 4 }}>
+                              <TextInput
+                                label={
+                                  <Group gap={6}>
+                                    <IconWorld size={14} />
+                                    <Text size="sm">{t('createAgreementModal.fields.passportCountry')} *</Text>
+                                  </Group>
+                                }
+                                placeholder={t('createAgreementModal.placeholders.passportCountry')}
+                                value={party.passport_country}
+                                onChange={(e) => updateParty(index, 'passport_country', e.target.value)}
+                                size={isMobile ? 'md' : undefined}
+                                styles={mobileInputStyles}
+                                required
+                                leftSection={<IconWorld size={16} />}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={{ base: 12, sm: 4 }}>
+                              <TextInput
+                                label={
+                                  <Group gap={6}>
+                                    <IconId size={14} />
+                                    <Text size="sm">{t('createAgreementModal.fields.passportNumber')} *</Text>
+                                  </Group>
+                                }
+                                placeholder={t('createAgreementModal.placeholders.passportNumber')}
+                                value={party.passport_number}
+                                onChange={(e) => updateParty(index, 'passport_number', e.target.value)}
+                                size={isMobile ? 'md' : undefined}
+                                styles={mobileInputStyles}
+                                required
+                                leftSection={<IconId size={16} />}
+                              />
+                            </Grid.Col>
+                            
+                            <Grid.Col span={12}>
+                              <Divider 
+                                label={
+                                  <Group gap={6}>
+                                    <IconPhoto size={14} />
+                                    <Text size="sm" fw={600}>{t('createAgreementModal.sections.documents')}</Text>
+                                  </Group>
+                                }
+                                labelPosition="center"
+                              />
+                              
+                              {party.documents && party.documents.length > 0 && (
+                                <Grid gutter="xs" mb="sm">
+                                  {party.documents.map((doc, docIndex) => (
+                                    <Grid.Col key={docIndex} span={{ base: 6, sm: 4, md: 3 }}>
+                                      <Paper 
+                                        p="xs" 
+                                        withBorder 
+                                        radius="md"
+                                        style={{ 
+                                          position: 'relative',
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      >
+                                        {doc.uploading ? (
+                                          <Center h={isMobile ? 80 : 100}>
+                                            <Loader size="sm" />
+                                          </Center>
+                                        ) : (
+                                          <>
+                                            <Image
+                                              src={doc.preview}
+                                              alt={t('createAgreementModal.documentAlt', { number: docIndex + 1 })}
+                                              height={isMobile ? 80 : 100}
+                                              fit="cover"
+                                              radius="sm"
+                                            />
+                                            <ActionIcon
+                                              color="red"
+                                              size="sm"
+                                              radius="xl"
+                                              variant="filled"
+                                              onClick={() => removeDocument(index, docIndex)}
+                                              style={{
+                                                position: 'absolute',
+                                                top: 4,
+                                                right: 4
+                                              }}
+                                            >
+                                              <IconTrash size={14} />
+                                            </ActionIcon>
+                                          </>
+                                        )}
+                                      </Paper>
+                                    </Grid.Col>
+                                  ))}
+                                </Grid>
+                              )}
+
+                              <FileButton
+                                onChange={(file) => file && handleDocumentUpload(index, file)}
+                                accept="image/*,.pdf"
+                              >
+                                {(props) => (
+                                  <Button
+                                    {...props}
+                                    variant={party.documents && party.documents.length > 0 ? 'light' : 'filled'}
+                                    color="blue"
+                                    leftSection={<IconUpload size={16} />}
+                                    fullWidth
+                                    size={isMobile ? 'md' : undefined}
+                                  >
+                                    {party.documents && party.documents.length > 0 
+                                      ? t('createAgreementModal.buttons.uploadMore') 
+                                      : t('createAgreementModal.buttons.uploadPassport')}
+                                  </Button>
+                                )}
+                              </FileButton>
+                            </Grid.Col>
+                          </Grid>
+                        ) : (
+                          <Grid gutter="md">
+                            <Grid.Col span={{ base: 12, sm: 6 }}>
+                              <TextInput
+                                label={
+                                  <Group gap={6}>
+                                    <IconBuildingBank size={14} />
+                                    <Text size="sm">{t('createAgreementModal.fields.companyName')} *</Text>
+                                  </Group>
+                                }
+                                placeholder={t('createAgreementModal.placeholders.companyName')}
+                                value={party.company_name}
+                                onChange={(e) => updateParty(index, 'company_name', e.target.value)}
+                                size={isMobile ? 'md' : undefined}
+                                styles={mobileInputStyles}
+                                required
+                                leftSection={<IconBuildingBank size={16} />}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={{ base: 12, sm: 6 }}>
+                              <TextInput
+                                label={
+                                  <Group gap={6}>
+                                    <IconNumber size={14} />
+                                    <Text size="sm">{t('createAgreementModal.fields.taxId')} *</Text>
+                                  </Group>
+                                }
+                                placeholder={t('createAgreementModal.placeholders.taxId')}
+                                value={party.company_tax_id}
+                                onChange={(e) => updateParty(index, 'company_tax_id', e.target.value)}
+                                size={isMobile ? 'md' : undefined}
+                                styles={mobileInputStyles}
+                                required
+                                leftSection={<IconNumber size={16} />}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={12}>
+                              <Textarea
+                                label={
+                                  <Group gap={6}>
+                                    <IconMapPin size={14} />
+                                    <Text size="sm">{t('createAgreementModal.fields.companyAddress')}</Text>
+                                  </Group>
+                                }
+                                placeholder={t('createAgreementModal.placeholders.companyAddress')}
+                                rows={isMobile ? 3 : 2}
+                                value={party.company_address}
+                                onChange={(e) => updateParty(index, 'company_address', e.target.value)}
+                                styles={mobileInputStyles}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={12}>
+                              <Divider 
+                                label={
+                                  <Group gap={6}>
+                                    <IconUser size={14} />
+                                    <Text size="sm" fw={600}>{t('createAgreementModal.sections.directorInfo')}</Text>
+                                  </Group>
+                                }
+                                labelPosition="center"
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={{ base: 12, sm: 4 }}>
+                              <TextInput
+                                label={
+                                  <Group gap={6}>
+                                    <IconUser size={14} />
+                                    <Text size="sm">{t('createAgreementModal.fields.directorName')} *</Text>
+                                  </Group>
+                                }
+                                placeholder={t('createAgreementModal.placeholders.directorName')}
+                                value={party.director_name}
+                                onChange={(e) => updateParty(index, 'director_name', e.target.value)}
+                                size={isMobile ? 'md' : undefined}
+                                styles={mobileInputStyles}
+                                required
+                                leftSection={<IconUser size={16} />}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={{ base: 12, sm: 4 }}>
+                              <TextInput
+                                label={
+                                  <Group gap={6}>
+                                    <IconWorld size={14} />
+                                    <Text size="sm">{t('createAgreementModal.fields.directorCountry')}</Text>
+                                  </Group>
+                                }
+                                placeholder={t('createAgreementModal.placeholders.directorCountry')}
+                                value={party.director_country}
+                                onChange={(e) => updateParty(index, 'director_country', e.target.value)}
+                                size={isMobile ? 'md' : undefined}
+                                styles={mobileInputStyles}
+                                leftSection={<IconWorld size={16} />}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={{ base: 12, sm: 4 }}>
+                              <TextInput
+                                label={
+                                  <Group gap={6}>
+                                    <IconId size={14} />
+                                    <Text size="sm">{t('createAgreementModal.fields.directorPassport')}</Text>
+                                  </Group>
+                                }
+                                placeholder={t('createAgreementModal.placeholders.directorPassport')}
+                                value={party.director_passport}
+                                onChange={(e) => updateParty(index, 'director_passport', e.target.value)}
+                                size={isMobile ? 'md' : undefined}
+                                styles={mobileInputStyles}
+                                leftSection={<IconId size={16} />}
+                              />
+                            </Grid.Col>
+
+                            <Grid.Col span={12}>
+                              <Divider 
+                                label={
+                                  <Group gap={6}>
+                                    <IconPhoto size={14} />
+                                    <Text size="sm" fw={600}>{t('createAgreementModal.sections.registrationDocs')}</Text>
+                                  </Group>
+                                }
+                                labelPosition="center"
+                              />
+                              
+                              {party.documents && party.documents.length > 0 && (
+                                <Grid gutter="xs" mb="sm">
+                                  {party.documents.map((doc, docIndex) => (
+                                    <Grid.Col key={docIndex} span={{ base: 6, sm: 4, md: 3 }}>
+                                      <Paper 
+                                        p="xs" 
+                                        withBorder 
+                                        radius="md"
+                                        style={{ 
+                                          position: 'relative',
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      >
+                                        {doc.uploading ? (
+                                          <Center h={isMobile ? 80 : 100}>
+                                            <Loader size="sm" />
+                                          </Center>
+                                        ) : (
+                                          <>
+                                            <Image
+                                              src={doc.preview}
+                                              alt={t('createAgreementModal.documentAlt', { number: docIndex + 1 })}
+                                              height={isMobile ? 80 : 100}
+                                              fit="cover"
+                                              radius="sm"
+                                            />
+                                            <ActionIcon
+                                              color="red"
+                                              size="sm"
+                                              radius="xl"
+                                              variant="filled"
+                                              onClick={() => removeDocument(index, docIndex)}
+                                              style={{
+                                                position: 'absolute',
+                                                top: 4,
+                                                right: 4
+                                              }}
+                                            >
+                                              <IconTrash size={14} />
+                                            </ActionIcon>
+                                          </>
+                                        )}
+                                      </Paper>
+                                    </Grid.Col>
+                                  ))}
+                                </Grid>
+                              )}
+
+                              <FileButton
+                                onChange={(file) => file && handleDocumentUpload(index, file)}
+                                accept="image/*,.pdf"
+                              >
+                                {(props) => (
+                                  <Button
+                                    {...props}
+                                    variant={party.documents && party.documents.length > 0 ? 'light' : 'filled'}
+                                    color="orange"
+                                    leftSection={<IconPhoto size={16} />}
+                                    fullWidth
+                                    size={isMobile ? 'md' : undefined}
+                                  >
+                                    {party.documents && party.documents.length > 0 
+                                      ? t('createAgreementModal.buttons.uploadMore') 
+                                      : t('createAgreementModal.buttons.uploadCompanyDoc')}
+                                  </Button>
+                                )}
+                              </FileButton>
+                            </Grid.Col>
+                          </Grid>
+                        )}
+                      </Stack>
+                    </Card>
+                  ))}
+
+                  <Button
+                    variant="light"
+                    color="violet"
+                    leftSection={<IconPlus size={16} />}
+                    onClick={addParty}
+                    fullWidth
+                    size={isMobile ? 'md' : 'lg'}
+                  >
+                    {t('createAgreementModal.buttons.addParty')}
+                  </Button>
+                </Stack>
+              )}
+
+              {/* Шаг 4: Финансовая информация */}
+              {currentStep === 3 && (
+                <Stack gap="lg">
+                  <Alert
+                    icon={<IconCalculator size={18} />}
+                    title={t('createAgreementModal.hints.finance')}
+                    color="green"
+                    variant="light"
+                  >
+                    {t('createAgreementModal.hints.financeDesc')}
+                  </Alert>
+
+                  <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Stack gap="md">
+                      <Group gap={6}>
+                        <ThemeIcon size="xl" color="green" variant="light">
+                          <IconCurrencyBaht size={24} />
+                        </ThemeIcon>
+                        <Box>
+                          <Text size="lg" fw={700}>{t('createAgreementModal.sections.financialInfo')}</Text>
+                          <Text size="xs" c="dimmed">{t('createAgreementModal.hints.autoCalculation')}</Text>
+                        </Box>
+                      </Group>
+                      
+                      <Grid gutter="md">
+                        <Grid.Col span={{ base: 12, sm: 6 }}>
+                          <NumberInput
+                            label={
+                              <Group gap={6}>
+                                <IconCurrencyBaht size={14} />
+                                <Text size="sm" fw={500}>{t('createAgreementModal.fields.rentMonthly')}</Text>
+                              </Group>
+                            }
+                            placeholder="50000"
+                            value={formData.rent_amount_monthly}
+                            onChange={(value) => setFormData((prev: any) => ({ ...prev, rent_amount_monthly: value }))}
+                            thousandSeparator=","
+                            suffix=" THB"
+                            min={0}
+                            size={isMobile ? 'md' : undefined}
+                            styles={mobileInputStyles}
+                            leftSection={<IconPigMoney size={16} />}
+                            description={t('createAgreementModal.hints.monthlyRent')}
+                          />
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, sm: 6 }}>
+                          <NumberInput
+                            label={
+                              <Group gap={6}>
+                                <IconReceipt size={14} />
+                                <Text size="sm" fw={500}>{t('createAgreementModal.fields.rentTotal')}</Text>
+                              </Group>
+                            }
+                            placeholder="600000"
+                            value={formData.rent_amount_total}
+                            onChange={(value) => setFormData((prev: any) => ({ ...prev, rent_amount_total: value }))}
+                            thousandSeparator=","
+                            suffix=" THB"
+                            min={0}
+                            size={isMobile ? 'md' : undefined}
+                            styles={mobileInputStyles}
+                            leftSection={<IconReceipt size={16} />}
+                            description={t('createAgreementModal.hints.totalRent')}
+                          />
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, sm: 6 }}>
+                          <NumberInput
+                            label={
+                              <Group gap={6}>
+                                <IconPigMoney size={14} />
+                                <Text size="sm" fw={500}>{t('createAgreementModal.fields.deposit')}</Text>
+                              </Group>
+                            }
+                            placeholder="100000"
+                            value={formData.deposit_amount}
+                            onChange={(value) => setFormData((prev: any) => ({ ...prev, deposit_amount: value }))}
+                            thousandSeparator=","
+                            suffix=" THB"
+                            min={0}
+                            size={isMobile ? 'md' : undefined}
+                            styles={mobileInputStyles}
+                            leftSection={<IconPigMoney size={16} />}
+                            description={t('createAgreementModal.hints.deposit')}
+                          />
+                        </Grid.Col>
+                      </Grid>
+
+                      {/* Breakdown визуализация */}
+                      {(formData.rent_amount_monthly || formData.deposit_amount) && (
+                        <Paper p="md" withBorder radius="md">
+                          <Stack gap="xs">
+                            <Group justify="space-between">
+                              <Text size="sm" c="dimmed">{t('createAgreementModal.totalCost')}</Text>
+                              <Text size="lg" fw={700}>
+                                {((formData.rent_amount_total || 0) + (formData.deposit_amount || 0)).toLocaleString()} THB
+                              </Text>
+                            </Group>
+                            {formData.rent_amount_total && (
+                              <Group justify="space-between">
+                                <Badge color="green" variant="dot">{t('createAgreementModal.fields.rentTotal')}</Badge>
+                                <Text size="sm">{formData.rent_amount_total.toLocaleString()} THB</Text>
+                              </Group>
+                            )}
+                            {formData.deposit_amount && (
+                              <Group justify="space-between">
+                                <Badge color="blue" variant="dot">{t('createAgreementModal.fields.deposit')}</Badge>
+                                <Text size="sm">{formData.deposit_amount.toLocaleString()} THB</Text>
+                              </Group>
+                            )}
+                          </Stack>
+                        </Paper>
+                      )}
+
+                      <Textarea
+                        label={
+                          <Group gap={6}>
+                            <IconInfoCircle size={14} />
+                            <Text size="sm" fw={500}>{t('createAgreementModal.fields.utilitiesIncluded')}</Text>
+                          </Group>
+                        }
+                        placeholder={t('createAgreementModal.placeholders.utilities')}
+                        rows={isMobile ? 4 : 3}
+                        value={formData.utilities_included}
+                        onChange={(e) => setFormData((prev: any) => ({ ...prev, utilities_included: e.target.value }))}
+                        styles={mobileInputStyles}
+                        description={t('createAgreementModal.hints.utilities')}
+                      />
+                    </Stack>
+                  </Card>
+
+                  {isMobile ? (
+                    <Accordion>
+                      <Accordion.Item value="payment-terms">
+                        <Accordion.Control
+                          icon={
+                            <ThemeIcon variant="light" color="violet" size="lg">
+                              <IconCurrencyBaht size={18} />
+                            </ThemeIcon>
+                          }
+                        >
+                          <Text fw={600}>{t('createAgreementModal.paymentTerms.title')}</Text>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                          <Stack gap="md">
+                            <Alert color="blue" icon={<IconInfoCircle size={16} />} variant="light">
+                              <Text size="xs">{t('createAgreementModal.paymentTerms.description')}</Text>
+                            </Alert>
+                            
+                            <NumberInput
+                              label={t('createAgreementModal.paymentTerms.uponSigned')}
+                              description={t('createAgreementModal.paymentTerms.uponSignedTooltip')}
+                              placeholder="200000"
+                              value={formData.upon_signed_pay}
+                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_signed_pay: value }))}
+                              thousandSeparator=","
+                              suffix=" THB"
+                              min={0}
+                              styles={mobileInputStyles}
+                              leftSection={<IconFileText size={16} />}
+                            />
+                            
+                            <NumberInput
+                              label={t('createAgreementModal.paymentTerms.uponCheckin')}
+                              description={t('createAgreementModal.paymentTerms.uponCheckinTooltip')}
+                              placeholder="200000"
+                              value={formData.upon_checkin_pay}
+                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkin_pay: value }))}
+                              thousandSeparator=","
+                              suffix=" THB"
+                              min={0}
+                              styles={mobileInputStyles}
+                              leftSection={<IconCalendar size={16} />}
+                            />
+                            
+                            <NumberInput
+                              label={t('createAgreementModal.paymentTerms.uponCheckout')}
+                              description={t('createAgreementModal.paymentTerms.uponCheckoutTooltip')}
+                              placeholder="200000"
+                              value={formData.upon_checkout_pay}
+                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkout_pay: value }))}
+                              thousandSeparator=","
+                              suffix=" THB"
+                              min={0}
+                              styles={mobileInputStyles}
+                              leftSection={<IconCalendar size={16} />}
+                            />
+                          </Stack>
+                        </Accordion.Panel>
+                      </Accordion.Item>
+                    </Accordion>
+                  ) : (
+                    <Card shadow="sm" padding="lg" radius="md" withBorder>
+                      <Stack gap="md">
+                        <Group gap={6}>
+                          <ThemeIcon size="lg" color="violet" variant="light">
+                            <IconCurrencyBaht size={20} />
+                          </ThemeIcon>
+                          <Text size="md" fw={700}>{t('createAgreementModal.paymentTerms.title')}</Text>
+                        </Group>
+                        
+                        <Alert color="blue" icon={<IconInfoCircle size={16} />} variant="light">
+                          <Text size="sm">{t('createAgreementModal.paymentTerms.description')}</Text>
+                        </Alert>
+                        
+                        <Grid gutter="md">
+                          <Grid.Col span={{ base: 12, sm: 4 }}>
+                            <NumberInput
+                              label={
+                                <Group gap={6}>
+                                  <IconFileText size={14} />
+                                  <Text size="sm">{t('createAgreementModal.paymentTerms.uponSigned')}</Text>
+                                </Group>
+                              }
+                              description={t('createAgreementModal.paymentTerms.uponSignedTooltip')}
+                              placeholder="200000"
+                              value={formData.upon_signed_pay}
+                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_signed_pay: value }))}
+                              thousandSeparator=","
+                              suffix=" THB"
+                              min={0}
+                              leftSection={<IconFileText size={16} />}
+                            />
+                          </Grid.Col>
+                          <Grid.Col span={{ base: 12, sm: 4 }}>
+                            <NumberInput
+                              label={
+                                <Group gap={6}>
+                                  <IconCalendar size={14} />
+                                  <Text size="sm">{t('createAgreementModal.paymentTerms.uponCheckin')}</Text>
+                                </Group>
+                              }
+                              description={t('createAgreementModal.paymentTerms.uponCheckinTooltip')}
+                              placeholder="200000"
+                              value={formData.upon_checkin_pay}
+                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkin_pay: value }))}
+                              thousandSeparator=","
+                              suffix=" THB"
+                              min={0}
+                              leftSection={<IconCalendar size={16} />}
+                            />
+                          </Grid.Col>
+                          <Grid.Col span={{ base: 12, sm: 4 }}>
+                            <NumberInput
+                              label={
+                                <Group gap={6}>
+                                  <IconCalendar size={14} />
+                                  <Text size="sm">{t('createAgreementModal.paymentTerms.uponCheckout')}</Text>
+                                </Group>
+                              }
+                              description={t('createAgreementModal.paymentTerms.uponCheckoutTooltip')}
+                              placeholder="200000"
+                              value={formData.upon_checkout_pay}
+                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkout_pay: value }))}
+                              thousandSeparator=","
+                              suffix=" THB"
+                              min={0}
+                              leftSection={<IconCalendar size={16} />}
+                            />
+                          </Grid.Col>
+                        </Grid>
+                      </Stack>
+                    </Card>
+                  )}
+
+                  {isMobile ? (
+                    <Accordion>
+                      <Accordion.Item value="bank-details">
+                        <Accordion.Control
+                          icon={
+                            <ThemeIcon variant="light" color="blue" size="lg">
+                              <IconBuildingBank size={18} />
+                            </ThemeIcon>
+                          }
+                        >
+                          <Text fw={600}>{t('createAgreementModal.sections.bankDetails')}</Text>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                          <Stack gap="md">
+                            <TextInput
+                              label={
+                                <Group gap={6}>
+                                  <IconBuildingBank size={14} />
+                                  <Text size="sm">{t('createAgreementModal.fields.bankName')}</Text>
+                                </Group>
+                              }
+                              placeholder={t('createAgreementModal.placeholders.bankName')}
+                              value={formData.bank_name}
+                              onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_name: e.target.value }))}
+                              styles={mobileInputStyles}
+                              leftSection={<IconBuildingBank size={16} />}
+                            />
+                            <TextInput
+                              label={
+                                <Group gap={6}>
+                                  <IconUser size={14} />
+                                  <Text size="sm">{t('createAgreementModal.fields.accountHolder')}</Text>
+                                </Group>
+                              }
+                              placeholder={t('createAgreementModal.placeholders.accountHolder')}
+                              value={formData.bank_account_name}
+                              onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_name: e.target.value }))}
+                              styles={mobileInputStyles}
+                              leftSection={<IconUser size={16} />}
+                            />
+                            <TextInput
+                              label={
+                                <Group gap={6}>
+                                  <IconNumber size={14} />
+                                  <Text size="sm">{t('createAgreementModal.fields.accountNumber')}</Text>
+                                </Group>
+                              }
+                              placeholder={t('createAgreementModal.placeholders.accountNumber')}
+                              value={formData.bank_account_number}
+                              onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_number: e.target.value }))}
+                              styles={mobileInputStyles}
+                              leftSection={<IconNumber size={16} />}
+                            />
+                          </Stack>
+                        </Accordion.Panel>
+                      </Accordion.Item>
+                    </Accordion>
+                  ) : (
+                    <Card shadow="sm" padding="lg" radius="md" withBorder>
+                      <Stack gap="md">
+                        <Group gap={6}>
+                          <ThemeIcon size="lg" color="blue" variant="light">
+                            <IconBuildingBank size={20} />
+                          </ThemeIcon>
+                          <Text size="md" fw={700}>{t('createAgreementModal.sections.bankDetails')}</Text>
+                        </Group>
+                        
+                        <TextInput
+                          label={
+                            <Group gap={6}>
+                              <IconBuildingBank size={14} />
+                              <Text size="sm">{t('createAgreementModal.fields.bankName')}</Text>
+                            </Group>
+                          }
+                          placeholder={t('createAgreementModal.placeholders.bankName')}
+                          value={formData.bank_name}
+                          onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_name: e.target.value }))}
+                          leftSection={<IconBuildingBank size={16} />}
+                          description={t('createAgreementModal.hints.bankName')}
+                        />
+                        <TextInput
+                          label={
+                            <Group gap={6}>
+                              <IconUser size={14} />
+                              <Text size="sm">{t('createAgreementModal.fields.accountHolder')}</Text>
+                            </Group>
+                          }
+                          placeholder={t('createAgreementModal.placeholders.accountHolder')}
+                          value={formData.bank_account_name}
+                          onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_name: e.target.value }))}
+                          leftSection={<IconUser size={16} />}
+                          description={t('createAgreementModal.hints.accountHolder')}
+                        />
+                        <TextInput
+                          label={
+                            <Group gap={6}>
+                              <IconNumber size={14} />
+                              <Text size="sm">{t('createAgreementModal.fields.accountNumber')}</Text>
+                            </Group>
+                          }
+                          placeholder={t('createAgreementModal.placeholders.accountNumber')}
+                          value={formData.bank_account_number}
+                          onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_number: e.target.value }))}
+                          leftSection={<IconNumber size={16} />}
+                          description={t('createAgreementModal.hints.accountNumber')}
+                        />
+                      </Stack>
+                    </Card>
+                  )}
+                </Stack>
+              )}
+            </div>
           )}
-          {currentStep < steps.length - 1 ? (
-            <Button type="primary" onClick={handleNext}>{t('createAgreementModal.buttons.next')}</Button>
-          ) : (
-            <Button type="primary" onClick={handleSubmit} loading={loading}>
-              {t('createAgreementModal.buttons.create')}
-            </Button>
-          )}
-        </Space>
+        </Transition>
       </div>
+
+      {/* Кнопки навигации */}
+      {isMobile ? (
+        <Paper
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '12px 16px',
+            borderTop: `1px solid ${isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'}`,
+            zIndex: 1000,
+            background: isDark ? 'var(--mantine-color-dark-7)' : 'var(--mantine-color-gray-0)'
+          }}
+        >
+          <Group gap="xs" grow>
+            {currentStep > 0 && (
+              <Button
+                variant="light"
+                leftSection={<IconArrowLeft size={16} />}
+                onClick={handlePrev}
+                size="md"
+              >
+                {t('createAgreementModal.buttons.back')}
+              </Button>
+            )}
+            {currentStep < steps.length - 1 ? (
+              <Button
+                variant="filled"
+                color="violet"
+                rightSection={<IconArrowRight size={16} />}
+                onClick={handleNext}
+                size="md"
+              >
+                {t('createAgreementModal.buttons.next')}
+              </Button>
+            ) : (
+              <Button
+                variant="filled"
+                color="green"
+                leftSection={<IconCheckupList size={18} />}
+                onClick={handleSubmit}
+                loading={loading}
+                size="md"
+              >
+                {t('createAgreementModal.buttons.create')}
+              </Button>
+            )}
+          </Group>
+        </Paper>
+      ) : (
+        <Group justify="space-between" mt="xl" pt="lg" style={{
+          borderTop: `1px solid ${isDark ? 'var(--mantine-color-dark-4)' : 'var(--mantine-color-gray-3)'}`
+        }}>
+          <Button 
+            variant="subtle" 
+            onClick={onCancel}
+            leftSection={<IconX size={16} />}
+            size="lg"
+          >
+            {t('common.cancel')}
+          </Button>
+          <Group gap="xs">
+            {currentStep > 0 && (
+              <Button 
+                variant="light" 
+                onClick={handlePrev}
+                leftSection={<IconArrowLeft size={16} />}
+                size="lg"
+              >
+                {t('createAgreementModal.buttons.back')}
+              </Button>
+            )}
+            {currentStep < steps.length - 1 ? (
+              <Button 
+                variant="filled"
+                color="violet"
+                onClick={handleNext}
+                rightSection={<IconArrowRight size={16} />}
+                size="lg"
+              >
+                {t('createAgreementModal.buttons.next')}
+              </Button>
+            ) : (
+              <Button 
+                variant="filled"
+                color="green"
+                onClick={handleSubmit} 
+                loading={loading}
+                leftSection={<IconCheck size={18} />}
+                size="lg"
+              >
+                {t('createAgreementModal.buttons.create')}
+              </Button>
+            )}
+          </Group>
+        </Group>
+      )}
     </Modal>
   );
 };

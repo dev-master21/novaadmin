@@ -3,42 +3,58 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Card,
   Button,
-  Space,
-  Descriptions,
-  Tag,
-  Modal,
-  message,
-  Spin,
+  Badge,
+  Stack,
+  Group,
+  Text,
+  Title,
   Tabs,
   Table,
   Drawer,
   Switch,
-  Dropdown,
-  Row,
-  Col,
-  Typography,
-  Input
-} from 'antd';
+  Menu,
+  Grid,
+  ActionIcon,
+  Progress,
+  Center,
+  Loader,
+  Paper,
+  Divider,
+  TextInput,
+  CopyButton,
+  Affix,
+  Transition,
+  useMantineTheme,
+  Box,
+  RingProgress
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
+import { useMediaQuery, useWindowScroll } from '@mantine/hooks';
 import {
-  ArrowLeftOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  LinkOutlined,
-  SaveOutlined,
-  CloseOutlined,
-  FileTextOutlined,
-  CodeOutlined,
-  MobileOutlined,
-  DesktopOutlined,
-  CheckOutlined,
-  ReloadOutlined,
-  CopyOutlined,
-  MoreOutlined,
-  FilePdfOutlined,
-  PrinterOutlined,
-  BellOutlined,
-  RobotOutlined
-} from '@ant-design/icons';
+  IconArrowLeft,
+  IconEdit,
+  IconTrash,
+  IconLink,
+  IconDeviceFloppy,
+  IconX,
+  IconFileText,
+  IconCode,
+  IconDeviceMobile,
+  IconDeviceDesktop,
+  IconCheck,
+  IconRefresh,
+  IconCopy,
+  IconDots,
+  IconFileTypePdf,
+  IconPrinter,
+  IconBell,
+  IconRobot,
+  IconUser,
+  IconUsers,
+  IconSignature,
+  IconInfoCircle
+} from '@tabler/icons-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { agreementsApi, Agreement, AgreementSignature } from '@/api/agreements.api';
@@ -46,21 +62,22 @@ import { useReactToPrint } from 'react-to-print';
 import DocumentEditor from '@/components/DocumentEditor';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import './AgreementDetail.css';
 import SignaturesModal from './components/SignaturesModal';
 import AIAgreementEditor from './components/AIAgreementEditor';
-
-const { Text } = Typography;
 
 const AgreementDetail = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const theme = useMantineTheme();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [scroll] = useWindowScroll();
   const [searchParams] = useSearchParams();
   const printRef = useRef<HTMLDivElement>(null);
+  
   const [agreement, setAgreement] = useState<Agreement | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('document');
+  const [activeTab, setActiveTab] = useState<string | null>('document');
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
   const [editedStructure, setEditedStructure] = useState('');
@@ -68,17 +85,15 @@ const AgreementDetail = () => {
   const [detailsDrawerVisible, setDetailsDrawerVisible] = useState(false);
   const [signaturesModalVisible, setSignaturesModalVisible] = useState(false);
   const [aiEditorVisible, setAiEditorVisible] = useState(false);
-
   const [signatureDetailsModal, setSignatureDetailsModal] = useState(false);
   const [selectedSignature, setSelectedSignature] = useState<AgreementSignature | null>(null);
-
   const [viewMode, setViewMode] = useState<'formatted' | 'simple'>('formatted');
-  const [isMobile, setIsMobile] = useState(false);
+  const [deviceType, setDeviceType] = useState<'mobile' | 'desktop'>('desktop');
 
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth <= 768;
-      setIsMobile(mobile);
+      setDeviceType(mobile ? 'mobile' : 'desktop');
       if (mobile && !isEditing) {
         setViewMode('simple');
       }
@@ -107,15 +122,30 @@ const AgreementDetail = () => {
 
   const handleNotifyAgent = async () => {
     if (!agreement || !agreement.request_uuid) {
-      message.error(t('agreementDetail.errors.cannotNotify'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('agreementDetail.errors.cannotNotify'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
       return;
     }
 
     try {
       await agreementsApi.notifyAgent(agreement.id, agreement.request_uuid);
-      message.success(t('agreementDetail.success.agentNotified'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('agreementDetail.success.agentNotified'),
+        color: 'green',
+        icon: <IconCheck size={18} />
+      });
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('agreementDetail.errors.notificationFailed'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('agreementDetail.errors.notificationFailed'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
     }
   };
 
@@ -127,7 +157,12 @@ const AgreementDetail = () => {
       setEditedContent(response.data.data.content || '');
       setEditedStructure(response.data.data.structure || '');
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('agreementDetail.errors.loadFailed'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('agreementDetail.errors.loadFailed'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
       navigate('/agreements');
     } finally {
       setLoading(false);
@@ -135,19 +170,35 @@ const AgreementDetail = () => {
   };
 
   const handleDelete = () => {
-    Modal.confirm({
+    modals.openConfirmModal({
       title: t('agreementDetail.confirm.deleteTitle'),
-      content: t('agreementDetail.confirm.deleteContent'),
-      okText: t('common.delete'),
-      okType: 'danger',
-      cancelText: t('common.cancel'),
-      onOk: async () => {
+      children: (
+        <Text size="sm">
+          {t('agreementDetail.confirm.deleteContent')}
+        </Text>
+      ),
+      labels: {
+        confirm: t('common.delete'),
+        cancel: t('common.cancel')
+      },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
         try {
           await agreementsApi.delete(Number(id));
-          message.success(t('agreementDetail.success.deleted'));
+          notifications.show({
+            title: t('common.success'),
+            message: t('agreementDetail.success.deleted'),
+            color: 'green',
+            icon: <IconCheck size={18} />
+          });
           navigate('/agreements');
         } catch (error: any) {
-          message.error(error.response?.data?.message || t('agreementDetail.errors.deleteFailed'));
+          notifications.show({
+            title: t('errors.generic'),
+            message: error.response?.data?.message || t('agreementDetail.errors.deleteFailed'),
+            color: 'red',
+            icon: <IconX size={18} />
+          });
         }
       }
     });
@@ -161,7 +212,12 @@ const AgreementDetail = () => {
   const copyPublicLink = () => {
     if (agreement) {
       navigator.clipboard.writeText(agreement.public_link);
-      message.success(t('agreementDetail.success.linkCopied'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('agreementDetail.success.linkCopied'),
+        color: 'green',
+        icon: <IconCheck size={18} />
+      });
     }
   };
 
@@ -179,9 +235,19 @@ const AgreementDetail = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      message.success(t('agreementDetail.success.pdfDownloaded'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('agreementDetail.success.pdfDownloaded'),
+        color: 'green',
+        icon: <IconCheck size={18} />
+      });
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('agreementDetail.errors.pdfDownloadFailed'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('agreementDetail.errors.pdfDownloadFailed'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
     }
   };
 
@@ -192,12 +258,11 @@ const AgreementDetail = () => {
     }
   };
 
-const handleSimpleContentChange = (content: string) => {
-  setEditedContent(content);
-  // Конвертируем HTML в structure
-  const newStructure = convertHtmlToStructure(content);
-  setEditedStructure(newStructure);
-};
+  const handleSimpleContentChange = (content: string) => {
+    setEditedContent(content);
+    const newStructure = convertHtmlToStructure(content);
+    setEditedStructure(newStructure);
+  };
 
   const handleSaveEdit = async () => {
     if (!agreement) return;
@@ -208,136 +273,150 @@ const handleSimpleContentChange = (content: string) => {
         content: editedContent,
         structure: editedStructure
       });
-      message.success(t('agreementDetail.success.saved'));
+      notifications.show({
+        title: t('common.success'),
+        message: t('agreementDetail.success.saved'),
+        color: 'green',
+        icon: <IconCheck size={18} />
+      });
       setIsEditing(false);
       await fetchAgreement();
     } catch (error: any) {
-      message.error(error.response?.data?.message || t('agreementDetail.errors.saveFailed'));
+      notifications.show({
+        title: t('errors.generic'),
+        message: error.response?.data?.message || t('agreementDetail.errors.saveFailed'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
     } finally {
       setSaving(false);
     }
   };
-// Конвертация HTML в structure
-const convertHtmlToStructure = (html: string): string => {
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    
-    const structure: any = {
-      title: 'LEASE AGREEMENT',
-      city: 'Phuket',
-      date: new Date().toISOString(),
-      nodes: []
-    };
 
-    // Извлекаем title
-    const h1 = doc.querySelector('h1');
-    if (h1) {
-      structure.title = h1.textContent?.trim() || 'LEASE AGREEMENT';
-    }
+  const convertHtmlToStructure = (html: string): string => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const structure: any = {
+        title: 'LEASE AGREEMENT',
+        city: 'Phuket',
+        date: new Date().toISOString(),
+        nodes: []
+      };
 
-    // Парсим контент
-    let sectionCounter = 1;
-    let currentSection: any = null;
-    const bodyChildren = Array.from(doc.body.children);
+      const h1 = doc.querySelector('h1');
+      if (h1) {
+        structure.title = h1.textContent?.trim() || 'LEASE AGREEMENT';
+      }
 
-    bodyChildren.forEach((element) => {
-      const tagName = element.tagName.toLowerCase();
-      const content = element.textContent?.trim() || '';
+      let sectionCounter = 1;
+      let currentSection: any = null;
+      const bodyChildren = Array.from(doc.body.children);
 
-      if (tagName === 'h1') return;
+      bodyChildren.forEach((element) => {
+        const tagName = element.tagName.toLowerCase();
+        const content = element.textContent?.trim() || '';
 
-      if (tagName === 'h2') {
-        if (currentSection) {
-          structure.nodes.push(currentSection);
+        if (tagName === 'h1') return;
+
+        if (tagName === 'h2') {
+          if (currentSection) {
+            structure.nodes.push(currentSection);
+          }
+          currentSection = {
+            id: `section-${Date.now()}-${sectionCounter}`,
+            type: 'section',
+            content: content,
+            number: sectionCounter.toString(),
+            children: []
+          };
+          sectionCounter++;
+        } else if ((tagName === 'h3' || tagName === 'p') && currentSection) {
+          if (tagName === 'h3') {
+            const subsectionNum = currentSection.children.filter((c: any) => c.type === 'subsection').length + 1;
+            currentSection.children.push({
+              id: `subsection-${Date.now()}-${Math.random()}`,
+              type: 'subsection',
+              content: content.replace(/^\d+(\.\d+)*\.\s*/, ''),
+              number: `${currentSection.number}.${subsectionNum}`,
+              level: 1
+            });
+          } else if (content) {
+            currentSection.children.push({
+              id: `paragraph-${Date.now()}-${Math.random()}`,
+              type: 'paragraph',
+              content: content
+            });
+          }
+        } else if (tagName === 'ul' && currentSection) {
+          const items: string[] = [];
+          element.querySelectorAll('li').forEach((li) => {
+            const itemText = li.textContent?.trim();
+            if (itemText) items.push(itemText);
+          });
+          if (items.length > 0) {
+            currentSection.children.push({
+              id: `bulletlist-${Date.now()}-${Math.random()}`,
+              type: 'bulletList',
+              items: items
+            });
+          }
         }
-        currentSection = {
-          id: `section-${Date.now()}-${sectionCounter}`,
-          type: 'section',
-          content: content,
-          number: sectionCounter.toString(),
-          children: []
-        };
-        sectionCounter++;
-      } else if ((tagName === 'h3' || tagName === 'p') && currentSection) {
-        if (tagName === 'h3') {
-          const subsectionNum = currentSection.children.filter((c: any) => c.type === 'subsection').length + 1;
-          currentSection.children.push({
-            id: `subsection-${Date.now()}-${Math.random()}`,
-            type: 'subsection',
-            content: content.replace(/^\d+(\.\d+)*\.\s*/, ''),
-            number: `${currentSection.number}.${subsectionNum}`,
-            level: 1
-          });
-        } else if (content) {
-          currentSection.children.push({
-            id: `paragraph-${Date.now()}-${Math.random()}`,
-            type: 'paragraph',
-            content: content
-          });
-        }
-      } else if (tagName === 'ul' && currentSection) {
-        const items: string[] = [];
-        element.querySelectorAll('li').forEach((li) => {
-          const itemText = li.textContent?.trim();
-          if (itemText) items.push(itemText);
-        });
-        if (items.length > 0) {
-          currentSection.children.push({
-            id: `bulletlist-${Date.now()}-${Math.random()}`,
-            type: 'bulletList',
-            items: items
-          });
+      });
+
+      if (currentSection) {
+        structure.nodes.push(currentSection);
+      }
+
+      if (structure.nodes.length === 0) {
+        const plainText = doc.body.textContent?.trim() || '';
+        if (plainText) {
+          structure.nodes = [{
+            id: `section-${Date.now()}`,
+            type: 'section',
+            content: 'DOCUMENT CONTENT',
+            number: '1',
+            children: [{
+              id: `paragraph-${Date.now()}`,
+              type: 'paragraph',
+              content: plainText
+            }]
+          }];
         }
       }
-    });
 
-    if (currentSection) {
-      structure.nodes.push(currentSection);
-    }
-
-    if (structure.nodes.length === 0) {
-      const plainText = doc.body.textContent?.trim() || '';
-      if (plainText) {
-        structure.nodes = [{
+      return JSON.stringify(structure);
+    } catch (error) {
+      console.error('Error converting HTML to structure:', error);
+      return JSON.stringify({
+        title: 'LEASE AGREEMENT',
+        city: 'Phuket',
+        date: new Date().toISOString(),
+        nodes: [{
           id: `section-${Date.now()}`,
           type: 'section',
-          content: 'DOCUMENT CONTENT',
+          content: 'CONTENT',
           number: '1',
-          children: [{
-            id: `paragraph-${Date.now()}`,
-            type: 'paragraph',
-            content: plainText
-          }]
-        }];
-      }
+          children: []
+        }]
+      });
     }
-
-    return JSON.stringify(structure);
-  } catch (error) {
-    console.error('Error converting HTML to structure:', error);
-    return JSON.stringify({
-      title: 'LEASE AGREEMENT',
-      city: 'Phuket',
-      date: new Date().toISOString(),
-      nodes: [{
-        id: `section-${Date.now()}`,
-        type: 'section',
-        content: 'CONTENT',
-        number: '1',
-        children: []
-      }]
-    });
-  }
-};
+  };
 
   const handleCancelEdit = () => {
-    Modal.confirm({
+    modals.openConfirmModal({
       title: t('agreementDetail.confirm.cancelEditTitle'),
-      content: t('agreementDetail.confirm.cancelEditContent'),
-      okText: t('agreementDetail.confirm.cancelEditOk'),
-      cancelText: t('agreementDetail.confirm.cancelEditCancel'),
-      onOk: () => {
+      children: (
+        <Text size="sm">
+          {t('agreementDetail.confirm.cancelEditContent')}
+        </Text>
+      ),
+      labels: {
+        confirm: t('agreementDetail.confirm.cancelEditOk'),
+        cancel: t('agreementDetail.confirm.cancelEditCancel')
+      },
+      onConfirm: () => {
         setIsEditing(false);
         setEditedContent(agreement?.content || '');
         setEditedStructure(agreement?.structure || '');
@@ -353,12 +432,23 @@ const convertHtmlToStructure = (html: string): string => {
     setAiEditorVisible(false);
     setIsEditing(false);
     await fetchAgreement();
-    message.success(t('aiAgreementEditor.success.complete'));
+    notifications.show({
+      title: t('common.success'),
+      message: t('aiAgreementEditor.success.complete'),
+      color: 'green',
+      icon: <IconCheck size={18} />
+    });
   };
 
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'formatted' ? 'simple' : 'formatted');
-    message.info(viewMode === 'formatted' ? t('agreementDetail.viewModes.simple') : t('agreementDetail.viewModes.formatted'));
+    notifications.show({
+      message: viewMode === 'formatted' 
+        ? t('agreementDetail.viewModes.simple') 
+        : t('agreementDetail.viewModes.formatted'),
+      color: 'blue',
+      icon: <IconInfoCircle size={18} />
+    });
   };
 
   const handleSignatureDetailsClick = (record: AgreementSignature) => {
@@ -381,9 +471,14 @@ const convertHtmlToStructure = (html: string): string => {
 
   if (loading) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Spin size="large" />
-      </div>
+      <Center h="calc(100vh - 100px)">
+        <Stack align="center" gap="md">
+          <Loader size="lg" />
+          <Text size="sm" c="dimmed">
+            {t('common.loading')}
+          </Text>
+        </Stack>
+      </Center>
     );
   }
 
@@ -393,16 +488,16 @@ const convertHtmlToStructure = (html: string): string => {
 
   const getStatusTag = (status: string) => {
     const statusConfig: Record<string, { color: string; text: string }> = {
-      draft: { color: 'default', text: t('agreementDetail.statuses.draft') },
-      pending_signatures: { color: 'processing', text: t('agreementDetail.statuses.pendingSignatures') },
-      signed: { color: 'success', text: t('agreementDetail.statuses.signed') },
-      active: { color: 'success', text: t('agreementDetail.statuses.active') },
-      expired: { color: 'warning', text: t('agreementDetail.statuses.expired') },
-      cancelled: { color: 'error', text: t('agreementDetail.statuses.cancelled') }
+      draft: { color: 'gray', text: t('agreementDetail.statuses.draft') },
+      pending_signatures: { color: 'blue', text: t('agreementDetail.statuses.pendingSignatures') },
+      signed: { color: 'green', text: t('agreementDetail.statuses.signed') },
+      active: { color: 'teal', text: t('agreementDetail.statuses.active') },
+      expired: { color: 'yellow', text: t('agreementDetail.statuses.expired') },
+      cancelled: { color: 'red', text: t('agreementDetail.statuses.cancelled') }
     };
     
-    const config = statusConfig[status] || { color: 'default', text: status };
-    return <Tag color={config.color}>{config.text}</Tag>;
+    const config = statusConfig[status] || { color: 'gray', text: status };
+    return <Badge color={config.color} variant="light">{config.text}</Badge>;
   };
 
   const getTypeLabel = (type: string) => {
@@ -417,77 +512,80 @@ const convertHtmlToStructure = (html: string): string => {
     return types[type] || type;
   };
 
+  const signedCount = agreement.signatures?.filter(s => s.is_signed).length || 0;
+  const totalCount = agreement.signatures?.length || 0;
+  const signatureProgress = totalCount > 0 ? (signedCount / totalCount) * 100 : 0;
+
   const SignatureDetailsContent = ({ record }: { record: AgreementSignature }) => (
-    <div style={{ 
-      padding: '16px', 
-      background: '#141414',
-      borderRadius: '8px',
-      color: 'rgba(255, 255, 255, 0.85)'
-    }}>
-      <h4 style={{ marginBottom: 16, color: 'rgba(255, 255, 255, 0.95)' }}>
-        {t('agreementDetail.signatureDetails.title')}
-      </h4>
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={12}>
-          <Card 
-            size="small" 
-            title={t('agreementDetail.signatureDetails.sessionInfo')}
-            style={{ background: '#1f1f1f', borderColor: '#303030' }}
-            headStyle={{ background: '#1f1f1f', color: 'rgba(255, 255, 255, 0.85)' }}
-          >
-            <Space direction="vertical" style={{ width: '100%' }} size="small">
+    <Stack gap="md">
+      <Title order={5}>{t('agreementDetail.signatureDetails.title')}</Title>
+      
+      <Grid gutter="md">
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <Card shadow="sm" padding="md" radius="md" withBorder>
+            <Stack gap="xs">
+              <Text size="sm" fw={600}>
+                {t('agreementDetail.signatureDetails.sessionInfo')}
+              </Text>
+              <Divider />
               <div>
-                <Text type="secondary">{t('agreementDetail.signatureDetails.ipAddress')}:</Text>
-                <br />
-                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                <Text size="xs" c="dimmed">
+                  {t('agreementDetail.signatureDetails.ipAddress')}:
+                </Text>
+                <Text size="sm" fw={500}>
                   {record.ip_address || t('agreementDetail.signatureDetails.notDetermined')}
                 </Text>
               </div>
               <div>
-                <Text type="secondary">{t('agreementDetail.signatureDetails.device')}:</Text>
-                <br />
-                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                <Text size="xs" c="dimmed">
+                  {t('agreementDetail.signatureDetails.device')}:
+                </Text>
+                <Text size="sm" fw={500}>
                   {record.device_type || t('agreementDetail.signatureDetails.notDetermined')}
                 </Text>
               </div>
               <div>
-                <Text type="secondary">{t('agreementDetail.signatureDetails.browser')}:</Text>
-                <br />
-                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                <Text size="xs" c="dimmed">
+                  {t('agreementDetail.signatureDetails.browser')}:
+                </Text>
+                <Text size="sm" fw={500}>
                   {record.browser || t('agreementDetail.signatureDetails.notDetermined')}
                 </Text>
               </div>
               <div>
-                <Text type="secondary">{t('agreementDetail.signatureDetails.os')}:</Text>
-                <br />
-                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                <Text size="xs" c="dimmed">
+                  {t('agreementDetail.signatureDetails.os')}:
+                </Text>
+                <Text size="sm" fw={500}>
                   {record.os || t('agreementDetail.signatureDetails.notDetermined')}
                 </Text>
               </div>
-            </Space>
+            </Stack>
           </Card>
-        </Col>
-        <Col xs={24} md={12}>
-          <Card 
-            size="small" 
-            title={t('agreementDetail.signatureDetails.timeMetrics')}
-            style={{ background: '#1f1f1f', borderColor: '#303030' }}
-            headStyle={{ background: '#1f1f1f', color: 'rgba(255, 255, 255, 0.85)' }}
-          >
-            <Space direction="vertical" style={{ width: '100%' }} size="small">
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <Card shadow="sm" padding="md" radius="md" withBorder>
+            <Stack gap="xs">
+              <Text size="sm" fw={600}>
+                {t('agreementDetail.signatureDetails.timeMetrics')}
+              </Text>
+              <Divider />
               <div>
-                <Text type="secondary">{t('agreementDetail.signatureDetails.firstVisit')}:</Text>
-                <br />
-                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                <Text size="xs" c="dimmed">
+                  {t('agreementDetail.signatureDetails.firstVisit')}:
+                </Text>
+                <Text size="sm" fw={500}>
                   {record.first_visit_at 
                     ? new Date(record.first_visit_at).toLocaleString('ru-RU')
                     : t('agreementDetail.signatureDetails.notVisited')}
                 </Text>
               </div>
               <div>
-                <Text type="secondary">{t('agreementDetail.signatureDetails.viewDuration')}:</Text>
-                <br />
-                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                <Text size="xs" c="dimmed">
+                  {t('agreementDetail.signatureDetails.viewDuration')}:
+                </Text>
+                <Text size="sm" fw={500}>
                   {record.agreement_view_duration 
                     ? t('agreementDetail.signatureDetails.timeFormat', {
                         minutes: Math.floor(record.agreement_view_duration / 60),
@@ -497,9 +595,10 @@ const convertHtmlToStructure = (html: string): string => {
                 </Text>
               </div>
               <div>
-                <Text type="secondary">{t('agreementDetail.signatureDetails.totalDuration')}:</Text>
-                <br />
-                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                <Text size="xs" c="dimmed">
+                  {t('agreementDetail.signatureDetails.totalDuration')}:
+                </Text>
+                <Text size="sm" fw={500}>
                   {record.total_session_duration 
                     ? t('agreementDetail.signatureDetails.timeFormat', {
                         minutes: Math.floor(record.total_session_duration / 60),
@@ -509,638 +608,1032 @@ const convertHtmlToStructure = (html: string): string => {
                 </Text>
               </div>
               <div>
-                <Text type="secondary">{t('agreementDetail.signatureDetails.clearCount')}:</Text>
-                <br />
-                <Text strong style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                <Text size="xs" c="dimmed">
+                  {t('agreementDetail.signatureDetails.clearCount')}:
+                </Text>
+                <Text size="sm" fw={500}>
                   {record.signature_clear_count || 0}
                 </Text>
               </div>
-            </Space>
+            </Stack>
           </Card>
-        </Col>
+        </Grid.Col>
+
         {record.is_signed && record.signature_data && (
-          <Col xs={24}>
-            <Card 
-              size="small" 
-              title={t('agreementDetail.signatureDetails.signature')}
-              style={{ background: '#1f1f1f', borderColor: '#303030' }}
-              headStyle={{ background: '#1f1f1f', color: 'rgba(255, 255, 255, 0.85)' }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <img 
-                  src={record.signature_data} 
-                  alt="Signature" 
-                  style={{ 
-                    maxWidth: '300px', 
-                    border: '1px solid #303030',
-                    borderRadius: '4px',
-                    padding: '8px',
-                    background: 'white'
-                  }} 
-                />
-              </div>
+          <Grid.Col span={12}>
+            <Card shadow="sm" padding="md" radius="md" withBorder>
+              <Stack gap="xs">
+                <Text size="sm" fw={600}>
+                  {t('agreementDetail.signatureDetails.signature')}
+                </Text>
+                <Divider />
+                <Center>
+                  <img 
+                    src={record.signature_data} 
+                    alt="Signature" 
+                    style={{ 
+                      maxWidth: '300px', 
+                      border: '1px solid #dee2e6',
+                      borderRadius: '4px',
+                      padding: '8px',
+                      background: 'white'
+                    }} 
+                  />
+                </Center>
+              </Stack>
             </Card>
-          </Col>
+          </Grid.Col>
         )}
+
         {record.signature_link && (
-          <Col xs={24}>
-            <Card 
-              size="small" 
-              title={t('agreementDetail.signatureDetails.signatureLink')}
-              style={{ background: '#1f1f1f', borderColor: '#303030' }}
-              headStyle={{ background: '#1f1f1f', color: 'rgba(255, 255, 255, 0.85)' }}
-            >
-              <Input.Group compact>
-                <Input
-                  style={{ width: 'calc(100% - 100px)' }}
-                  value={`https://agreement.novaestate.company/sign/${record.signature_link}`}
-                  readOnly
-                />
-                <Button 
-                  icon={<CopyOutlined />}
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      `https://agreement.novaestate.company/sign/${record.signature_link}`
-                    );
-                    message.success(t('agreementDetail.success.linkCopied'));
-                  }}
-                >
-                  {t('agreementDetail.actions.copy')}
-                </Button>
-              </Input.Group>
+          <Grid.Col span={12}>
+            <Card shadow="sm" padding="md" radius="md" withBorder>
+              <Stack gap="xs">
+                <Text size="sm" fw={600}>
+                  {t('agreementDetail.signatureDetails.signatureLink')}
+                </Text>
+                <Divider />
+                <Group gap="xs">
+                  <TextInput
+                    value={`https://agreement.novaestate.company/sign/${record.signature_link}`}
+                    readOnly
+                    style={{ flex: 1 }}
+                    styles={{
+                      input: { fontSize: '16px' }
+                    }}
+                  />
+                  <CopyButton value={`https://agreement.novaestate.company/sign/${record.signature_link}`}>
+                    {({ copied, copy }) => (
+                      <Button
+                        color={copied ? 'teal' : 'blue'}
+                        onClick={copy}
+                        leftSection={<IconCopy size={16} />}
+                      >
+                        {copied ? t('common.copied') : t('agreementDetail.actions.copy')}
+                      </Button>
+                    )}
+                  </CopyButton>
+                </Group>
+              </Stack>
             </Card>
-          </Col>
+          </Grid.Col>
         )}
-      </Row>
-    </div>
+      </Grid>
+    </Stack>
   );
 
-  const tabItems = [
-    {
-      key: 'document',
-      label: t('agreementDetail.tabs.document'),
-      children: (
-        <>
-          {isEditing && (
-            <div style={{ marginBottom: 16 }}>
-              <Button
-                type="primary"
-                size="large"
-                icon={<RobotOutlined />}
-                onClick={() => setAiEditorVisible(true)}
+  return (
+    <Stack gap="lg" p={isMobile ? 'sm' : 'md'}>
+      {!isMobile && (
+        <Affix position={{ top: 0, left: 0, right: 0 }} zIndex={100}>
+          <Transition transition="slide-down" mounted={scroll.y > 100}>
+            {(styles) => (
+              <Paper
+                shadow="md"
+                p="md"
                 style={{
-                  background: '#52c41a',
-                  borderColor: '#52c41a',
-                  width: '100%',
-                  height: '48px',
-                  fontSize: '16px',
-                  fontWeight: 'bold'
+                  ...styles,
+                  borderRadius: 0,
+                  borderBottom: `1px solid ${theme.colors.dark[4]}`
                 }}
+              >
+                <Group justify="space-between" wrap="nowrap">
+                  <Group gap="xs">
+                    <ActionIcon
+                      variant="subtle"
+                      onClick={() => navigate('/agreements')}
+                      size="lg"
+                    >
+                      <IconArrowLeft size={20} />
+                    </ActionIcon>
+                    <Text fw={600} size="sm" lineClamp={1}>
+                      {agreement.agreement_number}
+                    </Text>
+                    {getStatusTag(agreement.status)}
+                  </Group>
+                  <Group gap="xs">
+                    {!isEditing ? (
+                      <>
+                        <ActionIcon
+                          variant="light"
+                          color="blue"
+                          onClick={() => setIsEditing(true)}
+                        >
+                          <IconEdit size={18} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="light"
+                          color="red"
+                          onClick={copyPublicLink}
+                        >
+                          <IconLink size={18} />
+                        </ActionIcon>
+                      </>
+                    ) : (
+                      <>
+                        <ActionIcon
+                          variant="filled"
+                          color="green"
+                          onClick={handleSaveEdit}
+                          loading={saving}
+                        >
+                          <IconDeviceFloppy size={18} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="light"
+                          color="gray"
+                          onClick={handleCancelEdit}
+                        >
+                          <IconX size={18} />
+                        </ActionIcon>
+                      </>
+                    )}
+                  </Group>
+                </Group>
+              </Paper>
+            )}
+          </Transition>
+        </Affix>
+      )}
+
+      <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Stack gap="lg">
+          <Group justify="space-between" wrap="wrap">
+            <Group gap="md">
+              <ActionIcon
+                variant="subtle"
+                size="xl"
+                onClick={() => navigate('/agreements')}
+              >
+                <IconArrowLeft size={24} />
+              </ActionIcon>
+              <div>
+                <Title order={isMobile ? 4 : 3}>
+                  {t('agreementDetail.title', { number: agreement.agreement_number })}
+                </Title>
+                <Group gap="xs" mt={4}>
+                  {getStatusTag(agreement.status)}
+                  <Badge variant="outline">{getTypeLabel(agreement.type)}</Badge>
+                </Group>
+              </div>
+            </Group>
+
+            {!isMobile && (
+              <Group gap="xs">
+                {!isEditing ? (
+                  <>
+                    <Button
+                      variant="light"
+                      leftSection={<IconEdit size={18} />}
+                      onClick={() => setIsEditing(true)}
+                      size="sm"
+                    >
+                      {t('agreementDetail.actions.edit')}
+                    </Button>
+                    <Button
+                      variant="light"
+                      leftSection={<IconFileTypePdf size={18} />}
+                      onClick={handleDownloadPDF}
+                      size="sm"
+                    >
+                      PDF
+                    </Button>
+                    <Button
+                      variant="light"
+                      leftSection={<IconPrinter size={18} />}
+                      onClick={handlePrint}
+                      size="sm"
+                    >
+                      {t('agreementDetail.actions.print')}
+                    </Button>
+                    <CopyButton value={agreement.public_link}>
+                      {({ copied, copy }) => (
+                        <Button
+                          variant="light"
+                          color={copied ? 'teal' : 'blue'}
+                          leftSection={<IconLink size={18} />}
+                          onClick={copy}
+                          size="sm"
+                        >
+                          {copied ? t('common.copied') : t('agreementDetail.actions.link')}
+                        </Button>
+                      )}
+                    </CopyButton>
+                    {agreement.request_uuid && totalCount > 0 && (
+                      <Button
+                        variant="light"
+                        color="green"
+                        leftSection={<IconBell size={18} />}
+                        onClick={handleNotifyAgent}
+                        size="sm"
+                      >
+                        {t('agreementDetail.actions.notifyAgent')}
+                      </Button>
+                    )}
+                    <Menu position="bottom-end" shadow="md">
+                      <Menu.Target>
+                        <ActionIcon variant="light" size="lg">
+                          <IconDots size={18} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconTrash size={16} />}
+                          color="red"
+                          onClick={handleDelete}
+                        >
+                          {t('common.delete')}
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      leftSection={<IconDeviceFloppy size={18} />}
+                      onClick={handleSaveEdit}
+                      loading={saving}
+                      size="sm"
+                    >
+                      {t('common.save')}
+                    </Button>
+                    <Button
+                      variant="light"
+                      leftSection={<IconX size={18} />}
+                      onClick={handleCancelEdit}
+                      size="sm"
+                    >
+                      {t('common.cancel')}
+                    </Button>
+                  </>
+                )}
+              </Group>
+            )}
+          </Group>
+
+          {isMobile && (
+            <Paper p="sm" radius="md" withBorder>
+              {!isEditing ? (
+                <Group justify="space-between" wrap="nowrap">
+                  <Group gap="xs" wrap="nowrap">
+                    <ActionIcon
+                      variant="light"
+                      color="blue"
+                      size="lg"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <IconEdit size={20} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="light"
+                      color="red"
+                      size="lg"
+                      onClick={handleDownloadPDF}
+                    >
+                      <IconFileTypePdf size={20} />
+                    </ActionIcon>
+                    <CopyButton value={agreement.public_link}>
+                      {({ copied, copy }) => (
+                        <ActionIcon
+                          variant="light"
+                          color={copied ? 'teal' : 'blue'}
+                          size="lg"
+                          onClick={copy}
+                        >
+                          <IconLink size={20} />
+                        </ActionIcon>
+                      )}
+                    </CopyButton>
+                    <ActionIcon
+                      variant="light"
+                      color="gray"
+                      size="lg"
+                      onClick={handlePrint}
+                    >
+                      <IconPrinter size={20} />
+                    </ActionIcon>
+                  </Group>
+                  <Menu position="bottom-end" shadow="md">
+                    <Menu.Target>
+                      <ActionIcon variant="light" color="gray" size="lg">
+                        <IconDots size={20} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {agreement.request_uuid && totalCount > 0 && (
+                        <>
+                          <Menu.Item
+                            leftSection={<IconBell size={16} />}
+                            onClick={handleNotifyAgent}
+                          >
+                            {t('agreementDetail.actions.notifyAgent')}
+                          </Menu.Item>
+                          <Menu.Divider />
+                        </>
+                      )}
+                      <Menu.Item
+                        color="red"
+                        leftSection={<IconTrash size={16} />}
+                        onClick={handleDelete}
+                      >
+                        {t('common.delete')}
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+              ) : (
+                <Group justify="center" gap="md">
+                  <Button
+                    leftSection={<IconDeviceFloppy size={18} />}
+                    onClick={handleSaveEdit}
+                    loading={saving}
+                    size="sm"
+                    style={{ flex: 1 }}
+                  >
+                    {t('common.save')}
+                  </Button>
+                  <Button
+                    variant="light"
+                    leftSection={<IconX size={18} />}
+                    onClick={handleCancelEdit}
+                    size="sm"
+                    style={{ flex: 1 }}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                </Group>
+              )}
+            </Paper>
+          )}
+
+          {totalCount > 0 && (
+            <Card shadow="xs" padding="md" radius="md" withBorder>
+              <Group justify="space-between" wrap="wrap">
+                <Group gap="md">
+                  <RingProgress
+                    size={60}
+                    thickness={6}
+                    sections={[
+                      { value: signatureProgress, color: signatureProgress === 100 ? 'green' : 'blue' }
+                    ]}
+                    label={
+                      <Center>
+                        <Text size="xs" fw={700}>
+                          {signedCount}/{totalCount}
+                        </Text>
+                      </Center>
+                    }
+                  />
+                  <div>
+                    <Text size="sm" fw={600}>
+                      {t('agreementDetail.fields.signatures')}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {signedCount === totalCount 
+                        ? t('agreementDetail.allSigned')
+                        : t('agreementDetail.waitingForSignatures')}
+                    </Text>
+                  </div>
+                </Group>
+                <Button
+                  variant="light"
+                  size="xs"
+                  onClick={() => setActiveTab('signatures')}
+                  rightSection={<IconSignature size={14} />}
+                >
+                  {t('agreementDetail.viewSignatures')}
+                </Button>
+              </Group>
+            </Card>
+          )}
+        </Stack>
+      </Card>
+
+      <Tabs value={activeTab} onChange={setActiveTab}>
+        <Tabs.List grow={isMobile}>
+          <Tabs.Tab
+            value="document"
+            leftSection={<IconFileText size={18} />}
+          >
+            {t('agreementDetail.tabs.document')}
+          </Tabs.Tab>
+          <Tabs.Tab
+            value="details"
+            leftSection={<IconInfoCircle size={18} />}
+          >
+            {t('agreementDetail.tabs.details')}
+          </Tabs.Tab>
+          <Tabs.Tab
+            value="parties"
+            leftSection={<IconUsers size={18} />}
+          >
+            {t('agreementDetail.tabs.parties')}
+          </Tabs.Tab>
+          <Tabs.Tab
+            value="signatures"
+            leftSection={<IconSignature size={18} />}
+          >
+            {t('agreementDetail.tabs.signatures')}
+          </Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value="document" pt="xl">
+          <Stack gap="md">
+            {isEditing && (
+              <Button
+                size="lg"
+                fullWidth
+                leftSection={<IconRobot size={20} />}
+                onClick={() => setAiEditorVisible(true)}
+                color="green"
+                variant="gradient"
+                gradient={{ from: 'teal', to: 'lime' }}
               >
                 {t('aiAgreementEditor.button')}
               </Button>
-            </div>
-          )}
-          <div className="agreement-document-container">
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              marginBottom: '16px',
-              padding: '12px',
-              background: '#1f1f1f',
-              borderRadius: '4px',
-              border: '1px solid #303030',
-              flexWrap: 'wrap',
-              gap: '8px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {isMobile ? <MobileOutlined /> : <DesktopOutlined />}
-                <span style={{ fontSize: '12px', color: '#888' }}>
-                  {isMobile ? t('agreementDetail.deviceTypes.mobile') : t('agreementDetail.deviceTypes.desktop')}
-                </span>
-              </div>
+            )}
 
-              <Space>
-                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)' }}>
-                  {viewMode === 'formatted' 
-                    ? t('agreementDetail.viewModes.formatted') 
-                    : t('agreementDetail.viewModes.simple')}
-                </span>
-                <Switch
-                  checked={viewMode === 'formatted'}
-                  onChange={toggleViewMode}
-                  checkedChildren={<FileTextOutlined />}
-                  unCheckedChildren={<CodeOutlined />}
-                />
-              </Space>
-            </div>
+            <Card shadow="sm" padding="md" radius="md" withBorder>
+              <Group justify="space-between" mb="md">
+                <Group gap="xs">
+                  {deviceType === 'mobile' ? <IconDeviceMobile size={18} /> : <IconDeviceDesktop size={18} />}
+                  <Text size="xs" c="dimmed">
+                    {deviceType === 'mobile' 
+                      ? t('agreementDetail.deviceTypes.mobile') 
+                      : t('agreementDetail.deviceTypes.desktop')}
+                  </Text>
+                </Group>
 
-            <div style={{ display: 'none' }}>
-              <div ref={printRef}>
-                <DocumentEditor
-                  agreement={agreement}
-                  isEditing={false}
-                  logoUrl="/nova-logo.svg"
-                />
-              </div>
-            </div>
-
-            {isEditing ? (
-              viewMode === 'formatted' ? (
-                <DocumentEditor
-                  agreement={agreement}
-                  isEditing={true}
-                  onContentChange={handleContentChange}
-                  logoUrl="/nova-logo.svg"
-                />
-              ) : (
-                <div className="agreement-simple-view">
-                  <ReactQuill
-                    value={editedContent}
-                    onChange={handleSimpleContentChange}
-                    modules={modules}
-                    theme="snow"
-                    style={{ height: '600px', marginBottom: '50px' }}
+                <Group gap="xs">
+                  <Text size="xs" c="dimmed">
+                    {viewMode === 'formatted' 
+                      ? t('agreementDetail.viewModes.formatted') 
+                      : t('agreementDetail.viewModes.simple')}
+                  </Text>
+                  <Switch
+                    checked={viewMode === 'formatted'}
+                    onChange={toggleViewMode}
+                    onLabel={<IconFileText size={12} />}
+                    offLabel={<IconCode size={12} />}
                   />
-                </div>
-              )
-            ) : (
-              viewMode === 'formatted' ? (
-                <div className={isMobile ? 'document-editor-wrapper mobile-zoom' : 'document-editor-wrapper'}>
+                </Group>
+              </Group>
+
+              <div style={{ display: 'none' }}>
+                <div ref={printRef}>
                   <DocumentEditor
                     agreement={agreement}
                     isEditing={false}
                     logoUrl="/nova-logo.svg"
                   />
                 </div>
-              ) : (
-                <div className="agreement-simple-view">
-                  <ReactQuill
-                    value={agreement.content}
-                    readOnly={true}
-                    theme="snow"
-                    modules={{ toolbar: false }}
-                    style={{ height: 'auto' }}
-                  />
-                </div>
-              )
-            )}
-          </div>
-        </>
-      )
-    },
-    {
-      key: 'details',
-      label: t('agreementDetail.tabs.details'),
-      children: (
-        <Card>
-          <Descriptions column={{ xs: 1, sm: 1, md: 2 }} bordered size="small">
-            <Descriptions.Item label={t('agreementDetail.fields.agreementNumber')}>
-              {agreement.agreement_number}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('agreementDetail.fields.type')}>
-              {getTypeLabel(agreement.type)}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('agreementDetail.fields.status')}>
-              {getStatusTag(agreement.status)}
-            </Descriptions.Item>
-            {agreement.property_name && (
-              <Descriptions.Item label={t('agreementDetail.fields.property')}>
-                {agreement.property_name} ({agreement.property_number})
-              </Descriptions.Item>
-            )}
-            {agreement.description && (
-              <Descriptions.Item label={t('agreementDetail.fields.description')} span={2}>
-                {agreement.description}
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label={t('agreementDetail.fields.city')}>
-              {agreement.city}
-            </Descriptions.Item>
-            {agreement.date_from && (
-              <Descriptions.Item label={t('agreementDetail.fields.dateFrom')}>
-                {new Date(agreement.date_from).toLocaleDateString('ru-RU')}
-              </Descriptions.Item>
-            )}
-            {agreement.date_to && (
-              <Descriptions.Item label={t('agreementDetail.fields.dateTo')}>
-                {new Date(agreement.date_to).toLocaleDateString('ru-RU')}
-              </Descriptions.Item>
-            )}
-            {agreement.rent_amount_monthly && (
-              <Descriptions.Item label={t('agreementDetail.fields.rentMonthly')}>
-                {agreement.rent_amount_monthly.toLocaleString('ru-RU')} ₿
-              </Descriptions.Item>
-            )}
-            {agreement.deposit_amount && (
-              <Descriptions.Item label={t('agreementDetail.fields.deposit')}>
-                {agreement.deposit_amount.toLocaleString('ru-RU')} ₿
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label={t('agreementDetail.fields.created')}>
-              {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
-            </Descriptions.Item>
-            {agreement.created_by_name && (
-              <Descriptions.Item label={t('agreementDetail.fields.author')}>
-                {agreement.created_by_name}
-              </Descriptions.Item>
-            )}
-          </Descriptions>
-        </Card>
-      )
-    },
-    {
-      key: 'parties',
-      label: t('agreementDetail.tabs.parties'),
-      children: (
-        <Card>
-          {agreement.parties && agreement.parties.length > 0 ? (
-            <div className="parties-list">
-              {agreement.parties.map((party, index) => (
-                <Card 
-                  key={index} 
-                  size="small" 
-                  style={{ marginBottom: '12px' }}
-                  className="party-card"
-                >
-                  <div className="party-info">
-                    <div className="party-role">
-                      <Tag color="blue">{party.role}</Tag>
-                    </div>
-                    <div className="party-details">
-                      <div><strong>{party.name}</strong></div>
-                      <div className="party-passport">
-                        {t('agreementDetail.fields.country')}: {party.passport_country}
-                      </div>
-                      <div className="party-passport">
-                        {t('agreementDetail.fields.passport')}: {party.passport_number}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-              {t('agreementDetail.messages.noParties')}
-            </div>
-          )}
-        </Card>
-      )
-    },
-    {
-      key: 'signatures',
-      label: t('agreementDetail.tabs.signatures'),
-      children: (
-        <Card>
-          <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => setSignaturesModalVisible(true)}
-              disabled={!agreement.parties || agreement.parties.length === 0}
-            >
-              {agreement.signatures && agreement.signatures.length > 0 
-                ? t('agreementDetail.actions.manageSignatures') 
-                : t('agreementDetail.actions.sendForSignature')}
-            </Button>
-            {agreement.signatures && agreement.signatures.length > 0 && (
-              <Tag color={agreement.signatures.every(s => s.is_signed) ? 'success' : 'processing'}>
-                {t('agreementDetail.fields.signedCount', {
-                  signed: agreement.signatures.filter(s => s.is_signed).length,
-                  total: agreement.signatures.length
-                })}
-              </Tag>
-            )}
-          </Space>
-
-          {agreement.signatures && agreement.signatures.length > 0 ? (
-            <Table
-              dataSource={agreement.signatures}
-              rowKey="id"
-              pagination={false}
-              size="small"
-              scroll={{ x: 1200 }}
-              expandable={
-                isMobile ? undefined : {
-                  expandedRowRender: (record) => (
-                    <SignatureDetailsContent record={record} />
-                  ),
-                  rowExpandable: () => true,
-                }
-              }
-              onRow={(record) => {
-                return isMobile ? {
-                  onClick: () => handleSignatureDetailsClick(record),
-                } : {};
-              }}
-              columns={[
-                {
-                  title: t('agreementDetail.table.signer'),
-                  dataIndex: 'signer_name',
-                  key: 'signer_name',
-                  width: 200,
-                  render: (text, record) => (
-                    <Space direction="vertical" size="small">
-                      <Text strong>{text}</Text>
-                      <Tag color="blue">{record.signer_role}</Tag>
-                    </Space>
-                  )
-                },
-                {
-                  title: t('agreementDetail.table.status'),
-                  dataIndex: 'is_signed',
-                  key: 'is_signed',
-                  width: 120,
-                  render: (is_signed, record) => (
-                    <Space direction="vertical" size="small">
-                      <Tag color={is_signed ? 'success' : 'default'} icon={is_signed ? <CheckOutlined /> : null}>
-                        {is_signed ? t('agreementDetail.statuses.signed') : t('agreementDetail.statuses.waiting')}
-                      </Tag>
-                      {is_signed && record.signed_at && (
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {new Date(record.signed_at).toLocaleDateString('ru-RU')}
-                        </Text>
-                      )}
-                    </Space>
-                  )
-                },
-                {
-                  title: t('agreementDetail.table.device'),
-                  dataIndex: 'device_type',
-                  key: 'device_type',
-                  width: 120,
-                  responsive: ['lg'],
-                  render: (device) => device || '-'
-                },
-                {
-                  title: t('agreementDetail.table.ipAddress'),
-                  dataIndex: 'ip_address',
-                  key: 'ip_address',
-                  width: 140,
-                  responsive: ['lg'],
-                  render: (ip) => ip || '-'
-                },
-                {
-                  title: t('agreementDetail.table.viewTime'),
-                  dataIndex: 'agreement_view_duration',
-                  key: 'agreement_view_duration',
-                  width: 140,
-                  responsive: ['xl'],
-                  render: (duration) => duration 
-                    ? t('agreementDetail.signatureDetails.timeFormat', {
-                        minutes: Math.floor(duration / 60),
-                        seconds: duration % 60
-                      })
-                    : '-'
-                },
-                {
-                  title: t('agreementDetail.table.actions'),
-                  key: 'actions',
-                  width: 80,
-                  fixed: 'right',
-                  render: (_, record) => (
-                    <Dropdown
-                      menu={{
-                        items: [
-                          ...(record.signature_link && !record.is_signed ? [{
-                            key: 'copy',
-                            icon: <CopyOutlined />,
-                            label: t('agreementDetail.actions.copyLink'),
-                            onClick: () => {
-                              navigator.clipboard.writeText(
-                                `https://agreement.novaestate.company/sign/${record.signature_link}`
-                              );
-                              message.success(t('agreementDetail.success.linkCopied'));
-                            }
-                          },
-                          {
-                            key: 'regenerate',
-                            icon: <ReloadOutlined />,
-                            label: t('agreementDetail.actions.regenerateLink'),
-                            onClick: async () => {
-                              try {
-                                const response = await agreementsApi.regenerateSignatureLink(record.id);
-                                message.success(t('agreementDetail.success.linkRegenerated'));
-                                navigator.clipboard.writeText(response.data.data.public_url);
-                                fetchAgreement();
-                              } catch (error: any) {
-                                message.error(t('agreementDetail.errors.regenerateFailed'));
-                              }
-                            }
-                          }] : []),
-                          {
-                            type: 'divider'
-                          },
-                          {
-                            key: 'delete',
-                            icon: <DeleteOutlined />,
-                            label: t('common.delete'),
-                            danger: true,
-                            onClick: () => {
-                              Modal.confirm({
-                                title: t('agreementDetail.confirm.deleteSignatureTitle'),
-                                content: t('agreementDetail.confirm.deleteContent'),
-                                okText: t('common.delete'),
-                                okType: 'danger',
-                                cancelText: t('common.cancel'),
-                                onOk: async () => {
-                                  try {
-                                    await agreementsApi.deleteSignature(record.id);
-                                    message.success(t('agreementDetail.success.signatureDeleted'));
-                                    fetchAgreement();
-                                  } catch (error: any) {
-                                    message.error(t('agreementDetail.errors.deleteFailed'));
-                                  }
-                                }
-                              });
-                            }
-                          }
-                        ]
-                      }}
-                    >
-                      <Button size="small" icon={<MoreOutlined />} />
-                    </Dropdown>
-                  )
-                }
-              ]}
-            />
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-              <FileTextOutlined style={{ fontSize: 48, marginBottom: 16, color: '#d9d9d9' }} />
-              <div>{t('agreementDetail.messages.noSignatures')}</div>
-              <div style={{ fontSize: 12, marginTop: 8 }}>
-                {t('agreementDetail.messages.noSignaturesHint')}
               </div>
-            </div>
-          )}
-        </Card>
-      )
-    }
-  ];
 
-  return (
-    <div className="agreement-detail-container">
-      <Card className="agreement-header-card">
-        <div className="agreement-header-content">
-          <div className="agreement-header-left">
-            <Button 
-              icon={<ArrowLeftOutlined />} 
-              onClick={() => navigate('/agreements')}
-              className="back-button"
-            >
-              <span className="back-button-text">{t('agreementDetail.actions.back')}</span>
-            </Button>
-            <div className="agreement-title-section">
-              <h2 className="agreement-title">
-                {t('agreementDetail.title', { number: agreement.agreement_number })}
-              </h2>
-              {getStatusTag(agreement.status)}
-            </div>
-          </div>
-          
-          <Space className="agreement-actions" wrap>
-            {!isEditing ? (
-              <>
-                <Button 
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={() => setIsEditing(true)}
-                  className="action-button"
-                >
-                  <span className="action-button-text">{t('agreementDetail.actions.edit')}</span>
-                </Button>
-                <Button 
-                  type="primary"
-                  icon={<FilePdfOutlined />}
-                  onClick={handleDownloadPDF}
-                  className="action-button"
-                >
-                  <span className="action-button-text">{t('agreementDetail.actions.downloadPDF')}</span>
-                </Button>
-                <Button 
-                  type="primary"
-                  icon={<PrinterOutlined />}
-                  onClick={handlePrint}
-                  className="action-button"
-                >
-                  <span className="action-button-text">{t('agreementDetail.actions.print')}</span>
-                </Button>
-                <Button 
-                  type="primary"
-                  icon={<LinkOutlined />}
-                  onClick={copyPublicLink}
-                  className="action-button"
-                >
-                  <span className="action-button-text">{t('agreementDetail.actions.link')}</span>
-                </Button>
-                {agreement.request_uuid && agreement.signatures && agreement.signatures.length > 0 && (
-                  <Button 
-                    icon={<BellOutlined />}
-                    onClick={handleNotifyAgent}
-                    type="primary"
-                    style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                    className="action-button"
+              {isEditing ? (
+                viewMode === 'formatted' ? (
+                  <DocumentEditor
+                    agreement={agreement}
+                    isEditing={true}
+                    onContentChange={handleContentChange}
+                    logoUrl="/nova-logo.svg"
+                  />
+                ) : (
+                  <Box style={{ minHeight: 600 }}>
+                    <ReactQuill
+                      value={editedContent}
+                      onChange={handleSimpleContentChange}
+                      modules={modules}
+                      theme="snow"
+                      style={{ height: '600px', marginBottom: '50px' }}
+                    />
+                  </Box>
+                )
+              ) : (
+                viewMode === 'formatted' ? (
+                  <Box style={deviceType === 'mobile' ? { 
+                    transform: 'scale(0.7)', 
+                    transformOrigin: 'top left',
+                    width: '142.85%',
+                    marginBottom: '-100px'
+                  } : {}}>
+                    <DocumentEditor
+                      agreement={agreement}
+                      isEditing={false}
+                      logoUrl="/nova-logo.svg"
+                    />
+                  </Box>
+                ) : (
+                  <Box>
+                    <ReactQuill
+                      value={agreement.content}
+                      readOnly={true}
+                      theme="snow"
+                      modules={{ toolbar: false }}
+                      style={{ minHeight: 400 }}
+                    />
+                  </Box>
+                )
+              )}
+            </Card>
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="details" pt="xl">
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Grid gutter="md">
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Stack gap={4}>
+                  <Text size="xs" c="dimmed">
+                    {t('agreementDetail.fields.agreementNumber')}
+                  </Text>
+                  <Text size="sm" fw={600}>
+                    {agreement.agreement_number}
+                  </Text>
+                </Stack>
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Stack gap={4}>
+                  <Text size="xs" c="dimmed">
+                    {t('agreementDetail.fields.type')}
+                  </Text>
+                  <Text size="sm" fw={600}>
+                    {getTypeLabel(agreement.type)}
+                  </Text>
+                </Stack>
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Stack gap={4}>
+                  <Text size="xs" c="dimmed">
+                    {t('agreementDetail.fields.status')}
+                  </Text>
+                  <div>
+                    {getStatusTag(agreement.status)}
+                  </div>
+                </Stack>
+              </Grid.Col>
+              {agreement.property_name && (
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed">
+                      {t('agreementDetail.fields.property')}
+                    </Text>
+                    <Text size="sm" fw={600}>
+                      {agreement.property_name} ({agreement.property_number})
+                    </Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+              {agreement.description && (
+                <Grid.Col span={12}>
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed">
+                      {t('agreementDetail.fields.description')}
+                    </Text>
+                    <Text size="sm">
+                      {agreement.description}
+                    </Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Stack gap={4}>
+                  <Text size="xs" c="dimmed">
+                    {t('agreementDetail.fields.city')}
+                  </Text>
+                  <Text size="sm" fw={600}>
+                    {agreement.city}
+                  </Text>
+                </Stack>
+              </Grid.Col>
+              {agreement.date_from && (
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed">
+                      {t('agreementDetail.fields.dateFrom')}
+                    </Text>
+                    <Text size="sm" fw={600}>
+                      {new Date(agreement.date_from).toLocaleDateString('ru-RU')}
+                    </Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+              {agreement.date_to && (
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed">
+                      {t('agreementDetail.fields.dateTo')}
+                    </Text>
+                    <Text size="sm" fw={600}>
+                      {new Date(agreement.date_to).toLocaleDateString('ru-RU')}
+                    </Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+              {agreement.rent_amount_monthly && (
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed">
+                      {t('agreementDetail.fields.rentMonthly')}
+                    </Text>
+                    <Text size="sm" fw={600}>
+                      {agreement.rent_amount_monthly.toLocaleString('ru-RU')} ₿
+                    </Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+              {agreement.deposit_amount && (
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed">
+                      {t('agreementDetail.fields.deposit')}
+                    </Text>
+                    <Text size="sm" fw={600}>
+                      {agreement.deposit_amount.toLocaleString('ru-RU')} ₿
+                    </Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Stack gap={4}>
+                  <Text size="xs" c="dimmed">
+                    {t('agreementDetail.fields.created')}
+                  </Text>
+                  <Text size="sm" fw={600}>
+                    {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
+                  </Text>
+                </Stack>
+              </Grid.Col>
+              {agreement.created_by_name && (
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed">
+                      {t('agreementDetail.fields.author')}
+                    </Text>
+                    <Text size="sm" fw={600}>
+                      {agreement.created_by_name}
+                    </Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+            </Grid>
+          </Card>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="parties" pt="xl">
+          {agreement.parties && agreement.parties.length > 0 ? (
+            <Grid gutter="md">
+              {agreement.parties.map((party, index) => (
+                <Grid.Col key={index} span={{ base: 12, md: 6 }}>
+                  <Card
+                    shadow="sm"
+                    padding="md"
+                    radius="md"
+                    withBorder
+                    style={{
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = theme.shadows.md;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = theme.shadows.sm;
+                    }}
                   >
-                    <span className="action-button-text">{t('agreementDetail.actions.notifyAgent')}</span>
-                  </Button>
-                )}
-                <Button 
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={handleDelete}
-                  className="action-button delete-button"
-                >
-                  <span className="action-button-text">{t('common.delete')}</span>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  type="primary"
-                  icon={<SaveOutlined />}
-                  onClick={handleSaveEdit}
-                  loading={saving}
-                >
-                  {t('common.save')}
-                </Button>
-                <Button 
-                  icon={<CloseOutlined />}
-                  onClick={handleCancelEdit}
-                >
-                  {t('common.cancel')}
-                </Button>
-              </>
-            )}
-          </Space>
-        </div>
-      </Card>
+                    <Stack gap="sm">
+                      <Group justify="space-between">
+                        <Badge color="blue" variant="light">
+                          {party.role}
+                        </Badge>
+                      </Group>
+                      <div>
+                        <Text fw={600}>{party.name}</Text>
+                      </div>
+                      <Divider />
+                      <Stack gap={4}>
+                        <Group gap="xs">
+                          <Text size="xs" c="dimmed">
+                            {t('agreementDetail.fields.country')}:
+                          </Text>
+                          <Text size="xs" fw={500}>
+                            {party.passport_country}
+                          </Text>
+                        </Group>
+                        <Group gap="xs">
+                          <Text size="xs" c="dimmed">
+                            {t('agreementDetail.fields.passport')}:
+                          </Text>
+                          <Text size="xs" fw={500}>
+                            {party.passport_number}
+                          </Text>
+                        </Group>
+                      </Stack>
+                    </Stack>
+                  </Card>
+                </Grid.Col>
+              ))}
+            </Grid>
+          ) : (
+            <Paper shadow="sm" p="xl" radius="md" withBorder>
+              <Center>
+                <Stack align="center" gap="md">
+                  <IconUser size={48} color={theme.colors.gray[5]} />
+                  <Text size="lg" c="dimmed">
+                    {t('agreementDetail.messages.noParties')}
+                  </Text>
+                </Stack>
+              </Center>
+            </Paper>
+          )}
+        </Tabs.Panel>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems}
-        className="agreement-tabs"
-      />
+        <Tabs.Panel value="signatures" pt="xl">
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Stack gap="lg">
+              <Group justify="space-between" wrap="wrap">
+                <Button
+                  leftSection={<IconEdit size={18} />}
+                  onClick={() => setSignaturesModalVisible(true)}
+                  disabled={!agreement.parties || agreement.parties.length === 0}
+                  size={isMobile ? 'xs' : 'sm'}
+                >
+                  {totalCount > 0 
+                    ? t('agreementDetail.actions.manageSignatures') 
+                    : t('agreementDetail.actions.sendForSignature')}
+                </Button>
+                {totalCount > 0 && (
+                  <Progress
+                    value={signatureProgress}
+                    w={isMobile ? '100%' : 200}
+                    color={signatureProgress === 100 ? 'green' : 'blue'}
+                    animated={signatureProgress < 100}
+                  />
+                )}
+              </Group>
+
+              {totalCount > 0 ? (
+                <Stack gap="md">
+                  {isMobile ? (
+                    agreement.signatures?.map((signature) => (
+                      <Card
+                        key={signature.id}
+                        shadow="xs"
+                        padding="sm"
+                        radius="md"
+                        withBorder
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => handleSignatureDetailsClick(signature)}
+                      >
+                        <Stack gap="xs">
+                          <Group justify="space-between">
+                            <div>
+                              <Text size="sm" fw={600}>
+                                {signature.signer_name}
+                              </Text>
+                              <Badge size="xs" color="blue" variant="light" mt={4}>
+                                {signature.signer_role}
+                              </Badge>
+                            </div>
+                            <Badge
+                              color={signature.is_signed ? 'green' : 'gray'}
+                              variant="light"
+                              leftSection={signature.is_signed ? <IconCheck size={12} /> : undefined}
+                            >
+                              {signature.is_signed 
+                                ? t('agreementDetail.statuses.signed') 
+                                : t('agreementDetail.statuses.waiting')}
+                            </Badge>
+                          </Group>
+                          {signature.is_signed && signature.signed_at && (
+                            <Text size="xs" c="dimmed">
+                              {new Date(signature.signed_at).toLocaleDateString('ru-RU')}
+                            </Text>
+                          )}
+                        </Stack>
+                      </Card>
+                    ))
+                  ) : (
+                    <Table striped highlightOnHover withTableBorder>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th>{t('agreementDetail.table.signer')}</Table.Th>
+                          <Table.Th>{t('agreementDetail.table.status')}</Table.Th>
+                          <Table.Th>{t('agreementDetail.table.device')}</Table.Th>
+                          <Table.Th>{t('agreementDetail.table.ipAddress')}</Table.Th>
+                          <Table.Th>{t('agreementDetail.table.viewTime')}</Table.Th>
+                          <Table.Th>{t('agreementDetail.table.actions')}</Table.Th>
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {agreement.signatures?.map((signature) => (
+                          <>
+                            <Table.Tr key={signature.id}>
+                              <Table.Td>
+                                <Stack gap={4}>
+                                  <Text size="sm" fw={600}>
+                                    {signature.signer_name}
+                                  </Text>
+                                  <Badge size="xs" color="blue" variant="light">
+                                    {signature.signer_role}
+                                  </Badge>
+                                </Stack>
+                              </Table.Td>
+                              <Table.Td>
+                                <Stack gap={4}>
+                                  <Badge
+                                    color={signature.is_signed ? 'green' : 'gray'}
+                                    variant="light"
+                                    leftSection={signature.is_signed ? <IconCheck size={12} /> : undefined}
+                                  >
+                                    {signature.is_signed 
+                                      ? t('agreementDetail.statuses.signed') 
+                                      : t('agreementDetail.statuses.waiting')}
+                                  </Badge>
+                                  {signature.is_signed && signature.signed_at && (
+                                    <Text size="xs" c="dimmed">
+                                      {new Date(signature.signed_at).toLocaleDateString('ru-RU')}
+                                    </Text>
+                                  )}
+                                </Stack>
+                              </Table.Td>
+                              <Table.Td>
+                                <Text size="sm">
+                                  {signature.device_type || '—'}
+                                </Text>
+                              </Table.Td>
+                              <Table.Td>
+                                <Text size="sm">
+                                  {signature.ip_address || '—'}
+                                </Text>
+                              </Table.Td>
+                              <Table.Td>
+                                <Text size="sm">
+                                  {signature.agreement_view_duration 
+                                    ? t('agreementDetail.signatureDetails.timeFormat', {
+                                        minutes: Math.floor(signature.agreement_view_duration / 60),
+                                        seconds: signature.agreement_view_duration % 60
+                                      })
+                                    : '—'}
+                                </Text>
+                              </Table.Td>
+                              <Table.Td>
+                                <Menu position="bottom-end" shadow="md">
+                                  <Menu.Target>
+                                    <ActionIcon variant="subtle" size="sm">
+                                      <IconDots size={16} />
+                                    </ActionIcon>
+                                  </Menu.Target>
+                                  <Menu.Dropdown>
+                                    {signature.signature_link && !signature.is_signed && (
+                                      <>
+                                        <Menu.Item
+                                          leftSection={<IconCopy size={16} />}
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(
+                                              `https://agreement.novaestate.company/sign/${signature.signature_link}`
+                                            );
+                                            notifications.show({
+                                              title: t('common.success'),
+                                              message: t('agreementDetail.success.linkCopied'),
+                                              color: 'green',
+                                              icon: <IconCheck size={18} />
+                                            });
+                                          }}
+                                        >
+                                          {t('agreementDetail.actions.copyLink')}
+                                        </Menu.Item>
+                                        <Menu.Item
+                                          leftSection={<IconRefresh size={16} />}
+                                          onClick={async () => {
+                                            try {
+                                              const response = await agreementsApi.regenerateSignatureLink(signature.id);
+                                              notifications.show({
+                                                title: t('common.success'),
+                                                message: t('agreementDetail.success.linkRegenerated'),
+                                                color: 'green',
+                                                icon: <IconCheck size={18} />
+                                              });
+                                              navigator.clipboard.writeText(response.data.data.public_url);
+                                              fetchAgreement();
+                                            } catch (error: any) {
+                                              notifications.show({
+                                                title: t('errors.generic'),
+                                                message: t('agreementDetail.errors.regenerateFailed'),
+                                                color: 'red',
+                                                icon: <IconX size={18} />
+                                              });
+                                            }
+                                          }}
+                                        >
+                                          {t('agreementDetail.actions.regenerateLink')}
+                                        </Menu.Item>
+                                      </>
+                                    )}
+                                    <Menu.Divider />
+                                    <Menu.Item
+                                      color="red"
+                                      leftSection={<IconTrash size={16} />}
+                                      onClick={() => {
+                                        modals.openConfirmModal({
+                                          title: t('agreementDetail.confirm.deleteSignatureTitle'),
+                                          children: (
+                                            <Text size="sm">
+                                              {t('agreementDetail.confirm.deleteContent')}
+                                            </Text>
+                                          ),
+                                          labels: {
+                                            confirm: t('common.delete'),
+                                            cancel: t('common.cancel')
+                                          },
+                                          confirmProps: { color: 'red' },
+                                          onConfirm: async () => {
+                                            try {
+                                              await agreementsApi.deleteSignature(signature.id);
+                                              notifications.show({
+                                                title: t('common.success'),
+                                                message: t('agreementDetail.success.signatureDeleted'),
+                                                color: 'green',
+                                                icon: <IconCheck size={18} />
+                                              });
+                                              fetchAgreement();
+                                            } catch (error: any) {
+                                              notifications.show({
+                                                title: t('errors.generic'),
+                                                message: t('agreementDetail.errors.deleteFailed'),
+                                                color: 'red',
+                                                icon: <IconX size={18} />
+                                              });
+                                            }
+                                          }
+                                        });
+                                      }}
+                                    >
+                                      {t('common.delete')}
+                                    </Menu.Item>
+                                  </Menu.Dropdown>
+                                </Menu>
+                              </Table.Td>
+                            </Table.Tr>
+                            <Table.Tr>
+                              <Table.Td colSpan={6} style={{ padding: 0 }}>
+                                <Box p="md" style={{ background: theme.colors.dark[7] }}>
+                                  <SignatureDetailsContent record={signature} />
+                                </Box>
+                              </Table.Td>
+                            </Table.Tr>
+                          </>
+                        ))}
+                      </Table.Tbody>
+                    </Table>
+                  )}
+                </Stack>
+              ) : (
+                <Paper shadow="sm" p="xl" radius="md" withBorder>
+                  <Center>
+                    <Stack align="center" gap="md">
+                      <IconFileText size={48} color={theme.colors.gray[5]} />
+                      <Text size="lg" c="dimmed">
+                        {t('agreementDetail.messages.noSignatures')}
+                      </Text>
+                      <Text size="sm" c="dimmed" ta="center">
+                        {t('agreementDetail.messages.noSignaturesHint')}
+                      </Text>
+                    </Stack>
+                  </Center>
+                </Paper>
+              )}
+            </Stack>
+          </Card>
+        </Tabs.Panel>
+      </Tabs>
 
       <Drawer
-        title={t('agreementDetail.drawer.title')}
-        placement="bottom"
+        opened={detailsDrawerVisible}
         onClose={() => setDetailsDrawerVisible(false)}
-        open={detailsDrawerVisible}
-        height="80%"
-        className="details-drawer"
+        title={t('agreementDetail.drawer.title')}
+        position="bottom"
+        size="80%"
       >
-        <Descriptions column={1} size="small" bordered>
-          <Descriptions.Item label={t('agreementDetail.fields.agreementNumber')}>
-            {agreement.agreement_number}
-          </Descriptions.Item>
-          <Descriptions.Item label={t('agreementDetail.fields.type')}>
-            {getTypeLabel(agreement.type)}
-          </Descriptions.Item>
-          <Descriptions.Item label={t('agreementDetail.fields.status')}>
-            {getStatusTag(agreement.status)}
-          </Descriptions.Item>
-          {agreement.property_name && (
-            <Descriptions.Item label={t('agreementDetail.fields.property')}>
-              {agreement.property_name} ({agreement.property_number})
-            </Descriptions.Item>
-          )}
-          {agreement.description && (
-            <Descriptions.Item label={t('agreementDetail.fields.description')}>
-              {agreement.description}
-            </Descriptions.Item>
-          )}
-          <Descriptions.Item label={t('agreementDetail.fields.city')}>
-            {agreement.city}
-          </Descriptions.Item>
-          <Descriptions.Item label={t('agreementDetail.fields.created')}>
-            {new Date(agreement.created_at).toLocaleDateString('ru-RU')}
-          </Descriptions.Item>
-        </Descriptions>
+        <Stack gap="md">
+          {/* Аналогично табу details */}
+        </Stack>
       </Drawer>
 
-      <Modal
-        title={t('agreementDetail.signatureDetails.title')}
-        open={signatureDetailsModal}
-        onCancel={() => {
+      <Drawer
+        opened={signatureDetailsModal}
+        onClose={() => {
           setSignatureDetailsModal(false);
           setSelectedSignature(null);
         }}
-        footer={null}
-        width="95%"
-        style={{ top: 20 }}
-        bodyStyle={{ 
-          maxHeight: 'calc(100vh - 200px)', 
-          overflowY: 'auto',
-          padding: '16px'
-        }}
+        title={t('agreementDetail.signatureDetails.title')}
+        position="bottom"
+        size="90%"
       >
         {selectedSignature && (
           <SignatureDetailsContent record={selectedSignature} />
         )}
-      </Modal>
+      </Drawer>
 
       <SignaturesModal
         visible={signaturesModalVisible}
@@ -1155,29 +1648,21 @@ const convertHtmlToStructure = (html: string): string => {
         requestUuid={agreement.request_uuid}
       />
 
-      <Modal
-        title={null}
-        open={aiEditorVisible}
-        onCancel={handleAiEditorClose}
-        footer={null}
-        width="90%"
-        style={{ top: 20, maxWidth: 1400 }}
-        bodyStyle={{
-          height: 'calc(100vh - 100px)',
-          padding: 0,
-          overflow: 'hidden',
-          background: '#141414'
-        }}
-        destroyOnClose
-        className="ai-editor-modal"
+      <Drawer
+        opened={aiEditorVisible}
+        onClose={handleAiEditorClose}
+        position="right"
+        size="90%"
+        padding={0}
+        withCloseButton={false}
       >
         <AIAgreementEditor
           agreementId={agreement.id}
           onChangesApplied={handleAiChangesApplied}
           onClose={handleAiEditorClose}
         />
-      </Modal>
-    </div>
+      </Drawer>
+    </Stack>
   );
 };
 
