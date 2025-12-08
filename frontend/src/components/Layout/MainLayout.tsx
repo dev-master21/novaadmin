@@ -1,5 +1,5 @@
 // frontend/src/components/Layout/MainLayout.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -41,6 +41,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { authApi } from '@/api/auth.api';
+import { partnersApi } from '@/api/partners.api';
 
 interface NavItem {
   path: string;
@@ -61,6 +62,30 @@ const MainLayout = () => {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [logoFilename, setLogoFilename] = useState<string>('logo.svg');
+
+  // Загрузка логотипа по домену
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const currentDomain = window.location.hostname;
+        console.log('Current domain:', currentDomain);
+        
+        const result = await partnersApi.getByDomain(currentDomain);
+        console.log('Logo result:', result);
+        
+        if (result.logo_filename) {
+          setLogoFilename(result.logo_filename);
+        }
+      } catch (error) {
+        console.error('Error loading logo:', error);
+        // В случае ошибки используем дефолтный логотип
+        setLogoFilename('logo.svg');
+      }
+    };
+
+    loadLogo();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -180,14 +205,18 @@ const MainLayout = () => {
             {!isMobile && (
               <Group gap="xs">
                 <img
-                  src="/logo.svg"
-                  alt="NOVA ESTATE"
+                  src={`/${logoFilename}`}
+                  alt="Logo"
                   style={{
                     height: 36,
                     width: 'auto',
                     cursor: 'pointer'
                   }}
                   onClick={() => navigate('/')}
+                  onError={(e) => {
+                    // Fallback на дефолтный логотип если файл не найден
+                    e.currentTarget.src = '/logo.svg';
+                  }}
                 />
               </Group>
             )}
@@ -381,8 +410,8 @@ const MainLayout = () => {
               }}
             >
               <img
-                src="/logo.svg"
-                alt="NOVA ESTATE"
+                src={`/${logoFilename}`}
+                alt="Logo"
                 style={{
                   height: 40,
                   width: 'auto',
@@ -391,6 +420,10 @@ const MainLayout = () => {
                 onClick={() => {
                   navigate('/');
                   if (isMobile) closeMobile();
+                }}
+                onError={(e) => {
+                  // Fallback на дефолтный логотип если файл не найден
+                  e.currentTarget.src = '/logo.svg';
                 }}
               />
             </Box>

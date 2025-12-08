@@ -19,12 +19,14 @@ import {
   ArrowLeftOutlined,
   UserOutlined,
   LockOutlined,
-  MailOutlined
+  MailOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usersApi } from '@/api/users.api';
 import { rolesApi } from '@/api/roles.api';
+import { partnersApi, Partner } from '@/api/partners.api';
 import { useAuthStore } from '@/store/authStore';
 import type { UserFormData } from './types';
 
@@ -38,11 +40,15 @@ const UserForm = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [roles, setRoles] = useState<any[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
 
   const isEditMode = !!id;
 
   useEffect(() => {
     loadRoles();
+    if (isSuperAdmin()) {
+      loadPartners();
+    }
     if (isEditMode) {
       loadUser();
     }
@@ -57,6 +63,16 @@ const UserForm = () => {
     }
   };
 
+  const loadPartners = async () => {
+    try {
+      const data = await partnersApi.getAll();
+      setPartners(data);
+    } catch (error) {
+      console.error('Error loading partners:', error);
+      message.error('Ошибка загрузки партнёров');
+    }
+  };
+
   const loadUser = async () => {
     setLoading(true);
     try {
@@ -68,6 +84,7 @@ const UserForm = () => {
         full_name: userData.full_name,
         email: userData.email,
         is_active: userData.is_active,
+        partner_id: userData.partner_id,
         role_ids: userData.roles?.map((r: any) => r.id)
       });
     } catch (error: any) {
@@ -235,6 +252,33 @@ const UserForm = () => {
               </Form.Item>
             </Col>
 
+            {isSuperAdmin() && (
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Партнёр"
+                  name="partner_id"
+                  tooltip="Выберите партнёра для привязки пользователя"
+                >
+                  <Select
+                    placeholder="Выберите партнёра"
+                    allowClear
+                    showSearch
+                    optionFilterProp="children"
+                    suffixIcon={<TeamOutlined />}
+                  >
+                    {partners.map((partner) => (
+                      <Select.Option key={partner.id} value={partner.id}>
+                        {partner.partner_name || partner.domain}
+                        {partner.domain && ` (${partner.domain})`}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            )}
+          </Row>
+
+          <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
                 label={t('users.isActive')}

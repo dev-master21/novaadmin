@@ -16,7 +16,8 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  UserOutlined
+  UserOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -90,6 +91,28 @@ const UsersList = () => {
       key: 'email',
       width: 200,
       responsive: ['md']
+    },
+    {
+      title: 'Партнёр',
+      dataIndex: 'partner_name',
+      key: 'partner',
+      width: 200,
+      responsive: ['lg'],
+      render: (partnerName: string, record: User) => (
+        partnerName ? (
+          <Space>
+            <TeamOutlined style={{ color: '#722ed1' }} />
+            <Tag color="purple">{partnerName}</Tag>
+            {record.partner_domain && (
+              <span style={{ fontSize: '0.85em', color: '#999' }}>
+                ({record.partner_domain})
+              </span>
+            )}
+          </Space>
+        ) : (
+          <Tag color="default">Без партнёра</Tag>
+        )
+      )
     },
     {
       title: t('users.roles'),

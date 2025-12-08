@@ -14,6 +14,7 @@ import propertySearchRoutes from './propertySearch.routes';
 import contactsRoutes from './contacts.routes';
 import integrationsRoutes from './integrations.routes';
 import propertyOwnersRoutes from './propertyOwners.routes';
+import partnersRoutes from './partners.routes';
 
 const router = Router();
 
@@ -31,5 +32,6 @@ router.use('/property-search', propertySearchRoutes);
 router.use('/contacts', contactsRoutes);
 router.use('/integrations', integrationsRoutes);
 router.use('/property-owners', propertyOwnersRoutes);
+router.use('/partners', partnersRoutes);
 
 export default router;

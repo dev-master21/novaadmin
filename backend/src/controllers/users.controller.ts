@@ -11,16 +11,20 @@ class UsersController {
     try {
       const users = await db.query<any>(
         `SELECT 
-          id,
-          username,
-          full_name,
-          email,
-          is_active,
-          is_super_admin,
-          last_login_at,
-          created_at
-         FROM admin_users
-         ORDER BY created_at DESC`
+          u.id,
+          u.username,
+          u.full_name,
+          u.email,
+          u.is_active,
+          u.is_super_admin,
+          u.partner_id,
+          u.last_login_at,
+          u.created_at,
+          p.partner_name,
+          p.domain as partner_domain
+         FROM admin_users u
+         LEFT JOIN partners p ON u.partner_id = p.id
+         ORDER BY u.created_at DESC`
       );
 
       // Получаем роли для каждого пользователя
@@ -55,16 +59,20 @@ class UsersController {
 
       const user = await db.queryOne<any>(
         `SELECT 
-          id,
-          username,
-          full_name,
-          email,
-          is_active,
-          is_super_admin,
-          last_login_at,
-          created_at
-         FROM admin_users
-         WHERE id = ?`,
+          u.id,
+          u.username,
+          u.full_name,
+          u.email,
+          u.is_active,
+          u.is_super_admin,
+          u.partner_id,
+          u.last_login_at,
+          u.created_at,
+          p.partner_name,
+          p.domain as partner_domain
+         FROM admin_users u
+         LEFT JOIN partners p ON u.partner_id = p.id
+         WHERE u.id = ?`,
         [id]
       );
 
@@ -104,7 +112,7 @@ class UsersController {
     const connection = await db.beginTransaction();
 
     try {
-      const { username, password, full_name, email, role_ids } = req.body;
+      const { username, password, full_name, email, role_ids, partner_id } = req.body;
 
       // Проверяем уникальность username
       const existingUser = await db.queryOne(
@@ -121,14 +129,24 @@ class UsersController {
         return;
       }
 
+      // Проверяем права на назначение партнёра
+      if (partner_id && !req.admin?.is_super_admin) {
+        await db.rollback(connection);
+        res.status(403).json({
+          success: false,
+          message: 'Только SuperAdmin может назначать партнёров'
+        });
+        return;
+      }
+
       // Хешируем пароль
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Создаем пользователя
+      // Создаем пользователя с partner_id
       const result = await connection.query(
-        `INSERT INTO admin_users (username, password_hash, full_name, email, is_active)
-         VALUES (?, ?, ?, ?, TRUE)`,
-        [username, passwordHash, full_name, email || null]
+        `INSERT INTO admin_users (username, password_hash, full_name, email, partner_id, is_active)
+         VALUES (?, ?, ?, ?, ?, TRUE)`,
+        [username, passwordHash, full_name, email || null, partner_id || null]
       );
 
       const userId = (result as any)[0].insertId;
@@ -145,7 +163,7 @@ class UsersController {
 
       await db.commit(connection);
 
-      logger.info(`User created: ${username} by user ${req.admin?.username}`);
+      logger.info(`User created: ${username} (partner_id: ${partner_id}) by user ${req.admin?.username}`);
 
       res.status(201).json({
         success: true,
@@ -168,7 +186,7 @@ class UsersController {
 
     try {
       const { id } = req.params;
-      const { full_name, email, password, role_ids, is_active } = req.body;
+      const { full_name, email, password, role_ids, is_active, partner_id } = req.body;
 
       // Проверяем существование пользователя
       const user = await db.queryOne('SELECT id FROM admin_users WHERE id = ?', [id]);
@@ -178,6 +196,16 @@ class UsersController {
         res.status(404).json({
           success: false,
           message: 'Пользователь не найден'
+        });
+        return;
+      }
+
+      // Проверяем права на изменение партнёра
+      if (partner_id !== undefined && !req.admin?.is_super_admin) {
+        await db.rollback(connection);
+        res.status(403).json({
+          success: false,
+          message: 'Только SuperAdmin может изменять партнёров'
         });
         return;
       }
@@ -202,6 +230,10 @@ class UsersController {
       if (is_active !== undefined) {
         fields.push('is_active = ?');
         values.push(is_active);
+      }
+      if (partner_id !== undefined) {
+        fields.push('partner_id = ?');
+        values.push(partner_id || null);
       }
 
       if (fields.length > 0) {

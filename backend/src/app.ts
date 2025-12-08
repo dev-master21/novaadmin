@@ -24,7 +24,15 @@ const allowedOrigins = [
   'http://owner.novaestate.company',
   'http://agreement.novaestate.company',
   'http://admin.novaestate.company',
-  'http://novaestate.company'
+  'http://novaestate.company',
+  'https://owner.warmplus.club',
+  'https://agreement.warmplus.club',
+  'https://admin.warmplus.club',
+  'https://warmplus.club',
+  'http://owner.warmplus.club',
+  'http://agreement.warmplus.club',
+  'http://admin.warmplus.club',
+  'http://warmplus.club'
 ];
 
 app.use(cors({
