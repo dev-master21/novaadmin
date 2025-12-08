@@ -57,6 +57,48 @@ router.get('/public/receipt/:uuid/pdf', (req, res) => {
 // Все роуты ниже этой строки требуют авторизации
 router.use(authenticate);
 
+// ========== SAVED BANK DETAILS ==========
+
+// Получить все сохранённые банковские реквизиты
+router.get('/saved-bank-details',
+  requirePermission('financial_documents.view_invoices'),
+  (req, res) => {
+    financialDocumentsController.getAllSavedBankDetails(req as AuthRequest, res);
+  }
+);
+
+// Получить сохранённые банковские реквизиты по ID
+router.get('/saved-bank-details/:id',
+  requirePermission('financial_documents.view_invoices'),
+  (req, res) => {
+    financialDocumentsController.getSavedBankDetailsById(req as AuthRequest, res);
+  }
+);
+
+// Создать сохранённые банковские реквизиты
+router.post('/saved-bank-details',
+  requirePermission('financial_documents.create_invoices'),
+  (req, res) => {
+    financialDocumentsController.createSavedBankDetails(req as AuthRequest, res);
+  }
+);
+
+// Обновить сохранённые банковские реквизиты
+router.put('/saved-bank-details/:id',
+  requirePermission('financial_documents.edit_invoices'),
+  (req, res) => {
+    financialDocumentsController.updateSavedBankDetails(req as AuthRequest, res);
+  }
+);
+
+// Удалить сохранённые банковские реквизиты
+router.delete('/saved-bank-details/:id',
+  requirePermission('financial_documents.delete_invoices'),
+  (req, res) => {
+    financialDocumentsController.deleteSavedBankDetails(req as AuthRequest, res);
+  }
+);
+
 // ========== INVOICES ==========
 
 // Получить список инвойсов
@@ -72,6 +114,14 @@ router.get('/invoices/:id',
   requirePermission('financial_documents.view_invoices'), 
   (req, res) => {
     financialDocumentsController.getInvoiceById(req as AuthRequest, res);
+  }
+);
+
+// Получить статусы оплаты позиций инвойса
+router.get('/invoices/:id/items-payment-status',
+  requirePermission('financial_documents.view_invoices'),
+  (req, res) => {
+    financialDocumentsController.getInvoiceItemsPaymentStatus(req as AuthRequest, res);
   }
 );
 
@@ -112,6 +162,14 @@ router.get('/invoices/:id/pdf',
   requirePermission('financial_documents.view_invoices'),
   (req, res) => {
     financialDocumentsController.downloadInvoicePDF(req as AuthRequest, res);
+  }
+);
+
+// Проверить существующие инвойсы для договора
+router.get('/agreements/:agreementId/check-existing-invoices',
+  requirePermission('financial_documents.view_invoices'),
+  (req, res) => {
+    financialDocumentsController.checkExistingInvoicesForAgreement(req as AuthRequest, res);
   }
 );
 

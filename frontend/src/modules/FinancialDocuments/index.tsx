@@ -65,6 +65,7 @@ import { financialDocumentsApi, Invoice, Receipt } from '@/api/financialDocument
 import { agreementsApi, Agreement, AgreementParty, AgreementSignature } from '@/api/agreements.api';
 import CreateInvoiceModal from './components/CreateInvoiceModal';
 import CreateReceiptModal from './components/CreateReceiptModal';
+import DeleteInvoiceModal from './components/DeleteInvoiceModal';
 import dayjs from 'dayjs';
 
 const FinancialDocuments = () => {
@@ -95,6 +96,10 @@ const FinancialDocuments = () => {
   const [loadingAgreement, setLoadingAgreement] = useState(false);
   const [invoiceDetailsModalVisible, setInvoiceDetailsModalVisible] = useState(false);
   const [selectedInvoiceForDetails, setSelectedInvoiceForDetails] = useState<Invoice | null>(null);
+  
+  // Delete Invoice Modal
+  const [deleteInvoiceModalVisible, setDeleteInvoiceModalVisible] = useState(false);
+  const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
 
   // Statistics
   const [stats, setStats] = useState({
@@ -311,39 +316,10 @@ const FinancialDocuments = () => {
     }
   };
 
-  const handleDeleteInvoice = (id: number) => {
-    modals.openConfirmModal({
-      title: t('financialDocuments.confirm.deleteInvoiceTitle'),
-      children: (
-        <Text size="sm">
-          {t('financialDocuments.confirm.deleteDescription')}
-        </Text>
-      ),
-      labels: {
-        confirm: t('common.delete'),
-        cancel: t('common.cancel')
-      },
-      confirmProps: { color: 'red' },
-      onConfirm: async () => {
-        try {
-          await financialDocumentsApi.deleteInvoice(id);
-          notifications.show({
-            title: t('common.success'),
-            message: t('financialDocuments.messages.invoiceDeleted'),
-            color: 'green',
-            icon: <IconCheck size={18} />
-          });
-          fetchInvoices();
-        } catch (error: any) {
-          notifications.show({
-            title: t('errors.generic'),
-            message: t('financialDocuments.messages.invoiceDeleteError'),
-            color: 'red',
-            icon: <IconX size={18} />
-          });
-        }
-      }
-    });
+  // Новый обработчик для открытия модалки удаления инвойса
+  const handleDeleteInvoiceClick = (id: number) => {
+    setDeleteInvoiceId(id);
+    setDeleteInvoiceModalVisible(true);
   };
 
   const handleDeleteReceipt = (id: number) => {
@@ -606,7 +582,7 @@ const FinancialDocuments = () => {
                 variant="light"
                 color="red"
                 leftSection={<IconTrash size={16} />}
-                onClick={() => handleDeleteInvoice(invoice.id)}
+                onClick={() => handleDeleteInvoiceClick(invoice.id)}
               >
                 {t('common.delete')}
               </Button>
@@ -1491,7 +1467,7 @@ const FinancialDocuments = () => {
                                     <Menu.Item
                                       color="red"
                                       leftSection={<IconTrash size={16} />}
-                                      onClick={() => handleDeleteInvoice(invoice.id)}
+                                      onClick={() => handleDeleteInvoiceClick(invoice.id)}
                                     >
                                       {t('common.delete')}
                                     </Menu.Item>
@@ -1695,6 +1671,19 @@ const FinancialDocuments = () => {
           setCreateReceiptModalVisible(false);
           fetchReceipts();
         }}
+      />
+
+      {/* Модалка удаления инвойса */}
+      <DeleteInvoiceModal
+        visible={deleteInvoiceModalVisible}
+        onClose={() => {
+          setDeleteInvoiceModalVisible(false);
+          setDeleteInvoiceId(null);
+        }}
+        onSuccess={() => {
+          fetchInvoices();
+        }}
+        invoiceId={deleteInvoiceId}
       />
 
       <AgreementDetailsModal />

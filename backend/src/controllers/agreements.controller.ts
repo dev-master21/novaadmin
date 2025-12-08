@@ -293,7 +293,6 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
     });
   }
 }
-
 /**
  * Создать договор
  * POST /api/agreements
@@ -335,6 +334,18 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     console.log('🎯 Extracted request_uuid:', request_uuid);
     
     const userId = req.admin!.id;
+
+    // ✅ ПОЛУЧАЕМ ДОМЕН ПАРТНЁРА ПОЛЬЗОВАТЕЛЯ
+    const userPartner = await db.queryOne<any>(`
+      SELECT p.domain, p.partner_name
+      FROM admin_users au
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+      WHERE au.id = ?
+    `, [userId]);
+
+    // Определяем базовый домен для ссылок
+    const baseDomain = userPartner?.domain || 'novaestate.company';
+    console.log(`🌐 Using domain for agreement: ${baseDomain}`);
 
     // Получаем шаблон
     const template = await db.queryOne<any>(
@@ -390,7 +401,9 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     const agreement_number = `AGR-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     const { v4: uuidv4 } = require('uuid');
     const public_link_uuid = uuidv4();
-    const public_link = `https://agreement.novaestate.company/agreement/${public_link_uuid}`;
+    
+    // ✅ ИСПОЛЬЗУЕМ ДОМЕН ПАРТНЁРА ДЛЯ ССЫЛОК
+    const public_link = `https://agreement.${baseDomain}/agreement/${public_link_uuid}`;
     const verify_link = uuidv4();
 
     // Подготавливаем переменные для замены в шаблоне
@@ -556,7 +569,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ АВТОМАТИЧЕСКОЕ СОЗДАНИЕ ПОДПИСЕЙ ДЛЯ ВСЕХ СТОРОН
+    // ✅ АВТОМАТИЧЕСКОЕ СОЗДАНИЕ ПОДПИСЕЙ ДЛЯ ВСЕХ СТОРОН С ДОМЕНОМ ПАРТНЁРА
     if (createdPartiesMap.size > 0) {
       console.log('✍️ Auto-creating signatures for all parties...');
       
@@ -602,15 +615,16 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       VALUES (?, ?, ?, ?)
     `, [agreementId, 'created', 'Договор создан с автоматическими подписями', userId]);
 
-    // Генерируем QR-код в base64 для ссылки верификации
+    // ✅ ГЕНЕРИРУЕМ QR-КОД С ДОМЕНОМ ПАРТНЁРА
     try {
-      const verifyUrl = `https://agreement.novaestate.company/agreement-verify/${verify_link}`;
+      const verifyUrl = `https://agreement.${baseDomain}/agreement-verify/${verify_link}`;
+      console.log(`📱 Generating QR code for: ${verifyUrl}`);
       const qrCodeBase64 = await this.generateQRCodeBase64(verifyUrl);
       await connection.query(
         'UPDATE agreements SET qr_code_base64 = ? WHERE id = ?',
         [qrCodeBase64, agreementId]
       );
-      logger.info(`QR code generated for agreement ${agreementId}`);
+      logger.info(`QR code generated for agreement ${agreementId} with domain ${baseDomain}`);
     } catch (qrError) {
       logger.error('QR code generation failed:', qrError);
     }
@@ -730,39 +744,44 @@ async getPublicAgreement(req: AuthRequest, res: Response): Promise<void> {
       );
 
       if (!tokenData) {
-        res.status(403).json({
-          success: false,
-          message: 'Недействительный или истекший токен доступа'
-        });
+        res.status(403).send('Недействительный или истекший токен');
         return;
       }
 
-      // Удаляем использованный токен (одноразовый)
+      // Удаляем использованный токен
       await db.query('DELETE FROM agreement_print_tokens WHERE token = ?', [token]);
+    } else {
+      // Если токена нет - требуем авторизацию (через middleware)
+      if (!req.admin) {
+        res.status(401).send('Требуется авторизация');
+        return;
+      }
     }
 
-    // УВЕЛИЧИВАЕМ ЛИМИТ
+    // УВЕЛИЧИВАЕМ ЛИМИТ GROUP_CONCAT
     await db.query('SET SESSION group_concat_max_len = 1000000');
 
+    // ✅ ДОБАВЛЕН JOIN к partners для получения logo_filename
     const agreement = await db.queryOne(`
       SELECT 
         a.*,
         at.name as template_name,
+        p.logo_filename as partner_logo_filename,
+        p.partner_name,
         GROUP_CONCAT(DISTINCT CONCAT(s.id, '~|~', s.signer_name, '~|~', s.signer_role, '~|~', s.is_signed, '~|~', COALESCE(s.signature_data, ''), '~|~', COALESCE(s.signed_at, '')) SEPARATOR '|||') as signatures_data,
         GROUP_CONCAT(DISTINCT CONCAT(ap.id, '~|~', ap.role, '~|~', COALESCE(ap.name, ''), '~|~', COALESCE(ap.is_company, 0)) SEPARATOR '|||') as parties_data
       FROM agreements a
       LEFT JOIN agreement_templates at ON a.template_id = at.id
       LEFT JOIN agreement_signatures s ON a.id = s.agreement_id
       LEFT JOIN agreement_parties ap ON a.id = ap.agreement_id
+      LEFT JOIN admin_users au ON a.created_by = au.id
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
       WHERE a.id = ?
       GROUP BY a.id
     `, [id]);
 
     if (!agreement) {
-      res.status(404).json({
-        success: false,
-        message: 'Договор не найден'
-      });
+      res.status(404).send('Agreement not found');
       return;
     }
 
@@ -807,6 +826,11 @@ async getPublicAgreement(req: AuthRequest, res: Response): Promise<void> {
 
     agreement.signatures = signatures;
     agreement.parties = parties;
+
+    // ✅ ДОБАВЛЯЕМ ЛОГИКУ ОПРЕДЕЛЕНИЯ ЛОГОТИПА
+    agreement.logoUrl = agreement.partner_logo_filename 
+      ? `https://admin.novaestate.company/${agreement.partner_logo_filename}`
+      : 'https://admin.novaestate.company/nova-logo.svg';
 
     res.json({
       success: true,
@@ -844,16 +868,21 @@ async getAgreementInternal(req: AuthRequest, res: Response): Promise<void> {
     // УВЕЛИЧИВАЕМ ЛИМИТ
     await db.query('SET SESSION group_concat_max_len = 1000000');
 
+    // ✅ ДОБАВЛЕН JOIN к partners для получения logo_filename
     const agreement = await db.queryOne(`
       SELECT 
         a.*,
         at.name as template_name,
+        p.logo_filename as partner_logo_filename,
+        p.partner_name,
         GROUP_CONCAT(DISTINCT CONCAT(s.id, '~|~', s.signer_name, '~|~', s.signer_role, '~|~', s.is_signed, '~|~', COALESCE(s.signature_data, ''), '~|~', COALESCE(s.signed_at, '')) SEPARATOR '|||') as signatures_data,
         GROUP_CONCAT(DISTINCT CONCAT(ap.id, '~|~', ap.role, '~|~', COALESCE(ap.name, ''), '~|~', COALESCE(ap.is_company, 0)) SEPARATOR '|||') as parties_data
       FROM agreements a
       LEFT JOIN agreement_templates at ON a.template_id = at.id
       LEFT JOIN agreement_signatures s ON a.id = s.agreement_id
       LEFT JOIN agreement_parties ap ON a.id = ap.agreement_id
+      LEFT JOIN admin_users au ON a.created_by = au.id
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
       WHERE a.id = ?
       GROUP BY a.id
     `, [id]);
@@ -907,6 +936,12 @@ async getAgreementInternal(req: AuthRequest, res: Response): Promise<void> {
 
     agreement.signatures = signatures;
     agreement.parties = parties;
+
+    // ✅ ДОБАВЛЯЕМ ЛОГИКУ ОПРЕДЕЛЕНИЯ ЛОГОТИПА
+    // Если у партнёра есть логотип - используем его, иначе стандартный
+    agreement.logoUrl = agreement.partner_logo_filename 
+      ? `https://admin.novaestate.company/${agreement.partner_logo_filename}`
+      : 'https://admin.novaestate.company/nova-logo.svg';
 
     res.json({
       success: true,
@@ -1245,7 +1280,6 @@ async getByPublicLink(req: AuthRequest, res: Response): Promise<void> {
     });
   }
 }
-
 /**
  * Создать зоны для подписей
  * POST /api/agreements/:id/signatures
@@ -1267,6 +1301,18 @@ async createSignatures(req: AuthRequest, res: Response): Promise<void> {
       });
       return;
     }
+
+    // ✅ ПОЛУЧАЕМ ДОМЕН ПАРТНЁРА СОЗДАТЕЛЯ ДОГОВОРА
+    const creatorPartner = await db.queryOne<any>(`
+      SELECT p.domain
+      FROM agreements a
+      LEFT JOIN admin_users au ON a.created_by = au.id
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+      WHERE a.id = ?
+    `, [id]);
+
+    const baseDomain = creatorPartner?.domain || 'novaestate.company';
+    console.log(`🌐 Using domain for signatures: ${baseDomain}`);
 
     // ✅ УБРАЛИ УДАЛЕНИЕ СУЩЕСТВУЮЩИХ ПОДПИСЕЙ - теперь только добавляем новые!
     // await connection.query('DELETE FROM agreement_signatures WHERE agreement_id = ?', [id]); // <-- ЭТА СТРОКА УДАЛЕНА
@@ -1308,7 +1354,8 @@ async createSignatures(req: AuthRequest, res: Response): Promise<void> {
 
     for (const signature of signatures) {
       const uniqueLink = uuidv4();
-      const publicLink = `https://agreement.novaestate.company/sign/${uniqueLink}`;
+      // ✅ ИСПОЛЬЗУЕМ ДОМЕН ПАРТНЁРА ДЛЯ ССЫЛОК ПОДПИСИ
+      const publicLink = `https://agreement.${baseDomain}/sign/${uniqueLink}`;
 
       await connection.query(`
         INSERT INTO agreement_signatures (
@@ -1344,6 +1391,22 @@ async createSignatures(req: AuthRequest, res: Response): Promise<void> {
     if (!(agreement as any).qr_code_path) {
       const qrCodePath = await this.generateQRCode((agreement as any).public_link, (agreement as any).agreement_number);
       await connection.query('UPDATE agreements SET qr_code_path = ? WHERE id = ?', [qrCodePath, id]);
+    }
+
+    // ✅ РЕГЕНЕРИРУЕМ QR-КОД В BASE64 С ПРАВИЛЬНЫМ ДОМЕНОМ (если ещё не был сгенерирован)
+    if (!(agreement as any).qr_code_base64) {
+      try {
+        const verifyUrl = `https://agreement.${baseDomain}/agreement-verify/${(agreement as any).verify_link}`;
+        console.log(`📱 Regenerating QR code for: ${verifyUrl}`);
+        const qrCodeBase64 = await this.generateQRCodeBase64(verifyUrl);
+        await connection.query(
+          'UPDATE agreements SET qr_code_base64 = ? WHERE id = ?',
+          [qrCodeBase64, id]
+        );
+        logger.info(`QR code generated for agreement ${id} with domain ${baseDomain}`);
+      } catch (qrError) {
+        logger.error('QR code generation failed:', qrError);
+      }
     }
 
     // Логируем

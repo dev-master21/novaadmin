@@ -103,140 +103,153 @@ export class PDFService {
       logger.error('Error deleting old PDF:', error);
     }
   }
+
   /**
- * Генерация PDF для инвойса
- */
-static async generateInvoicePDF(invoiceId: number): Promise<string> {
-  try {
-    const uploadsDir = path.join(__dirname, '../../uploads/invoices-pdf');
-    await fs.ensureDir(uploadsDir);
+   * Генерация PDF для инвойса
+   * @param invoiceId - ID инвойса
+   * @param selectedItems - Массив ID выбранных позиций для оплаты (опционально)
+   */
+  static async generateInvoicePDF(
+    invoiceId: number, 
+    selectedItems?: number[]
+  ): Promise<string> {
+    try {
+      const uploadsDir = path.join(__dirname, '../../uploads/invoices-pdf');
+      await fs.ensureDir(uploadsDir);
 
-    const filename = `invoice-${invoiceId}-${Date.now()}.pdf`;
-    const filepath = path.join(uploadsDir, filename);
-    const publicPath = `/uploads/invoices-pdf/${filename}`;
+      const filename = `invoice-${invoiceId}-${Date.now()}.pdf`;
+      const filepath = path.join(uploadsDir, filename);
+      const publicPath = `/uploads/invoices-pdf/${filename}`;
 
-    const internalKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
-    const htmlUrl = `https://admin.novaestate.company/api/financial-documents/invoices/${invoiceId}/html?internalKey=${internalKey}`;
-
-    logger.info(`Opening invoice HTML URL: ${htmlUrl}`);
-
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-features=IsolateOrigins,site-per-process'
-      ]
-    });
-
-    const page = await browser.newPage();
-    await page.setViewport({
-      width: 1920,
-      height: 1080,
-      deviceScaleFactor: 2
-    });
-
-    await page.goto(htmlUrl, {
-      waitUntil: 'networkidle0',
-      timeout: 60000
-    });
-
-    logger.info('Invoice HTML loaded successfully');
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    await page.pdf({
-      path: filepath,
-      format: 'A4',
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0
+      const internalKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
+      
+      // ✅ ДОБАВЛЯЕМ selected_items В URL ЕСЛИ ЕСТЬ
+      let htmlUrl = `https://admin.novaestate.company/api/financial-documents/invoices/${invoiceId}/html?internalKey=${internalKey}`;
+      
+      if (selectedItems && selectedItems.length > 0) {
+        const selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
+        htmlUrl += `&selected_items=${selectedItemsParam}`;
+        logger.info(`Generating invoice PDF with selected items: ${selectedItems.join(', ')}`);
       }
-    });
 
-    await browser.close();
+      logger.info(`Opening invoice HTML URL: ${htmlUrl}`);
 
-    logger.info(`Invoice PDF generated successfully: ${publicPath}`);
-    return publicPath;
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=IsolateOrigins,site-per-process'
+        ]
+      });
 
-  } catch (error) {
-    logger.error('Invoice PDF generation error:', error);
-    throw new Error('Failed to generate invoice PDF');
+      const page = await browser.newPage();
+      await page.setViewport({
+        width: 1920,
+        height: 1080,
+        deviceScaleFactor: 2
+      });
+
+      await page.goto(htmlUrl, {
+        waitUntil: 'networkidle0',
+        timeout: 60000
+      });
+
+      logger.info('Invoice HTML loaded successfully');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      await page.pdf({
+        path: filepath,
+        format: 'A4',
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: {
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0
+        }
+      });
+
+      await browser.close();
+
+      logger.info(`Invoice PDF generated successfully: ${publicPath}`);
+      return publicPath;
+
+    } catch (error) {
+      logger.error('Invoice PDF generation error:', error);
+      throw new Error('Failed to generate invoice PDF');
+    }
   }
-}
 
-/**
- * Генерация PDF для чека
- */
-static async generateReceiptPDF(receiptId: number): Promise<string> {
-  try {
-    const uploadsDir = path.join(__dirname, '../../uploads/receipts-pdf');
-    await fs.ensureDir(uploadsDir);
+  /**
+   * Генерация PDF для чека
+   */
+  static async generateReceiptPDF(receiptId: number): Promise<string> {
+    try {
+      const uploadsDir = path.join(__dirname, '../../uploads/receipts-pdf');
+      await fs.ensureDir(uploadsDir);
 
-    const filename = `receipt-${receiptId}-${Date.now()}.pdf`;
-    const filepath = path.join(uploadsDir, filename);
-    const publicPath = `/uploads/receipts-pdf/${filename}`;
+      const filename = `receipt-${receiptId}-${Date.now()}.pdf`;
+      const filepath = path.join(uploadsDir, filename);
+      const publicPath = `/uploads/receipts-pdf/${filename}`;
 
-    const internalKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
-    const htmlUrl = `https://admin.novaestate.company/api/financial-documents/receipts/${receiptId}/html?internalKey=${internalKey}`;
+      const internalKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
+      const htmlUrl = `https://admin.novaestate.company/api/financial-documents/receipts/${receiptId}/html?internalKey=${internalKey}`;
 
-    logger.info(`Opening receipt HTML URL: ${htmlUrl}`);
+      logger.info(`Opening receipt HTML URL: ${htmlUrl}`);
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-features=IsolateOrigins,site-per-process'
-      ]
-    });
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=IsolateOrigins,site-per-process'
+        ]
+      });
 
-    const page = await browser.newPage();
-    await page.setViewport({
-      width: 1920,
-      height: 1080,
-      deviceScaleFactor: 2
-    });
+      const page = await browser.newPage();
+      await page.setViewport({
+        width: 1920,
+        height: 1080,
+        deviceScaleFactor: 2
+      });
 
-    await page.goto(htmlUrl, {
-      waitUntil: 'networkidle0',
-      timeout: 60000
-    });
+      await page.goto(htmlUrl, {
+        waitUntil: 'networkidle0',
+        timeout: 60000
+      });
 
-    logger.info('Receipt HTML loaded successfully');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+      logger.info('Receipt HTML loaded successfully');
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
-    await page.pdf({
-      path: filepath,
-      format: 'A4',
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0
-      }
-    });
+      await page.pdf({
+        path: filepath,
+        format: 'A4',
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: {
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0
+        }
+      });
 
-    await browser.close();
+      await browser.close();
 
-    logger.info(`Receipt PDF generated successfully: ${publicPath}`);
-    return publicPath;
+      logger.info(`Receipt PDF generated successfully: ${publicPath}`);
+      return publicPath;
 
-  } catch (error) {
-    logger.error('Receipt PDF generation error:', error);
-    throw new Error('Failed to generate receipt PDF');
+    } catch (error) {
+      logger.error('Receipt PDF generation error:', error);
+      throw new Error('Failed to generate receipt PDF');
+    }
   }
-}
-
 }

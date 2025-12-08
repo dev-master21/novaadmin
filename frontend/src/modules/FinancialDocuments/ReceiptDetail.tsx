@@ -48,7 +48,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { financialDocumentsApi, Receipt } from '@/api/financialDocuments.api';
-import EditReceiptModal from './components/EditReceiptModal';
+import CreateReceiptModal from './components/CreateReceiptModal';
 
 const ReceiptDetail = () => {
   const { t } = useTranslation();
@@ -562,6 +562,165 @@ const ReceiptDetail = () => {
         </Stack>
       </Card>
 
+      {/* Банковские реквизиты */}
+      {(receipt.bank_details_type === 'simple' || receipt.bank_details_type === 'international' || receipt.bank_details_type === 'custom') && (
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Stack gap="md">
+            <Group gap="sm">
+              <ThemeIcon size="lg" radius="md" variant="light" color="indigo">
+                <IconBuildingBank size={20} />
+              </ThemeIcon>
+              <Title order={4}>{t('receiptDetail.sections.bankDetails')}</Title>
+            </Group>
+
+            {receipt.bank_details_type === 'simple' && (
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                {receipt.bank_name && (
+                  <InfoItem
+                    icon={<IconBuildingBank size={20} />}
+                    label={t('financialDocuments.bankDetails.simple.bankName')}
+                    value={receipt.bank_name}
+                    color="blue"
+                  />
+                )}
+
+                {receipt.bank_account_name && (
+                  <InfoItem
+                    icon={<IconUser size={20} />}
+                    label={t('financialDocuments.bankDetails.simple.accountName')}
+                    value={receipt.bank_account_name}
+                    color="cyan"
+                  />
+                )}
+
+                {receipt.bank_account_number && (
+                  <InfoItem
+                    icon={<IconCreditCard size={20} />}
+                    label={t('financialDocuments.bankDetails.simple.accountNumber')}
+                    value={receipt.bank_account_number}
+                    color="teal"
+                  />
+                )}
+              </SimpleGrid>
+            )}
+
+            {receipt.bank_details_type === 'international' && (
+              <Stack gap="sm">
+                <Paper p="md" radius="md" withBorder style={{ background: theme.colors.blue[0] }}>
+                  <Text size="xs" c="dimmed" mb={8} fw={600} tt="uppercase">
+                    {t('financialDocuments.bankDetails.international.accountInfo')}
+                  </Text>
+                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
+                    {receipt.bank_account_name && (
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          {t('financialDocuments.bankDetails.international.accountName')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {receipt.bank_account_name}
+                        </Text>
+                      </Box>
+                    )}
+
+                    {receipt.bank_account_address && (
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          {t('financialDocuments.bankDetails.international.accountAddress')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {receipt.bank_account_address}
+                        </Text>
+                      </Box>
+                    )}
+
+                    {receipt.bank_currency && (
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          {t('financialDocuments.bankDetails.international.currency')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {receipt.bank_currency}
+                        </Text>
+                      </Box>
+                    )}
+
+                    {receipt.bank_account_number && (
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          {t('financialDocuments.bankDetails.international.accountNumber')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {receipt.bank_account_number}
+                        </Text>
+                      </Box>
+                    )}
+                  </SimpleGrid>
+                </Paper>
+
+                <Paper p="md" radius="md" withBorder style={{ background: theme.colors.violet[0] }}>
+                  <Text size="xs" c="dimmed" mb={8} fw={600} tt="uppercase">
+                    {t('financialDocuments.bankDetails.international.bankInfo')}
+                  </Text>
+                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
+                    {receipt.bank_name && (
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          {t('financialDocuments.bankDetails.international.bankName')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {receipt.bank_name}
+                        </Text>
+                      </Box>
+                    )}
+
+                    {receipt.bank_address && (
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          {t('financialDocuments.bankDetails.international.bankAddress')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {receipt.bank_address}
+                        </Text>
+                      </Box>
+                    )}
+
+                    {receipt.bank_code && (
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          {t('financialDocuments.bankDetails.international.bankCode')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {receipt.bank_code}
+                        </Text>
+                      </Box>
+                    )}
+
+                    {receipt.bank_swift_code && (
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          {t('financialDocuments.bankDetails.international.swiftCode')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {receipt.bank_swift_code}
+                        </Text>
+                      </Box>
+                    )}
+                  </SimpleGrid>
+                </Paper>
+              </Stack>
+            )}
+
+            {receipt.bank_details_type === 'custom' && receipt.bank_custom_details && (
+              <Paper p="md" radius="md" withBorder>
+                <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                  {receipt.bank_custom_details}
+                </Text>
+              </Paper>
+            )}
+          </Stack>
+        </Card>
+      )}
+
       {/* Оплаченные позиции */}
       {receipt.items && receipt.items.length > 0 && (
         <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -716,14 +875,15 @@ const ReceiptDetail = () => {
       )}
 
       {/* Модальное окно редактирования */}
-      <EditReceiptModal
+      <CreateReceiptModal
         visible={editModalVisible}
-        receipt={receipt}
         onCancel={() => setEditModalVisible(false)}
         onSuccess={() => {
           setEditModalVisible(false);
           fetchReceipt();
         }}
+        mode="edit"
+        receiptId={receipt.id}
       />
     </Stack>
   );

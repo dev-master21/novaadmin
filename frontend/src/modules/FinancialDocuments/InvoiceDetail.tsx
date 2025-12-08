@@ -23,7 +23,6 @@ import {
   Progress
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { modals } from '@mantine/modals';
 import { useMediaQuery } from '@mantine/hooks';
 import {
   IconArrowLeft,
@@ -48,12 +47,15 @@ import {
   IconClock,
   IconInfoCircle,
   IconChartPie,
-  IconPercentage
+  IconPercentage,
+  IconCheckbox
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { financialDocumentsApi, Invoice } from '@/api/financialDocuments.api';
-import EditInvoiceModal from './components/EditInvoiceModal';
+import CreateInvoiceModal from './components/CreateInvoiceModal';
+import DeleteInvoiceModal from './components/DeleteInvoiceModal';
+import SelectInvoiceItemsModal from './components/SelectInvoiceItemsModal';
 
 const InvoiceDetail = () => {
   const { t } = useTranslation();
@@ -65,6 +67,10 @@ const InvoiceDetail = () => {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  
+  // 🆕 МОДАЛЬНОЕ ОКНО ВЫБОРА ПОЗИЦИЙ ДЛЯ PDF
+  const [pdfSelectionModalVisible, setPdfSelectionModalVisible] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -88,41 +94,6 @@ const InvoiceDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDelete = () => {
-    modals.openConfirmModal({
-      title: t('invoiceDetail.confirm.deleteTitle'),
-      children: (
-        <Text size="sm">
-          {t('invoiceDetail.confirm.deleteDescription')}
-        </Text>
-      ),
-      labels: {
-        confirm: t('common.delete'),
-        cancel: t('common.cancel')
-      },
-      confirmProps: { color: 'red' },
-      onConfirm: async () => {
-        try {
-          await financialDocumentsApi.deleteInvoice(Number(id));
-          notifications.show({
-            title: t('common.success'),
-            message: t('invoiceDetail.messages.deleted'),
-            color: 'green',
-            icon: <IconCheck size={18} />
-          });
-          navigate('/financial-documents');
-        } catch (error: any) {
-          notifications.show({
-            title: t('errors.generic'),
-            message: t('invoiceDetail.messages.deleteError'),
-            color: 'red',
-            icon: <IconX size={18} />
-          });
-        }
-      }
-    });
   };
 
   const handleCopyLink = async () => {
@@ -155,8 +126,16 @@ const InvoiceDetail = () => {
     }
   };
 
-  const handleDownloadPDF = async () => {
+  // 🆕 ОТКРЫВАЕМ МОДАЛЬНОЕ ОКНО ВЫБОРА ПОЗИЦИЙ
+  const handleDownloadPDF = () => {
+    setPdfSelectionModalVisible(true);
+  };
+
+  // 🆕 СКАЧИВАНИЕ PDF С ВЫБРАННЫМИ ПОЗИЦИЯМИ
+  const handleDownloadPDFWithSelection = async (selectedIds: number[]) => {
     try {
+      setPdfSelectionModalVisible(false);
+      
       notifications.show({
         id: 'pdf-download',
         loading: true,
@@ -166,7 +145,10 @@ const InvoiceDetail = () => {
         withCloseButton: false
       });
 
-      const response = await financialDocumentsApi.downloadInvoicePDF(Number(id));
+      const response = await financialDocumentsApi.downloadInvoicePDF(
+        Number(id),
+        selectedIds.length > 0 ? selectedIds : undefined
+      );
       
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
@@ -198,6 +180,14 @@ const InvoiceDetail = () => {
         autoClose: 3000
       });
     }
+  };
+
+  // 🆕 ПОЛУЧАЕМ СПИСОК НЕОПЛАЧЕННЫХ ПОЗИЦИЙ ПО УМОЛЧАНИЮ
+  const getDefaultSelectedItems = (): number[] => {
+    if (!invoice?.items) return [];
+    return invoice.items
+      .filter((item: any) => item.is_fully_paid !== 1)
+      .map((item: any) => item.id);
   };
 
   const getStatusBadge = (status: string) => {
@@ -291,6 +281,10 @@ const InvoiceDetail = () => {
 
   const paymentProgress = (invoice.amount_paid / invoice.total_amount) * 100;
   const remainingAmount = invoice.total_amount - invoice.amount_paid;
+
+  // 🆕 Подсчёт оплаченных позиций
+  const paidItemsCount = invoice.items?.filter((item: any) => item.is_fully_paid === 1).length || 0;
+  const totalItemsCount = invoice.items?.length || 0;
 
   const InfoItem = ({ 
     icon, 
@@ -483,7 +477,7 @@ const InvoiceDetail = () => {
               variant="light"
               color="red"
               leftSection={<IconTrash size={18} />}
-              onClick={handleDelete}
+              onClick={() => setDeleteModalVisible(true)}
               flex={isMobile ? 1 : undefined}
             >
               {!isMobile && t('common.delete')}
@@ -753,60 +747,86 @@ const InvoiceDetail = () => {
       {/* Позиции инвойса */}
       <Card shadow="sm" padding="lg" radius="md" withBorder>
         <Stack gap="md">
-          <Group gap="sm">
-            <ThemeIcon size="lg" radius="md" variant="light" color="green">
-              <IconPackage size={20} />
-            </ThemeIcon>
-            <Title order={4}>{t('invoiceDetail.sections.items')}</Title>
+          <Group justify="space-between">
+            <Group gap="sm">
+              <ThemeIcon size="lg" radius="md" variant="light" color="green">
+                <IconPackage size={20} />
+              </ThemeIcon>
+              <Title order={4}>{t('invoiceDetail.sections.items')}</Title>
+            </Group>
+            {/* 🆕 BADGE С КОЛИЧЕСТВОМ ОПЛАЧЕННЫХ ПОЗИЦИЙ */}
+            <Badge 
+              size="lg" 
+              color={paidItemsCount === totalItemsCount ? 'green' : 'yellow'}
+              variant="light"
+              leftSection={<IconCheckbox size={16} />}
+            >
+              Paid {paidItemsCount}/{totalItemsCount} items
+            </Badge>
           </Group>
 
           {isMobile ? (
             <Stack gap="xs">
-              {invoice.items && invoice.items.map((item, index) => (
-                <Paper
-                  key={item.id || index}
-                  p="md"
-                  radius="md"
-                  withBorder
-                  style={{
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateX(4px)';
-                    e.currentTarget.style.boxShadow = theme.shadows.md;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateX(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <Stack gap="xs">
-                    <Group justify="space-between" align="flex-start">
-                      <Box style={{ flex: 1 }}>
-                        <Badge size="xs" variant="light" mb={4}>
-                          {index + 1}
-                        </Badge>
-                        <Text fw={600} size="sm" mb={4}>
-                          {item.description}
-                        </Text>
-                        <Group gap={4}>
-                          <Badge size="sm" variant="light" color="gray">
-                            {item.quantity} x {formatCurrency(item.unit_price || 0)} {t('common.currencyTHB')}
-                          </Badge>
-                        </Group>
-                      </Box>
-                      <Box ta="right">
-                        <Text size="lg" fw={700} c="green">
-                          {formatCurrency(item.total_price || 0)}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {t('common.currencyTHB')}
-                        </Text>
-                      </Box>
-                    </Group>
-                  </Stack>
-                </Paper>
-              ))}
+              {invoice.items && invoice.items.map((item: any, index) => {
+                const isPaid = item.is_fully_paid === 1;
+                
+                return (
+                  <Paper
+                    key={item.id || index}
+                    p="md"
+                    radius="md"
+                    withBorder
+                    style={{
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      borderLeft: `4px solid ${isPaid ? theme.colors.green[6] : theme.colors.blue[6]}`,
+                      backgroundColor: isPaid ? theme.colors.green[0] : 'white',
+                      opacity: isPaid ? 0.9 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateX(4px)';
+                      e.currentTarget.style.boxShadow = theme.shadows.md;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateX(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <Stack gap="xs">
+                      <Group justify="space-between" align="flex-start">
+                        <Box style={{ flex: 1 }}>
+                          <Group gap="xs" mb={4}>
+                            <Badge size="xs" variant="light">
+                              {index + 1}
+                            </Badge>
+                            {/* 🆕 BADGE [PAID] */}
+                            {isPaid && (
+                              <Badge size="xs" color="green" variant="filled">
+                                PAID
+                              </Badge>
+                            )}
+                          </Group>
+                          <Text fw={600} size="sm" mb={4}>
+                            {item.description}
+                          </Text>
+                          <Group gap={4}>
+                            <Badge size="sm" variant="light" color="gray">
+                              {item.quantity} x {formatCurrency(item.unit_price || 0)} {t('common.currencyTHB')}
+                            </Badge>
+                          </Group>
+                        </Box>
+                        <Box ta="right">
+                          <Text size="lg" fw={700} c={isPaid ? 'green' : 'blue'}>
+                            {formatCurrency(item.total_price || 0)}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {t('common.currencyTHB')}
+                          </Text>
+                        </Box>
+                      </Group>
+                    </Stack>
+                  </Paper>
+                );
+              })}
             </Stack>
           ) : (
             <Table.ScrollContainer minWidth={600}>
@@ -818,24 +838,47 @@ const InvoiceDetail = () => {
                     <Table.Th ta="center" w={100}>{t('invoiceDetail.table.items.quantity')}</Table.Th>
                     <Table.Th ta="right" w={150}>{t('invoiceDetail.table.items.price')}</Table.Th>
                     <Table.Th ta="right" w={150}>{t('invoiceDetail.table.items.total')}</Table.Th>
+                    <Table.Th ta="center" w={100}>Status</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {invoice.items && invoice.items.map((item, index) => (
-                    <Table.Tr key={item.id || index}>
-                      <Table.Td>{index + 1}</Table.Td>
-                      <Table.Td>{item.description}</Table.Td>
-                      <Table.Td ta="center">{item.quantity}</Table.Td>
-                      <Table.Td ta="right">
-                        {formatCurrency(item.unit_price || 0)} {t('common.currencyTHB')}
-                      </Table.Td>
-                      <Table.Td ta="right">
-                        <Text fw={600} c="green">
-                          {formatCurrency(item.total_price || 0)} {t('common.currencyTHB')}
-                        </Text>
-                      </Table.Td>
-                    </Table.Tr>
-                  ))}
+                  {invoice.items && invoice.items.map((item: any, index) => {
+                    const isPaid = item.is_fully_paid === 1;
+                    
+                    return (
+                      <Table.Tr 
+                        key={item.id || index}
+                        style={{
+                          backgroundColor: isPaid ? theme.colors.green[0] : 'transparent',
+                          opacity: isPaid ? 0.9 : 1
+                        }}
+                      >
+                        <Table.Td>{index + 1}</Table.Td>
+                        <Table.Td>{item.description}</Table.Td>
+                        <Table.Td ta="center">{item.quantity}</Table.Td>
+                        <Table.Td ta="right">
+                          {formatCurrency(item.unit_price || 0)} {t('common.currencyTHB')}
+                        </Table.Td>
+                        <Table.Td ta="right">
+                          <Text fw={600} c={isPaid ? 'green' : 'blue'}>
+                            {formatCurrency(item.total_price || 0)} {t('common.currencyTHB')}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td ta="center">
+                          {/* 🆕 BADGE [PAID] В ТАБЛИЦЕ */}
+                          {isPaid ? (
+                            <Badge size="sm" color="green" variant="filled">
+                              PAID
+                            </Badge>
+                          ) : (
+                            <Badge size="sm" color="gray" variant="light">
+                              UNPAID
+                            </Badge>
+                          )}
+                        </Table.Td>
+                      </Table.Tr>
+                    );
+                  })}
                 </Table.Tbody>
                 <Table.Tfoot>
                   <Table.Tr>
@@ -847,6 +890,7 @@ const InvoiceDetail = () => {
                         {formatCurrency(invoice.subtotal)} {t('common.currencyTHB')}
                       </Text>
                     </Table.Td>
+                    <Table.Td />
                   </Table.Tr>
                   {invoice.tax_amount > 0 && (
                     <Table.Tr>
@@ -858,6 +902,7 @@ const InvoiceDetail = () => {
                           {formatCurrency(invoice.tax_amount)} {t('common.currencyTHB')}
                         </Text>
                       </Table.Td>
+                      <Table.Td />
                     </Table.Tr>
                   )}
                   <Table.Tr>
@@ -869,6 +914,7 @@ const InvoiceDetail = () => {
                         {formatCurrency(invoice.total_amount)} {t('common.currencyTHB')}
                       </Text>
                     </Table.Td>
+                    <Table.Td />
                   </Table.Tr>
                 </Table.Tfoot>
               </Table>
@@ -1062,15 +1108,35 @@ const InvoiceDetail = () => {
         </Card>
       )}
 
-      {/* Модальное окно редактирования */}
-      <EditInvoiceModal
+      {/* 🆕 МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ */}
+      <CreateInvoiceModal
         visible={editModalVisible}
-        invoice={invoice}
         onCancel={() => setEditModalVisible(false)}
         onSuccess={() => {
           setEditModalVisible(false);
           fetchInvoice();
         }}
+        mode="edit"
+        invoiceId={invoice.id}
+      />
+
+      {/* 🆕 МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ */}
+      <DeleteInvoiceModal
+        visible={deleteModalVisible}
+        onClose={() => setDeleteModalVisible(false)}
+        onSuccess={() => {
+          navigate('/financial-documents');
+        }}
+        invoiceId={invoice.id}
+      />
+
+      {/* 🆕 МОДАЛЬНОЕ ОКНО ВЫБОРА ПОЗИЦИЙ ДЛЯ PDF */}
+      <SelectInvoiceItemsModal
+        opened={pdfSelectionModalVisible}
+        onClose={() => setPdfSelectionModalVisible(false)}
+        items={invoice?.items || []}
+        onDownload={handleDownloadPDFWithSelection}
+        defaultSelectedItems={getDefaultSelectedItems()}
       />
     </Stack>
   );
