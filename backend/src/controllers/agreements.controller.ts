@@ -16,10 +16,10 @@ class AgreementsController {
     fs.ensureDirSync(this.uploadsPath);
   }
 
-  /**
-   * Получить список всех договоров
-   * GET /api/agreements
-   */
+/**
+ * Получить список всех договоров
+ * GET /api/agreements
+ */
 async getAll(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { type, status, property_id, search, page = 1, limit = 20 } = req.query;
@@ -30,6 +30,13 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
 
     const whereConditions: string[] = ['a.deleted_at IS NULL'];
     const queryParams: any[] = [];
+
+    // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined) {
+      whereConditions.push('au.partner_id = ?');
+      queryParams.push(userPartnerId);
+    }
 
     if (type) {
       whereConditions.push('a.type = ?');
@@ -57,6 +64,7 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
     const countQuery = `
       SELECT COUNT(*) as total
       FROM agreements a
+      LEFT JOIN admin_users au ON a.created_by = au.id
       ${whereClause}
     `;
     const countResult = await db.queryOne<{ total: number }>(countQuery, queryParams);
@@ -71,6 +79,7 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
         COALESCE(a.property_number_override, p.property_number) as property_number,
         COALESCE(a.property_address_override, p.address) as property_address,
         u.username as created_by_name,
+        au.partner_id as creator_partner_id,
         (SELECT COUNT(*) FROM agreement_signatures WHERE agreement_id = a.id) as signature_count,
         (SELECT COUNT(*) FROM agreement_signatures WHERE agreement_id = a.id AND is_signed = 1) as signed_count
       FROM agreements a
@@ -79,6 +88,7 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
       LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
       LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
       LEFT JOIN admin_users u ON a.created_by = u.id
+      LEFT JOIN admin_users au ON a.created_by = au.id
       ${whereClause}
       ORDER BY a.created_at DESC
       LIMIT ? OFFSET ?
@@ -201,10 +211,10 @@ async getAgreementByVerifyLink(req: AuthRequest, res: Response): Promise<void> {
   }
 }
 
-  /**
-   * Получить договор по ID
-   * GET /api/agreements/:id
-   */
+/**
+ * Получить договор по ID
+ * GET /api/agreements/:id
+ */
 async getById(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
@@ -216,13 +226,15 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
         COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name, CONCAT('Объект ', p.property_number)) as property_name,
         COALESCE(a.property_number_override, p.property_number) as property_number,
         COALESCE(a.property_address_override, p.address) as property_address,
-        u.username as created_by_name
+        u.username as created_by_name,
+        au.partner_id as creator_partner_id
       FROM agreements a
       LEFT JOIN agreement_templates at ON a.template_id = at.id
       LEFT JOIN properties p ON a.property_id = p.id
       LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
       LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
       LEFT JOIN admin_users u ON a.created_by = u.id
+      LEFT JOIN admin_users au ON a.created_by = au.id
       WHERE a.id = ? AND a.deleted_at IS NULL
     `, [id]);
 
@@ -230,6 +242,16 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       res.status(404).json({
         success: false,
         message: 'Договор не найден'
+      });
+      return;
+    }
+
+    // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined && agreement.creator_partner_id !== userPartnerId) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет доступа к этому договору'
       });
       return;
     }

@@ -20,6 +20,14 @@ class PropertiesController {
  */
 async getAll(req: AuthRequest, res: Response): Promise<void> {
   try {
+    // ✅ ИСПРАВЛЕННОЕ ЛОГИРОВАНИЕ (используем шаблонные строки)
+    logger.info(`=== GET ALL PROPERTIES ===`);
+    logger.info(`User ID: ${req.admin?.id}`);
+    logger.info(`User username: ${req.admin?.username}`);
+    logger.info(`User partner_id: ${req.admin?.partner_id}`);
+    logger.info(`User partner_id type: ${typeof req.admin?.partner_id}`);
+    logger.info(`User is_super_admin: ${req.admin?.is_super_admin}`);
+    
     const { 
       page = 1, 
       limit = 20, 
@@ -36,6 +44,19 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
     
     const whereConditions: string[] = ['p.deleted_at IS NULL'];
     const queryParams: any[] = [];
+
+    // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    logger.info(`Extracted userPartnerId: ${userPartnerId}`);
+    logger.info(`userPartnerId type: ${typeof userPartnerId}`);
+    
+    if (userPartnerId !== null && userPartnerId !== undefined) {
+      whereConditions.push('au.partner_id = ?');
+      queryParams.push(userPartnerId);
+      logger.info(`✅ PARTNER FILTER APPLIED: au.partner_id = ${userPartnerId}`);
+    } else {
+      logger.info(`❌ NO PARTNER FILTER - showing all properties`);
+    }
 
     if (status) {
       whereConditions.push('p.status = ?');
@@ -66,15 +87,22 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
       ? `WHERE ${whereConditions.join(' AND ')}` 
       : '';
 
+    // ✅ ИСПРАВЛЕННОЕ ЛОГИРОВАНИЕ SQL
+    logger.info(`Final WHERE clause: ${whereClause}`);
+    logger.info(`Final query params: ${JSON.stringify(queryParams)}`);
+
     const countQuery = `
       SELECT COUNT(DISTINCT p.id) as total
       FROM properties p
+      LEFT JOIN admin_users au ON p.created_by = au.id
       LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'ru'
       ${whereClause}
     `;
     
     const countResult = await db.queryOne<any>(countQuery, queryParams);
     const total = countResult?.total || 0;
+
+    logger.info(`Total properties found: ${total}`);
 
     const query = `
       SELECT 
@@ -98,6 +126,7 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
         p.owner_notes,
         COALESCE(au.full_name, 'Система') as creator_name,
         COALESCE(au.username, 'system') as creator_username,
+        au.partner_id as creator_partner_id,
         pt.property_name,
         (SELECT photo_url FROM property_photos WHERE property_id = p.id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as cover_photo
       FROM properties p
@@ -110,18 +139,20 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
 
     const properties = await db.query<any>(query, queryParams);
 
-    // ✅ НОВОЕ: Проверяем права и фильтруем данные о владельце
+    logger.info(`Properties returned: ${properties.length}`);
+    if (properties.length > 0) {
+      logger.info(`First property ID: ${properties[0].id}, creator_partner_id: ${properties[0].creator_partner_id}`);
+    }
+
     const canViewAllOwners = req.admin?.is_super_admin || 
                             (req.admin?.permissions && req.admin.permissions.includes('properties.update'));
 
     const propertiesWithUrls = properties.map((property: any) => {
-      // Если нет прав на просмотр всех владельцев и пользователь не создатель - скрываем данные о владельце
       const shouldHideOwner = !canViewAllOwners && property.created_by !== req.admin?.id;
       
       return {
         ...property,
         cover_photo: getImageUrl(property.cover_photo, true),
-        // Скрываем данные о владельце если нет прав
         owner_name: shouldHideOwner ? null : property.owner_name,
         owner_phone: shouldHideOwner ? null : property.owner_phone,
         owner_email: shouldHideOwner ? null : property.owner_email,
@@ -156,18 +187,44 @@ async getAll(req: AuthRequest, res: Response): Promise<void> {
  * Получить список уникальных владельцев (источников)
  * GET /api/properties/owners/unique
  */
-async getUniqueOwners(_req: AuthRequest, res: Response): Promise<void> {
+async getUniqueOwners(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const owners = await db.query<any>(
-      `SELECT DISTINCT owner_name
-       FROM properties
-       WHERE owner_name IS NOT NULL 
-       AND owner_name != ''
-       AND deleted_at IS NULL
-       ORDER BY owner_name ASC`
-    );
+    // ✅ ДОБАВИТЬ ЛОГИРОВАНИЕ
+    logger.info('=== GET UNIQUE OWNERS ===');
+    logger.info('User ID:', req.admin?.id);
+    logger.info('User partner_id:', req.admin?.partner_id);
+    
+    // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ (исправлено условие)
+    const userPartnerId = req.admin?.partner_id;
+    
+    let query = `
+      SELECT DISTINCT p.owner_name
+      FROM properties p
+      LEFT JOIN admin_users au ON p.created_by = au.id
+      WHERE p.owner_name IS NOT NULL 
+      AND p.owner_name != ''
+      AND p.deleted_at IS NULL
+    `;
+    
+    const queryParams: any[] = [];
+    
+    if (userPartnerId !== null && userPartnerId !== undefined) {
+      query += ' AND au.partner_id = ?';
+      queryParams.push(userPartnerId);
+      logger.info('✅ PARTNER FILTER APPLIED for owners: au.partner_id =', userPartnerId);
+    } else {
+      logger.info('❌ NO PARTNER FILTER for owners - showing all');
+    }
+    
+    query += ' ORDER BY p.owner_name ASC';
 
+    logger.info('Owners query:', query);
+    logger.info('Owners query params:', JSON.stringify(queryParams));
+
+    const owners = await db.query<any>(query, queryParams);
     const ownersList = owners.map((o: any) => o.owner_name);
+
+    logger.info('Unique owners found:', ownersList.length);
 
     res.json({
       success: true,
@@ -181,6 +238,7 @@ async getUniqueOwners(_req: AuthRequest, res: Response): Promise<void> {
     });
   }
 }
+
 /**
  * Скачать архив фотографий
  * POST /api/properties/:id/photos/download
@@ -293,7 +351,8 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       `SELECT 
         p.*,
         COALESCE(au.full_name, 'Система') as creator_name,
-        COALESCE(au.username, 'system') as creator_username
+        COALESCE(au.username, 'system') as creator_username,
+        au.partner_id as creator_partner_id
       FROM properties p
       LEFT JOIN admin_users au ON p.created_by = au.id
       WHERE p.id = ? AND p.deleted_at IS NULL`,
@@ -304,6 +363,16 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       res.status(404).json({
         success: false,
         message: 'Объект не найден'
+      });
+      return;
+    }
+
+    // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId && property.creator_partner_id !== userPartnerId) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет доступа к этому объекту'
       });
       return;
     }
@@ -360,7 +429,7 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       [id]
     );
 
-    // ✅ ИЗМЕНЕНО: Загружаем сезонные цены с новыми полями
+    // Загружаем сезонные цены с новыми полями
     const pricing = await db.query(
       `SELECT 
         id, season_type, start_date_recurring, end_date_recurring,
@@ -373,7 +442,7 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       [id]
     );
 
-    // ✅ ИЗМЕНЕНО: Загружаем месячные цены с новыми полями
+    // Загружаем месячные цены с новыми полями
     const monthly_pricing = await db.query(
       `SELECT 
         id, month_number, price_per_month, minimum_days,
@@ -620,7 +689,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         emptyToNull(ics_calendar_url),
         emptyToNull(video_url),
         status || 'draft',
-        req.admin?.id,
+        req.admin?.id, // ✅ created_by - автоматически привязываем к пользователю
         
         // 40-45: Информация о владельце
         emptyToNull(owner_name),
@@ -633,7 +702,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         // 46-52: Year Price с полями (✅ ОБНОВЛЕНО: добавлен 'month')
         emptyToNull(year_price),
         validateEnum(year_pricing_mode, ['net', 'gross', 'month']) || 'net',
-        validateEnum(year_commission_type, ['percentage', 'fixed', 'month']), // ✅ ДОБАВЛЕН 'month'
+        validateEnum(year_commission_type, ['percentage', 'fixed', 'month']),
         emptyToNull(year_commission_value),
         emptyToNull(year_source_price),
         emptyToNull(year_margin_amount),
@@ -659,7 +728,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     );
 
     const propertyId = (propertyResult as any)[0].insertId;
-    logger.info(`Property created: ${propertyId} by user ${req.admin?.username}`);
+    logger.info(`Property created: ${propertyId} by user ${req.admin?.username} (partner_id: ${req.admin?.partner_id || 'NULL'})`);
 
     // Определяем массив языков
     const languages = ['ru', 'en', 'th', 'zh', 'he'];

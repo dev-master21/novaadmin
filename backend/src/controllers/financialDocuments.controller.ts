@@ -10,140 +10,166 @@ class FinancialDocumentsController {
   
   // ==================== INVOICES ====================
   
-  /**
-   * Получить список всех инвойсов
-   * GET /api/financial-documents/invoices
-   */
-  async getAllInvoices(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { status, agreement_id, search, page = 1, limit = 20 } = req.query;
+/**
+ * Получить список всех инвойсов
+ * GET /api/financial-documents/invoices
+ */
+async getAllInvoices(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { status, agreement_id, search, page = 1, limit = 20 } = req.query;
 
-      const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
-      const limitNum = Math.max(1, Math.min(100, parseInt(String(limit), 10) || 20));
-      const offset = (pageNum - 1) * limitNum;
+    const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(String(limit), 10) || 20));
+    const offset = (pageNum - 1) * limitNum;
 
-      const whereConditions: string[] = ['i.deleted_at IS NULL'];
-      const queryParams: any[] = [];
+    const whereConditions: string[] = ['i.deleted_at IS NULL'];
+    const queryParams: any[] = [];
 
-      if (status) {
-        whereConditions.push('i.status = ?');
-        queryParams.push(status);
-      }
-
-      if (agreement_id) {
-        whereConditions.push('i.agreement_id = ?');
-        queryParams.push(agreement_id);
-      }
-
-      if (search) {
-        whereConditions.push('(i.invoice_number LIKE ? OR i.notes LIKE ?)');
-        queryParams.push(`%${search}%`, `%${search}%`);
-      }
-
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-      // Получаем общее количество
-      const countQuery = `SELECT COUNT(*) as total FROM invoices i ${whereClause}`;
-      const countResult = await db.queryOne<{ total: number }>(countQuery, queryParams);
-      const total = countResult?.total || 0;
-
-      // Получаем инвойсы
-      const query = `
-        SELECT 
-          i.*,
-          a.agreement_number,
-          u.username as created_by_name,
-          (SELECT COUNT(*) FROM receipts WHERE invoice_id = i.id AND deleted_at IS NULL) as receipts_count
-        FROM invoices i
-        LEFT JOIN agreements a ON i.agreement_id = a.id
-        LEFT JOIN admin_users u ON i.created_by = u.id
-        ${whereClause}
-        ORDER BY i.created_at DESC
-        LIMIT ? OFFSET ?
-      `;
-
-      queryParams.push(limitNum, offset);
-      const invoices = await db.query(query, queryParams);
-
-      res.json({
-        success: true,
-        data: invoices,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          totalPages: Math.ceil(total / limitNum)
-        }
-      });
-    } catch (error) {
-      logger.error('Get all invoices error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка получения инвойсов'
-      });
+    // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined) {
+      whereConditions.push('au.partner_id = ?');
+      queryParams.push(userPartnerId);
     }
-  }
 
-  /**
-   * Получить инвойс по ID
-   * GET /api/financial-documents/invoices/:id
-   */
-  async getInvoiceById(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-
-      const invoice = await db.queryOne(`
-        SELECT 
-          i.*,
-          a.agreement_number,
-          u.username as created_by_name
-        FROM invoices i
-        LEFT JOIN agreements a ON i.agreement_id = a.id
-        LEFT JOIN admin_users u ON i.created_by = u.id
-        WHERE i.id = ? AND i.deleted_at IS NULL
-      `, [id]);
-
-      if (!invoice) {
-        res.status(404).json({
-          success: false,
-          message: 'Инвойс не найден'
-        });
-        return;
-      }
-
-      // Получаем позиции инвойса
-      const items = await db.query(
-        'SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id',
-        [id]
-      );
-
-      // Получаем чеки для этого инвойса
-      const receipts = await db.query(`
-        SELECT 
-          r.*,
-          u.username as created_by_name
-        FROM receipts r
-        LEFT JOIN admin_users u ON r.created_by = u.id
-        WHERE r.invoice_id = ? AND r.deleted_at IS NULL
-        ORDER BY r.created_at DESC
-      `, [id]);
-
-      res.json({
-        success: true,
-        data: {
-          ...invoice,
-          items,
-          receipts
-        }
-      });
-    } catch (error) {
-      logger.error('Get invoice error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка получения инвойса'
-      });
+    if (status) {
+      whereConditions.push('i.status = ?');
+      queryParams.push(status);
     }
+
+    if (agreement_id) {
+      whereConditions.push('i.agreement_id = ?');
+      queryParams.push(agreement_id);
+    }
+
+    if (search) {
+      whereConditions.push('(i.invoice_number LIKE ? OR i.notes LIKE ?)');
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Получаем общее количество
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM invoices i 
+      LEFT JOIN admin_users au ON i.created_by = au.id
+      ${whereClause}
+    `;
+    const countResult = await db.queryOne<{ total: number }>(countQuery, queryParams);
+    const total = countResult?.total || 0;
+
+    // Получаем инвойсы
+    const query = `
+      SELECT 
+        i.*,
+        a.agreement_number,
+        u.username as created_by_name,
+        au.partner_id as creator_partner_id,
+        (SELECT COUNT(*) FROM receipts WHERE invoice_id = i.id AND deleted_at IS NULL) as receipts_count
+      FROM invoices i
+      LEFT JOIN agreements a ON i.agreement_id = a.id
+      LEFT JOIN admin_users u ON i.created_by = u.id
+      LEFT JOIN admin_users au ON i.created_by = au.id
+      ${whereClause}
+      ORDER BY i.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    queryParams.push(limitNum, offset);
+    const invoices = await db.query(query, queryParams);
+
+    res.json({
+      success: true,
+      data: invoices,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    logger.error('Get all invoices error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения инвойсов'
+    });
   }
+}
+
+/**
+ * Получить инвойс по ID
+ * GET /api/financial-documents/invoices/:id
+ */
+async getInvoiceById(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const invoice = await db.queryOne(`
+      SELECT 
+        i.*,
+        a.agreement_number,
+        u.username as created_by_name,
+        au.partner_id as creator_partner_id
+      FROM invoices i
+      LEFT JOIN agreements a ON i.agreement_id = a.id
+      LEFT JOIN admin_users u ON i.created_by = u.id
+      LEFT JOIN admin_users au ON i.created_by = au.id
+      WHERE i.id = ? AND i.deleted_at IS NULL
+    `, [id]);
+
+    if (!invoice) {
+      res.status(404).json({
+        success: false,
+        message: 'Инвойс не найден'
+      });
+      return;
+    }
+
+    // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined && invoice.creator_partner_id !== userPartnerId) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет доступа к этому инвойсу'
+      });
+      return;
+    }
+
+    // Получаем позиции инвойса
+    const items = await db.query(
+      'SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id',
+      [id]
+    );
+
+    // Получаем чеки для этого инвойса
+    const receipts = await db.query(`
+      SELECT 
+        r.*,
+        u.username as created_by_name
+      FROM receipts r
+      LEFT JOIN admin_users u ON r.created_by = u.id
+      WHERE r.invoice_id = ? AND r.deleted_at IS NULL
+      ORDER BY r.created_at DESC
+    `, [id]);
+
+    res.json({
+      success: true,
+      data: {
+        ...invoice,
+        items,
+        receipts
+      }
+    });
+  } catch (error) {
+    logger.error('Get invoice error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения инвойса'
+    });
+  }
+}
 
   /**
    * Создать инвойс
@@ -518,151 +544,177 @@ class FinancialDocumentsController {
 
   // ==================== RECEIPTS ====================
   
-  /**
-   * Получить список всех чеков
-   * GET /api/financial-documents/receipts
-   */
-  async getAllReceipts(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { status, invoice_id, agreement_id, search, page = 1, limit = 20 } = req.query;
+/**
+ * Получить список всех чеков
+ * GET /api/financial-documents/receipts
+ */
+async getAllReceipts(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { status, invoice_id, agreement_id, search, page = 1, limit = 20 } = req.query;
 
-      const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
-      const limitNum = Math.max(1, Math.min(100, parseInt(String(limit), 10) || 20));
-      const offset = (pageNum - 1) * limitNum;
+    const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(String(limit), 10) || 20));
+    const offset = (pageNum - 1) * limitNum;
 
-      const whereConditions: string[] = ['r.deleted_at IS NULL'];
-      const queryParams: any[] = [];
+    const whereConditions: string[] = ['r.deleted_at IS NULL'];
+    const queryParams: any[] = [];
 
-      if (status) {
-        whereConditions.push('r.status = ?');
-        queryParams.push(status);
-      }
-
-      if (invoice_id) {
-        whereConditions.push('r.invoice_id = ?');
-        queryParams.push(invoice_id);
-      }
-
-      if (agreement_id) {
-        whereConditions.push('r.agreement_id = ?');
-        queryParams.push(agreement_id);
-      }
-
-      if (search) {
-        whereConditions.push('(r.receipt_number LIKE ? OR r.notes LIKE ?)');
-        queryParams.push(`%${search}%`, `%${search}%`);
-      }
-
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-      // Получаем общее количество
-      const countQuery = `SELECT COUNT(*) as total FROM receipts r ${whereClause}`;
-      const countResult = await db.queryOne<{ total: number }>(countQuery, queryParams);
-      const total = countResult?.total || 0;
-
-      // Получаем чеки
-      const query = `
-        SELECT 
-          r.*,
-          i.invoice_number,
-          a.agreement_number,
-          u.username as created_by_name,
-          (SELECT COUNT(*) FROM receipt_files WHERE receipt_id = r.id) as files_count
-        FROM receipts r
-        LEFT JOIN invoices i ON r.invoice_id = i.id
-        LEFT JOIN agreements a ON r.agreement_id = a.id
-        LEFT JOIN admin_users u ON r.created_by = u.id
-        ${whereClause}
-        ORDER BY r.created_at DESC
-        LIMIT ? OFFSET ?
-      `;
-
-      queryParams.push(limitNum, offset);
-      const receipts = await db.query(query, queryParams);
-
-      res.json({
-        success: true,
-        data: receipts,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          totalPages: Math.ceil(total / limitNum)
-        }
-      });
-    } catch (error) {
-      logger.error('Get all receipts error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка получения чеков'
-      });
+    // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined) {
+      whereConditions.push('au.partner_id = ?');
+      queryParams.push(userPartnerId);
     }
-  }
 
-  /**
-   * Получить чек по ID
-   * GET /api/financial-documents/receipts/:id
-   */
-  async getReceiptById(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-
-      const receipt = await db.queryOne(`
-        SELECT 
-          r.*,
-          i.invoice_number,
-          a.agreement_number,
-          u.username as created_by_name
-        FROM receipts r
-        LEFT JOIN invoices i ON r.invoice_id = i.id
-        LEFT JOIN agreements a ON r.agreement_id = a.id
-        LEFT JOIN admin_users u ON r.created_by = u.id
-        WHERE r.id = ? AND r.deleted_at IS NULL
-      `, [id]);
-
-      if (!receipt) {
-        res.status(404).json({
-          success: false,
-          message: 'Чек не найден'
-        });
-        return;
-      }
-
-      // Получаем файлы чека
-      const files = await db.query(
-        'SELECT * FROM receipt_files WHERE receipt_id = ? ORDER BY uploaded_at',
-        [id]
-      );
-
-      // Получаем привязанные позиции инвойса
-      const items = await db.query(`
-        SELECT 
-          rii.*,
-          ii.description,
-          ii.quantity,
-          ii.unit_price,
-          ii.total_price
-        FROM receipt_invoice_items rii
-        LEFT JOIN invoice_items ii ON rii.invoice_item_id = ii.id
-        WHERE rii.receipt_id = ?
-      `, [id]);
-
-      res.json({
-        success: true,
-        data: {
-          ...receipt,
-          files,
-          items
-        }
-      });
-    } catch (error) {
-      logger.error('Get receipt error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка получения чека'
-      });
+    if (status) {
+      whereConditions.push('r.status = ?');
+      queryParams.push(status);
     }
+
+    if (invoice_id) {
+      whereConditions.push('r.invoice_id = ?');
+      queryParams.push(invoice_id);
+    }
+
+    if (agreement_id) {
+      whereConditions.push('r.agreement_id = ?');
+      queryParams.push(agreement_id);
+    }
+
+    if (search) {
+      whereConditions.push('(r.receipt_number LIKE ? OR r.notes LIKE ?)');
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Получаем общее количество
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM receipts r 
+      LEFT JOIN admin_users au ON r.created_by = au.id
+      ${whereClause}
+    `;
+    const countResult = await db.queryOne<{ total: number }>(countQuery, queryParams);
+    const total = countResult?.total || 0;
+
+    // Получаем чеки
+    const query = `
+      SELECT 
+        r.*,
+        i.invoice_number,
+        a.agreement_number,
+        u.username as created_by_name,
+        au.partner_id as creator_partner_id,
+        (SELECT COUNT(*) FROM receipt_files WHERE receipt_id = r.id) as files_count
+      FROM receipts r
+      LEFT JOIN invoices i ON r.invoice_id = i.id
+      LEFT JOIN agreements a ON r.agreement_id = a.id
+      LEFT JOIN admin_users u ON r.created_by = u.id
+      LEFT JOIN admin_users au ON r.created_by = au.id
+      ${whereClause}
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    queryParams.push(limitNum, offset);
+    const receipts = await db.query(query, queryParams);
+
+    res.json({
+      success: true,
+      data: receipts,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    logger.error('Get all receipts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения чеков'
+    });
   }
+}
+
+/**
+ * Получить чек по ID
+ * GET /api/financial-documents/receipts/:id
+ */
+async getReceiptById(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const receipt = await db.queryOne(`
+      SELECT 
+        r.*,
+        i.invoice_number,
+        a.agreement_number,
+        u.username as created_by_name,
+        au.partner_id as creator_partner_id
+      FROM receipts r
+      LEFT JOIN invoices i ON r.invoice_id = i.id
+      LEFT JOIN agreements a ON r.agreement_id = a.id
+      LEFT JOIN admin_users u ON r.created_by = u.id
+      LEFT JOIN admin_users au ON r.created_by = au.id
+      WHERE r.id = ? AND r.deleted_at IS NULL
+    `, [id]);
+
+    if (!receipt) {
+      res.status(404).json({
+        success: false,
+        message: 'Чек не найден'
+      });
+      return;
+    }
+
+    // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined && receipt.creator_partner_id !== userPartnerId) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет доступа к этому чеку'
+      });
+      return;
+    }
+
+    // Получаем файлы чека
+    const files = await db.query(
+      'SELECT * FROM receipt_files WHERE receipt_id = ? ORDER BY uploaded_at',
+      [id]
+    );
+
+    // Получаем привязанные позиции инвойса
+    const items = await db.query(`
+      SELECT 
+        rii.*,
+        ii.description,
+        ii.quantity,
+        ii.unit_price,
+        ii.total_price
+      FROM receipt_invoice_items rii
+      LEFT JOIN invoice_items ii ON rii.invoice_item_id = ii.id
+      WHERE rii.receipt_id = ?
+    `, [id]);
+
+    res.json({
+      success: true,
+      data: {
+        ...receipt,
+        files,
+        items
+      }
+    });
+  } catch (error) {
+    logger.error('Get receipt error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения чека'
+    });
+  }
+}
 
   /**
    * Создать чек

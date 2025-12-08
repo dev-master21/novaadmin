@@ -16,6 +16,13 @@ class AgreementTemplatesController {
       const whereConditions: string[] = [];
       const queryParams: any[] = [];
 
+      // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ
+      const userPartnerId = req.admin?.partner_id;
+      if (userPartnerId !== null && userPartnerId !== undefined) {
+        whereConditions.push('au.partner_id = ?');
+        queryParams.push(userPartnerId);
+      }
+
       if (type) {
         whereConditions.push('t.type = ?');
         queryParams.push(type);
@@ -32,9 +39,11 @@ class AgreementTemplatesController {
         SELECT 
           t.*,
           u.username as created_by_name,
+          au.partner_id as creator_partner_id,
           (SELECT COUNT(*) FROM agreements WHERE template_id = t.id) as usage_count
         FROM agreement_templates t
         LEFT JOIN admin_users u ON t.created_by = u.id
+        LEFT JOIN admin_users au ON t.created_by = au.id
         ${whereClause}
         ORDER BY t.created_at DESC
       `;
@@ -65,9 +74,11 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
     const template = await db.queryOne(`
       SELECT 
         t.*,
-        u.username as created_by_name
+        u.username as created_by_name,
+        au.partner_id as creator_partner_id
       FROM agreement_templates t
       LEFT JOIN admin_users u ON t.created_by = u.id
+      LEFT JOIN admin_users au ON t.created_by = au.id
       WHERE t.id = ?
     `, [id]);
 
@@ -79,11 +90,21 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
+    // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined && template.creator_partner_id !== userPartnerId) {
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет доступа к этому шаблону'
+      });
+      return;
+    }
+
     // Получаем объекты где использовался шаблон
     const usedProperties = await db.query(`
       SELECT DISTINCT 
         p.*,
-        COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name, CONCAT('Объект ', p.property_number)) as property_nameы
+        COALESCE(pt_ru.property_name, pt_en.property_name, p.complex_name, CONCAT('Объект ', p.property_number)) as property_name
       FROM agreements a
       JOIN properties p ON a.property_id = p.id
       LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
@@ -166,13 +187,31 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
       const { id } = req.params;
       const { name, content, structure, is_active } = req.body;
 
-      const template = await db.queryOne('SELECT id FROM agreement_templates WHERE id = ?', [id]);
+      const template = await db.queryOne(`
+        SELECT 
+          t.id,
+          au.partner_id as creator_partner_id
+        FROM agreement_templates t
+        LEFT JOIN admin_users au ON t.created_by = au.id
+        WHERE t.id = ?
+      `, [id]);
 
       if (!template) {
         await db.rollback(connection);
         res.status(404).json({
           success: false,
           message: 'Шаблон не найден'
+        });
+        return;
+      }
+
+      // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+      const userPartnerId = req.admin?.partner_id;
+      if (userPartnerId !== null && userPartnerId !== undefined && template.creator_partner_id !== userPartnerId) {
+        await db.rollback(connection);
+        res.status(403).json({
+          success: false,
+          message: 'У вас нет доступа к этому шаблону'
         });
         return;
       }
@@ -235,6 +274,34 @@ async getById(req: AuthRequest, res: Response): Promise<void> {
   async delete(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+
+      // Получаем шаблон с проверкой доступа
+      const template = await db.queryOne(`
+        SELECT 
+          t.id,
+          au.partner_id as creator_partner_id
+        FROM agreement_templates t
+        LEFT JOIN admin_users au ON t.created_by = au.id
+        WHERE t.id = ?
+      `, [id]);
+
+      if (!template) {
+        res.status(404).json({
+          success: false,
+          message: 'Шаблон не найден'
+        });
+        return;
+      }
+
+      // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+      const userPartnerId = req.admin?.partner_id;
+      if (userPartnerId !== null && userPartnerId !== undefined && template.creator_partner_id !== userPartnerId) {
+        res.status(403).json({
+          success: false,
+          message: 'У вас нет доступа к этому шаблону'
+        });
+        return;
+      }
 
       // Проверяем использование шаблона
       const usageCount = await db.queryOne<{ count: number }>(

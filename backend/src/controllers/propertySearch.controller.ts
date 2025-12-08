@@ -354,81 +354,81 @@ class PropertySearchController {
    * Мануальный поиск недвижимости
    * POST /api/property-search/manual
    */
-  async searchManual(req: AuthRequest, res: Response): Promise<void> {
-    const startTime = Date.now();
+async searchManual(req: AuthRequest, res: Response): Promise<void> {
+  const startTime = Date.now();
+  
+  try {
+    const filters: SearchFilters = req.body;
+
+    logger.info(`Manual search request from user ${req.admin?.id}:`, filters);
+
+    // Выполняем поиск
+    const searchResult = await this.executeSearch(filters, req.admin!.id);
+        
+    // Рассчитываем цены
+    let propertiesWithPrices = await this.calculatePricesForProperties(
+      searchResult.properties,
+      filters.dates
+    );
     
-    try {
-      const filters: SearchFilters = req.body;
-
-      logger.info(`Manual search request from user ${req.admin?.id}:`, filters);
-
-      // Выполняем поиск
-      const searchResult = await this.executeSearch(filters, req.admin!.id);
-          
-      // Рассчитываем цены
-      let propertiesWithPrices = await this.calculatePricesForProperties(
-        searchResult.properties,
-        filters.dates
-      );
-      
-      // ✅ ФИЛЬТРУЕМ ПО БЮДЖЕТУ ПОСЛЕ РАСЧЕТА ЦЕН
-      if (filters.budget?.max && filters.dates?.check_in && filters.dates?.check_out) {
-        let budgetMax = filters.budget.max;
-        const tolerance = filters.budget.tolerance || 0;
-      
-        if (tolerance > 0) {
-          budgetMax = budgetMax * (1 + tolerance / 100);
-        }
-        
-        if (filters.budget.currency && filters.budget.currency !== 'THB') {
-          budgetMax = aiSearchService.convertToTHB(budgetMax, filters.budget.currency);
-        }
-        
-        logger.info(`=== POST-CALCULATION BUDGET FILTER: max ${budgetMax} THB ===`);
-        
-        propertiesWithPrices = propertiesWithPrices.filter(property => {
-          if (property.deal_type === 'sale') {
-            return property.sale_price && property.sale_price <= budgetMax;
-          }
-          
-          if (property.calculated_price?.total_price) {
-            return property.calculated_price.total_price <= budgetMax;
-          }
-          
-          return false;
-        });
+    // ✅ ФИЛЬТРУЕМ ПО БЮДЖЕТУ ПОСЛЕ РАСЧЕТА ЦЕН
+    if (filters.budget?.max && filters.dates?.check_in && filters.dates?.check_out) {
+      let budgetMax = filters.budget.max;
+      const tolerance = filters.budget.tolerance || 0;
+    
+      if (tolerance > 0) {
+        budgetMax = budgetMax * (1 + tolerance / 100);
       }
       
-      const executionTime = Date.now() - startTime;
-
-      // Сохраняем лог
-      await this.saveSearchLog({
-        user_id: req.admin!.id,
-        search_type: 'manual',
-        search_params: filters,
-        results_count: propertiesWithPrices.length,
-        property_ids: propertiesWithPrices.map(p => p.id),
-        execution_time_ms: executionTime
-      });
-
-      res.json({
-        success: true,
-        data: {
-          properties: propertiesWithPrices,
-          total: propertiesWithPrices.length,
-          execution_time_ms: executionTime,
-          requested_features: filters.features || [],
-          must_have_features: filters.must_have_features || []
+      if (filters.budget.currency && filters.budget.currency !== 'THB') {
+        budgetMax = aiSearchService.convertToTHB(budgetMax, filters.budget.currency);
+      }
+      
+      logger.info(`=== POST-CALCULATION BUDGET FILTER: max ${budgetMax} THB ===`);
+      
+      propertiesWithPrices = propertiesWithPrices.filter(property => {
+        if (property.deal_type === 'sale') {
+          return property.sale_price && property.sale_price <= budgetMax;
         }
-      });
-    } catch (error: any) {
-      logger.error('Manual search error:', error);
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Ошибка поиска'
+        
+        if (property.calculated_price?.total_price) {
+          return property.calculated_price.total_price <= budgetMax;
+        }
+        
+        return false;
       });
     }
+    
+    const executionTime = Date.now() - startTime;
+
+    // Сохраняем лог
+    await this.saveSearchLog({
+      user_id: req.admin!.id,
+      search_type: 'manual',
+      search_params: filters,
+      results_count: propertiesWithPrices.length,
+      property_ids: propertiesWithPrices.map(p => p.id),
+      execution_time_ms: executionTime
+    });
+
+    res.json({
+      success: true,
+      data: {
+        properties: propertiesWithPrices,
+        total: propertiesWithPrices.length,
+        execution_time_ms: executionTime,
+        requested_features: filters.features || [],
+        must_have_features: filters.must_have_features || []
+      }
+    });
+  } catch (error: any) {
+    logger.error('Manual search error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Ошибка поиска'
+    });
   }
+}
 
   /**
    * Получить список диалогов пользователя
@@ -766,6 +766,13 @@ private async findAvailableWindows(
  * Выполнить поиск с фильтрами
  */
 private async executeSearch(filters: SearchFilters, userId: number): Promise<{ properties: any[] }> {
+  // ✅ ПОЛУЧАЕМ PARTNER_ID ПОЛЬЗОВАТЕЛЯ
+  const user = await db.queryOne<any>(
+    'SELECT partner_id FROM admin_users WHERE id = ?',
+    [userId]
+  );
+  const userPartnerId = user?.partner_id;
+
   const whereConditions: string[] = [
     'p.deleted_at IS NULL', 
     'p.status IN ("published", "draft")'
@@ -773,7 +780,17 @@ private async executeSearch(filters: SearchFilters, userId: number): Promise<{ p
   const queryParams: any[] = [];
 
   logger.info('=== STARTING PROPERTY SEARCH ===');
+  logger.info(`User ${userId} partner_id: ${userPartnerId || 'NULL'}`);
   logger.info('Filters:', JSON.stringify(filters, null, 2));
+
+  // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ
+  if (userPartnerId) {
+    whereConditions.push('au.partner_id = ?');
+    queryParams.push(userPartnerId);
+    logger.info(`Partner filter applied: partner_id = ${userPartnerId}`);
+  } else {
+    logger.info('No partner filter - showing all properties');
+  }
 
   // Deal type
   if (filters.deal_type) {
@@ -1024,6 +1041,7 @@ private async executeSearch(filters: SearchFilters, userId: number): Promise<{ p
       (SELECT COUNT(*) FROM property_photos WHERE property_id = p.id) as photos_count
     FROM properties p
     LEFT JOIN property_translations pt ON p.id = pt.property_id AND pt.language_code = 'ru'
+    LEFT JOIN admin_users au ON p.created_by = au.id
     ${whereClause}
   `;
 

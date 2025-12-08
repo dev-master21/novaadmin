@@ -8,6 +8,7 @@ export interface AdminUser {
   email: string | null;
   is_active: boolean;
   is_super_admin: boolean;
+  partner_id?: number | null;
   last_login_at: Date | null;
   created_at: Date;
   updated_at: Date;

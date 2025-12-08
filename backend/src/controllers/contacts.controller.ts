@@ -8,14 +8,33 @@ class ContactsController {
    * Получить все сохраненные контакты с документами
    * GET /api/contacts
    */
-  async getAll(_req: AuthRequest, res: Response): Promise<void> {
+  async getAll(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const contacts = await db.query(`
-        SELECT * FROM agreement_saved_contacts
+      // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ
+      const userPartnerId = req.admin?.partner_id;
+      
+      let query = `
+        SELECT 
+          c.*,
+          au.partner_id as creator_partner_id
+        FROM agreement_saved_contacts c
+        LEFT JOIN admin_users au ON c.created_by = au.id
+      `;
+      
+      const queryParams: any[] = [];
+      
+      if (userPartnerId !== null && userPartnerId !== undefined) {
+        query += ' WHERE au.partner_id = ?';
+        queryParams.push(userPartnerId);
+      }
+      
+      query += `
         ORDER BY 
-          type ASC,
-          COALESCE(name, company_name) ASC
-      `);
+          c.type ASC,
+          COALESCE(c.name, c.company_name) ASC
+      `;
+
+      const contacts = await db.query(query, queryParams);
 
       // Для каждого контакта загружаем документы
       for (const contact of contacts as any[]) {
@@ -71,20 +90,43 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     });
 
     const userId = req.admin!.id;
+    const userPartnerId = req.admin?.partner_id;
 
-    // ✅ ИСПРАВЛЕННАЯ ПРОВЕРКА СУЩЕСТВОВАНИЯ
+    // ✅ ИСПРАВЛЕННАЯ ПРОВЕРКА СУЩЕСТВОВАНИЯ С УЧЁТОМ ПАРТНЁРА
     let existingRows: any;
     
     if (type === 'individual') {
-      existingRows = await connection.query(
-        'SELECT id FROM agreement_saved_contacts WHERE type = ? AND name = ? AND passport_number = ?',
-        [type, name, passport_number]
-      );
+      if (userPartnerId !== null && userPartnerId !== undefined) {
+        // Проверяем существование только среди контактов своего партнёра
+        existingRows = await connection.query(
+          `SELECT c.id FROM agreement_saved_contacts c
+           LEFT JOIN admin_users au ON c.created_by = au.id
+           WHERE c.type = ? AND c.name = ? AND c.passport_number = ? AND au.partner_id = ?`,
+          [type, name, passport_number, userPartnerId]
+        );
+      } else {
+        // Админ без партнёра видит все контакты
+        existingRows = await connection.query(
+          'SELECT id FROM agreement_saved_contacts WHERE type = ? AND name = ? AND passport_number = ?',
+          [type, name, passport_number]
+        );
+      }
     } else {
-      existingRows = await connection.query(
-        'SELECT id FROM agreement_saved_contacts WHERE type = ? AND company_name = ? AND company_tax_id = ?',
-        [type, company_name, company_tax_id]
-      );
+      if (userPartnerId !== null && userPartnerId !== undefined) {
+        // Проверяем существование только среди контактов своего партнёра
+        existingRows = await connection.query(
+          `SELECT c.id FROM agreement_saved_contacts c
+           LEFT JOIN admin_users au ON c.created_by = au.id
+           WHERE c.type = ? AND c.company_name = ? AND c.company_tax_id = ? AND au.partner_id = ?`,
+          [type, company_name, company_tax_id, userPartnerId]
+        );
+      } else {
+        // Админ без партнёра видит все контакты
+        existingRows = await connection.query(
+          'SELECT id FROM agreement_saved_contacts WHERE type = ? AND company_name = ? AND company_tax_id = ?',
+          [type, company_name, company_tax_id]
+        );
+      }
     }
     
     console.log('🔍 Existing rows result:', existingRows);
@@ -187,6 +229,36 @@ async create(req: AuthRequest, res: Response): Promise<void> {
   async delete(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      const userPartnerId = req.admin?.partner_id;
+
+      // ✅ ПРОВЕРКА ДОСТУПА ПЕРЕД УДАЛЕНИЕМ
+      const contact = await db.queryOne(`
+        SELECT 
+          c.id,
+          au.partner_id as creator_partner_id
+        FROM agreement_saved_contacts c
+        LEFT JOIN admin_users au ON c.created_by = au.id
+        WHERE c.id = ?
+      `, [id]);
+
+      if (!contact) {
+        res.status(404).json({
+          success: false,
+          message: 'Контакт не найден'
+        });
+        return;
+      }
+
+      // ✅ Проверяем права доступа
+      if (userPartnerId !== null && userPartnerId !== undefined) {
+        if (contact.creator_partner_id !== userPartnerId) {
+          res.status(403).json({
+            success: false,
+            message: 'У вас нет доступа к этому контакту'
+          });
+          return;
+        }
+      }
 
       await db.query('DELETE FROM agreement_saved_contacts WHERE id = ?', [id]);
 

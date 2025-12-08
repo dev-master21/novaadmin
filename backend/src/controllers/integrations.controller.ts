@@ -276,14 +276,11 @@ async getBeds24Properties(req: AuthRequest, res: Response): Promise<void> {
   }
 }
 
-/**
- * Получить список объектов из нашей БД для синхронизации
- * GET /api/integrations/beds24/my-properties
- */
 async getMyProperties(req: AuthRequest, res: Response): Promise<void> {
   try {
     const userId = req.admin?.id;
     const isSuperAdmin = req.admin?.is_super_admin;
+    const userPartnerId = req.admin?.partner_id;
 
     let query = `
       SELECT 
@@ -308,34 +305,33 @@ async getMyProperties(req: AuthRequest, res: Response): Promise<void> {
 
     const params: any[] = [];
 
+    // ✅ ФИЛЬТРАЦИЯ: супер-админ видит всё, пользователи с партнёром - только свои, остальные - только свои объекты
     if (!isSuperAdmin) {
-      query += ' AND p.created_by = ?';
-      params.push(userId);
+      if (userPartnerId) {
+        query += ' AND au.partner_id = ?';
+        params.push(userPartnerId);
+      } else {
+        query += ' AND p.created_by = ?';
+        params.push(userId);
+      }
     }
 
     query += ' ORDER BY p.created_at DESC';
 
     const properties = await db.query<any>(query, params);
 
-    // ✅ ИСПРАВЛЕНО: Правильный путь к фото
     const propertiesWithUrls = properties.map((property: any) => {
       let photoUrl = null;
       
       if (property.cover_photo) {
-        // Убираем возможные дублирующиеся пути
         let cleanPath = property.cover_photo;
         
-        // Если уже есть полный URL - используем как есть
         if (cleanPath.startsWith('http')) {
           photoUrl = cleanPath;
         } else {
-          // Убираем начальный слеш если есть
           cleanPath = cleanPath.replace(/^\//, '');
-          
-          // Убираем /uploads/properties/photos/ если есть в начале
           cleanPath = cleanPath.replace(/^uploads\/properties\/photos\//, '');
           
-          // Добавляем _thumb перед расширением если его нет
           if (!cleanPath.includes('_thumb')) {
             cleanPath = cleanPath.replace(/(\.[^.]+)$/, '_thumb$1');
           }

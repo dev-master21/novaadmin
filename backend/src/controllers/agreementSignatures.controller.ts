@@ -371,6 +371,7 @@ async signById(req: AuthRequest, res: Response): Promise<void> {
 
 /**
  * Удалить подпись
+ * DELETE /api/agreements/signatures/:id
  */
 async delete(req: AuthRequest, res: Response): Promise<void> {
   const connection = await db.beginTransaction();
@@ -378,16 +379,32 @@ async delete(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
 
-    const signature = await db.queryOne<any>(
-      'SELECT * FROM agreement_signatures WHERE id = ?',
-      [id]
-    );
+    const signature = await db.queryOne<any>(`
+      SELECT 
+        s.*,
+        au.partner_id as agreement_creator_partner_id
+      FROM agreement_signatures s
+      LEFT JOIN agreements a ON s.agreement_id = a.id
+      LEFT JOIN admin_users au ON a.created_by = au.id
+      WHERE s.id = ?
+    `, [id]);
 
     if (!signature) {
       await db.rollback(connection);
       res.status(404).json({
         success: false,
         message: 'Подпись не найдена'
+      });
+      return;
+    }
+
+    // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined && signature.agreement_creator_partner_id !== userPartnerId) {
+      await db.rollback(connection);
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет доступа к этой подписи'
       });
       return;
     }
@@ -459,16 +476,32 @@ async update(req: AuthRequest, res: Response): Promise<void> {
     // Логируем входные данные
     logger.info(`UPDATE REQUEST - ID: ${id}, signer_name: ${signer_name}, signer_role: ${signer_role}`);
 
-    const signature = await db.queryOne<any>(
-      'SELECT * FROM agreement_signatures WHERE id = ?',
-      [id]
-    );
+    const signature = await db.queryOne<any>(`
+      SELECT 
+        s.*,
+        au.partner_id as agreement_creator_partner_id
+      FROM agreement_signatures s
+      LEFT JOIN agreements a ON s.agreement_id = a.id
+      LEFT JOIN admin_users au ON a.created_by = au.id
+      WHERE s.id = ?
+    `, [id]);
 
     if (!signature) {
       await db.rollback(connection);
       res.status(404).json({
         success: false,
         message: 'Подпись не найдена'
+      });
+      return;
+    }
+
+    // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined && signature.agreement_creator_partner_id !== userPartnerId) {
+      await db.rollback(connection);
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет доступа к этой подписи'
       });
       return;
     }
@@ -548,16 +581,32 @@ async regenerateLink(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
 
-    const signature = await db.queryOne<any>(
-      'SELECT * FROM agreement_signatures WHERE id = ?',
-      [id]
-    );
+    const signature = await db.queryOne<any>(`
+      SELECT 
+        s.*,
+        au.partner_id as agreement_creator_partner_id
+      FROM agreement_signatures s
+      LEFT JOIN agreements a ON s.agreement_id = a.id
+      LEFT JOIN admin_users au ON a.created_by = au.id
+      WHERE s.id = ?
+    `, [id]);
 
     if (!signature) {
       await db.rollback(connection);
       res.status(404).json({
         success: false,
         message: 'Подпись не найдена'
+      });
+      return;
+    }
+
+    // ✅ ПРОВЕРКА ДОСТУПА ПО ПАРТНЁРУ
+    const userPartnerId = req.admin?.partner_id;
+    if (userPartnerId !== null && userPartnerId !== undefined && signature.agreement_creator_partner_id !== userPartnerId) {
+      await db.rollback(connection);
+      res.status(403).json({
+        success: false,
+        message: 'У вас нет доступа к этой подписи'
       });
       return;
     }

@@ -24,11 +24,11 @@ export const authenticate = async (
     const token = authHeader.substring(7);
     const decoded = verifyAccessToken(token);
 
-    // Получаем полную информацию о пользователе с ролями и правами
+    // ✅ ИСПРАВЛЕНО: Добавлено u.partner_id в SELECT
     const user = await db.queryOne<any>(
       `SELECT 
         u.id, u.username, u.full_name, u.email, 
-        u.is_active, u.is_super_admin,
+        u.is_active, u.is_super_admin, u.partner_id,
         GROUP_CONCAT(DISTINCT p.permission_name) as permissions
       FROM admin_users u
       LEFT JOIN user_roles ur ON u.id = ur.user_id
@@ -46,6 +46,13 @@ export const authenticate = async (
       });
       return;
     }
+
+    // ✅ ДОБАВЛЕНО: Логирование для отладки
+    console.log('=== AUTH MIDDLEWARE ===');
+    console.log('User ID:', user.id);
+    console.log('Username:', user.username);
+    console.log('Partner ID from DB:', user.partner_id);
+    console.log('Partner ID type:', typeof user.partner_id);
 
     req.admin = {
       ...user,
