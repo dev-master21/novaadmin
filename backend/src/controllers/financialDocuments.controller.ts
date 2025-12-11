@@ -582,7 +582,6 @@ async updateSavedBankDetails(req: AuthRequest, res: Response): Promise<void> {
       });
     }
   }
-
 /**
  * Создать инвойс
  * POST /api/financial-documents/invoices
@@ -669,7 +668,7 @@ async createInvoice(req: AuthRequest, res: Response): Promise<void> {
     const tax_amount = data.tax_amount || 0;
     const total_amount = subtotal + tax_amount;
 
-    // Создаем инвойс с новыми полями банковских реквизитов
+    // ✅ ИСПРАВЛЕНО: убран лишний ? из VALUES (было 43, стало 42)
     const result = await connection.query(`
       INSERT INTO invoices (
         invoice_number, uuid, agreement_id, invoice_date, due_date,
@@ -684,7 +683,7 @@ async createInvoice(req: AuthRequest, res: Response): Promise<void> {
         bank_account_address, bank_currency, bank_code, bank_swift_code, 
         bank_address, bank_custom_details,
         notes, status, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       invoice_number,
       invoiceUuid,
