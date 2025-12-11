@@ -552,7 +552,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         `, [
           agreementId,
           party.role,
-          party.is_company ? null : (party.name || null),
+          party.is_company ? (party.company_name || null) : (party.name || null), // ✅ ИСПРАВЛЕНО: для компаний используем company_name
           party.is_company ? null : (party.passport_country || null),
           party.is_company ? null : (party.passport_number || null),
           party.is_company ? 1 : 0,
