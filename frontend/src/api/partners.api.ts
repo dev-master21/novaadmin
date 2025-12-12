@@ -6,6 +6,9 @@ export interface Partner {
   partner_name: string | null;
   domain: string | null;
   logo_filename: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
   is_active: boolean;
   created_by: number | null;
   created_at: string;
@@ -17,6 +20,9 @@ export interface CreatePartnerDTO {
   domain?: string;
   logo?: File;
   is_active?: boolean;
+  primary_color?: string;
+  secondary_color?: string;
+  accent_color?: string;
 }
 
 export interface UpdatePartnerDTO {
@@ -24,11 +30,17 @@ export interface UpdatePartnerDTO {
   domain?: string;
   logo?: File;
   is_active?: boolean;
+  primary_color?: string;
+  secondary_color?: string;
+  accent_color?: string;
 }
 
 export interface PartnerInfo {
   logo_filename: string;
   partner_name: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
 }
 
 export const partnersApi = {
@@ -74,6 +86,16 @@ export const partnersApi = {
     if (data.is_active !== undefined) {
       formData.append('is_active', data.is_active ? '1' : '0');
     }
+    // Цвета
+    if (data.primary_color) {
+      formData.append('primary_color', data.primary_color);
+    }
+    if (data.secondary_color) {
+      formData.append('secondary_color', data.secondary_color);
+    }
+    if (data.accent_color) {
+      formData.append('accent_color', data.accent_color);
+    }
 
     const response = await api.post('/partners', formData, {
       headers: {
@@ -101,6 +123,16 @@ export const partnersApi = {
     }
     if (data.is_active !== undefined) {
       formData.append('is_active', data.is_active ? '1' : '0');
+    }
+    // Цвета
+    if (data.primary_color !== undefined) {
+      formData.append('primary_color', data.primary_color || '');
+    }
+    if (data.secondary_color !== undefined) {
+      formData.append('secondary_color', data.secondary_color || '');
+    }
+    if (data.accent_color !== undefined) {
+      formData.append('accent_color', data.accent_color || '');
     }
 
     const response = await api.put(`/partners/${id}`, formData, {

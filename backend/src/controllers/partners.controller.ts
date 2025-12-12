@@ -12,6 +12,9 @@ interface Partner {
   partner_name: string | null;
   domain: string | null;
   logo_filename: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
   is_active: boolean;
   created_by: number | null;
   created_at: Date;
@@ -176,7 +179,10 @@ class PartnersController {
           success: true,
           data: {
             logo_filename: 'logo.svg',
-            partner_name: null
+            partner_name: null,
+            primary_color: null,
+            secondary_color: null,
+            accent_color: null
           }
         });
         return;
@@ -188,7 +194,10 @@ class PartnersController {
         success: true,
         data: {
           logo_filename: partner.logo_filename || 'logo.svg',
-          partner_name: partner.partner_name || null
+          partner_name: partner.partner_name || null,
+          primary_color: partner.primary_color || null,
+          secondary_color: partner.secondary_color || null,
+          accent_color: partner.accent_color || null
         }
       });
     } catch (error) {
@@ -197,7 +206,10 @@ class PartnersController {
         success: true,
         data: {
           logo_filename: 'logo.svg',
-          partner_name: null
+          partner_name: null,
+          primary_color: null,
+          secondary_color: null,
+          accent_color: null
         }
       });
     }
@@ -220,7 +232,7 @@ class PartnersController {
         return;
       }
 
-      const { partner_name, domain, is_active } = req.body;
+      const { partner_name, domain, is_active, primary_color, secondary_color, accent_color } = req.body;
       const userId = req.admin.id;
 
       const logo_filename = req.file ? req.file.filename : null;
@@ -244,14 +256,17 @@ class PartnersController {
       }
 
       const result = await connection.query(
-        `INSERT INTO partners (partner_name, domain, logo_filename, is_active, created_by)
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO partners (partner_name, domain, logo_filename, is_active, created_by, primary_color, secondary_color, accent_color)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           partner_name || null,
           cleanDomain,
           logo_filename,
           is_active !== undefined ? is_active : 1,
-          userId
+          userId,
+          primary_color || null,
+          secondary_color || null,
+          accent_color || null
         ]
       );
 
@@ -312,7 +327,7 @@ class PartnersController {
         return;
       }
 
-      const { partner_name, domain, is_active } = req.body;
+      const { partner_name, domain, is_active, primary_color, secondary_color, accent_color } = req.body;
 
       const existingPartner = await db.queryOne<Partner>(
         'SELECT * FROM partners WHERE id = ?',
@@ -345,6 +360,22 @@ class PartnersController {
       if (is_active !== undefined) {
         fields.push('is_active = ?');
         values.push(is_active ? 1 : 0);
+      }
+
+      // ✅ НОВОЕ: Обработка цветов
+      if (primary_color !== undefined) {
+        fields.push('primary_color = ?');
+        values.push(primary_color || null);
+      }
+
+      if (secondary_color !== undefined) {
+        fields.push('secondary_color = ?');
+        values.push(secondary_color || null);
+      }
+
+      if (accent_color !== undefined) {
+        fields.push('accent_color = ?');
+        values.push(accent_color || null);
       }
 
       if (req.file) {

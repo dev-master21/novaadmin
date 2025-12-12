@@ -140,6 +140,8 @@ const AgreementPrint = () => {
         agreement={agreement}
         isEditing={false}
         logoUrl={agreement.logoUrl || 'https://admin.novaestate.company/nova-logo.svg'}
+        primaryColor={agreement.primaryColor}
+        secondaryColor={agreement.secondaryColor}
       />
     </div>
   );

@@ -20,6 +20,7 @@ import {
   Stepper,
   Alert,
   Checkbox,
+  Switch,
   useMantineTheme,
   ScrollArea
 } from '@mantine/core';
@@ -45,7 +46,8 @@ import {
   IconAlertTriangle,
   IconDeviceFloppy,
   IconDownload,
-  IconEdit
+  IconEdit,
+  IconQrcode
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -138,6 +140,9 @@ const CreateInvoiceModal = ({
   const [bankDetailsName, setBankDetailsName] = useState('');
 
   const [taxAmount, setTaxAmount] = useState<number>(0);
+
+  // ✅ QR Code toggle
+  const [showQrCode, setShowQrCode] = useState<boolean>(true);
 
   // Duplicate warning
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
@@ -235,6 +240,9 @@ const CreateInvoiceModal = ({
           setBankCustomDetails(invoice.bank_custom_details || '');
         }
       }
+
+      // ✅ QR Code setting
+      setShowQrCode(invoice.show_qr_code === 1);
 
       notifications.show({
         title: t('common.success'),
@@ -449,6 +457,7 @@ const resetForm = () => {
   setSaveBankDetails(false);
   setBankDetailsName('');
   setTaxAmount(0);
+  setShowQrCode(true);
   setErrors({});
   setShowDuplicateWarning(false);
   setExistingInvoiceId(null);
@@ -618,7 +627,9 @@ const resetForm = () => {
         bank_details_name: saveBankDetails ? bankDetailsName : undefined,
         
         notes: notes,
-        tax_amount: taxAmount
+        tax_amount: taxAmount,
+        
+        show_qr_code: showQrCode ? 1 : 0
       };
 
       if (mode === 'edit' && invoiceId) {
@@ -1413,7 +1424,7 @@ const resetForm = () => {
             </Stack>
           )}
 
-          {/* Шаг 4: Банковские реквизиты - БЕЗ ИЗМЕНЕНИЙ */}
+          {/* Шаг 4: Банковские реквизиты */}
           {currentStep === 3 && (
             <Stack gap="md">
               <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -1615,6 +1626,35 @@ const resetForm = () => {
                       required
                     />
                   )}
+                </Stack>
+              </Card>
+
+              {/* ✅ НАСТРОЙКИ ДОКУМЕНТА */}
+              <Card shadow="sm" padding="lg" radius="md" withBorder>
+                <Stack gap="md">
+                  <Group gap="sm">
+                    <ThemeIcon size="lg" radius="md" variant="light" color="gray">
+                      <IconQrcode size={20} />
+                    </ThemeIcon>
+                    <Text size="md" fw={600}>
+                      {t('createInvoiceModal.sections.documentSettings')}
+                    </Text>
+                  </Group>
+
+                  <Switch
+                    label={t('createInvoiceModal.fields.showQrCode')}
+                    description={t('createInvoiceModal.fields.showQrCodeDesc')}
+                    checked={showQrCode}
+                    onChange={(e) => setShowQrCode(e.currentTarget.checked)}
+                    size="md"
+                    thumbIcon={
+                      showQrCode ? (
+                        <IconCheck size={12} color={theme.colors.teal[6]} stroke={3} />
+                      ) : (
+                        <IconX size={12} color={theme.colors.red[6]} stroke={3} />
+                      )
+                    }
+                  />
                 </Stack>
               </Card>
 

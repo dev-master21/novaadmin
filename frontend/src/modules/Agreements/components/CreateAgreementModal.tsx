@@ -70,7 +70,8 @@ import {
   IconPigMoney,
   IconReceipt,
   IconBriefcase,
-  IconUserCheck
+  IconUserCheck,
+  IconQrcode
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { agreementsApi, AgreementTemplate } from '@/api/agreements.api';
@@ -187,7 +188,8 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
     bank_account_number: '',
     upon_signed_pay: null,
     upon_checkin_pay: null,
-    upon_checkout_pay: null
+    upon_checkout_pay: null,
+    show_qr_code: false
   });
 
   // Прокрутка вверх при смене шага
@@ -516,7 +518,8 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
       bank_account_number: '',
       upon_signed_pay: null,
       upon_checkin_pay: null,
-      upon_checkout_pay: null
+      upon_checkout_pay: null,
+      show_qr_code: false
     });
   };
 
@@ -766,7 +769,8 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
         property_number_manual: manualPropertyInput ? formData.property_number_manual : undefined,
         upon_signed_pay: formData.upon_signed_pay,
         upon_checkin_pay: formData.upon_checkin_pay,
-        upon_checkout_pay: formData.upon_checkout_pay
+        upon_checkout_pay: formData.upon_checkout_pay,
+        show_qr_code: formData.show_qr_code ? 1 : 0
       };
 
       const createResponse = await agreementsApi.create(agreementData);
@@ -2117,6 +2121,32 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                         styles={mobileInputStyles}
                         description={t('createAgreementModal.hints.utilities')}
                       />
+                    </Stack>
+                  </Card>
+
+                  {/* ✅ НОВОЕ: Настройки документа с QR-кодом */}
+                  <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Stack gap="md">
+                      <Group gap={6}>
+                        <ThemeIcon size="lg" color="grape" variant="light">
+                          <IconQrcode size={20} />
+                        </ThemeIcon>
+                        <Text size="md" fw={700}>{t('createAgreementModal.sections.documentSettings', 'Настройки документа')}</Text>
+                      </Group>
+                      
+                        <Switch
+                          checked={formData.show_qr_code}
+                          onChange={() => setFormData((prev: any) => ({ ...prev, show_qr_code: !prev.show_qr_code }))}
+                          label={
+                            <Group gap={6}>
+                              <IconQrcode size={16} />
+                              <Text size="sm" fw={500}>{t('createAgreementModal.fields.showQrCode', 'Показывать QR-код в документе')}</Text>
+                            </Group>
+                          }
+                          description={t('createAgreementModal.hints.showQrCode', 'QR-код для быстрой проверки подлинности документа')}
+                          size="md"
+                          color="grape"
+                        />
                     </Stack>
                   </Card>
 

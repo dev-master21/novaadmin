@@ -323,15 +323,17 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       property_address_override,
       property_name_manual,
       property_number_manual,
-      // ✅ НОВЫЕ ПОЛЯ
       upon_signed_pay,
       upon_checkin_pay,
-      upon_checkout_pay
+      upon_checkout_pay,
+      // ✅ НОВОЕ ПОЛЕ
+      show_qr_code
     } = req.body;
 
     console.log('🎯 Extracted property_id:', property_id);
     console.log('🎯 Extracted template_id:', template_id);
     console.log('🎯 Extracted request_uuid:', request_uuid);
+    console.log('🎯 Extracted show_qr_code:', show_qr_code);
     
     const userId = req.admin!.id;
 
@@ -423,7 +425,6 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       bank_name: bank_name || '',
       bank_account_name: bank_account_name || '',
       bank_account_number: bank_account_number || '',
-      // ✅ НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ОПЛАТЫ
       upon_signed_pay: upon_signed_pay || '',
       upon_checkin_pay: upon_checkin_pay || '',
       upon_checkout_pay: upon_checkout_pay || ''
@@ -493,7 +494,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ Создаем договор с новыми полями оплаты
+    // ✅ Создаем договор с новым полем show_qr_code
     const result = await connection.query(`
       INSERT INTO agreements (
         agreement_number, template_id, property_id, request_uuid, type, content, structure,
@@ -501,8 +502,8 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         city, rent_amount_monthly, rent_amount_total, deposit_amount,
         utilities_included, bank_name, bank_account_name, bank_account_number,
         property_address_override, property_name_override, property_number_override,
-        upon_signed_pay, upon_checkin_pay, upon_checkout_pay
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        upon_signed_pay, upon_checkin_pay, upon_checkout_pay, show_qr_code
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       agreement_number,
       template_id,
@@ -531,7 +532,8 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       property_number_manual || null,
       upon_signed_pay || null,
       upon_checkin_pay || null,
-      upon_checkout_pay || null
+      upon_checkout_pay || null,
+      show_qr_code ? 1 : 0
     ]);
 
     const agreementId = (result as any)[0].insertId;
@@ -552,7 +554,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
         `, [
           agreementId,
           party.role,
-          party.is_company ? (party.company_name || null) : (party.name || null), // ✅ ИСПРАВЛЕНО: для компаний используем company_name
+          party.is_company ? (party.company_name || null) : (party.name || null),
           party.is_company ? null : (party.passport_country || null),
           party.is_company ? null : (party.passport_number || null),
           party.is_company ? 1 : 0,
@@ -574,11 +576,9 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       console.log('✍️ Auto-creating signatures for all parties...');
       
       for (const [role] of createdPartiesMap.entries()) {
-        // Находим данные стороны
         const partyData = parties.find((p: any) => p.role === role);
         const signerName = partyData.is_company ? partyData.company_name : partyData.name;
         
-        // Генерируем уникальную ссылку для подписи
         const uniqueLink = uuidv4();
         
         await connection.query(`
@@ -591,16 +591,15 @@ async create(req: AuthRequest, res: Response): Promise<void> {
           agreementId,
           signerName,
           role,
-          100,  // Фиксированная координата (не используется, т.к. подписи на отдельной странице)
-          100,  // Фиксированная координата
-          1,    // Первая страница (не используется)
+          100,
+          100,
+          1,
           uniqueLink
         ]);
         
         console.log(`✅ Signature created for ${role}: ${signerName}`);
       }
       
-      // Обновляем статус договора
       await connection.query(
         'UPDATE agreements SET status = ? WHERE id = ?',
         ['pending_signatures', agreementId]
@@ -761,13 +760,16 @@ async getPublicAgreement(req: AuthRequest, res: Response): Promise<void> {
     // УВЕЛИЧИВАЕМ ЛИМИТ GROUP_CONCAT
     await db.query('SET SESSION group_concat_max_len = 1000000');
 
-    // ✅ ДОБАВЛЕН JOIN к partners для получения logo_filename
+    // ✅ ДОБАВЛЕН JOIN к partners для получения logo_filename и цветов
     const agreement = await db.queryOne(`
       SELECT 
         a.*,
         at.name as template_name,
         p.logo_filename as partner_logo_filename,
         p.partner_name,
+        p.primary_color as partner_primary_color,
+        p.secondary_color as partner_secondary_color,
+        p.accent_color as partner_accent_color,
         GROUP_CONCAT(DISTINCT CONCAT(s.id, '~|~', s.signer_name, '~|~', s.signer_role, '~|~', s.is_signed, '~|~', COALESCE(s.signature_data, ''), '~|~', COALESCE(s.signed_at, '')) SEPARATOR '|||') as signatures_data,
         GROUP_CONCAT(DISTINCT CONCAT(ap.id, '~|~', ap.role, '~|~', COALESCE(ap.name, ''), '~|~', COALESCE(ap.is_company, 0)) SEPARATOR '|||') as parties_data
       FROM agreements a
@@ -827,10 +829,15 @@ async getPublicAgreement(req: AuthRequest, res: Response): Promise<void> {
     agreement.signatures = signatures;
     agreement.parties = parties;
 
-    // ✅ ДОБАВЛЯЕМ ЛОГИКУ ОПРЕДЕЛЕНИЯ ЛОГОТИПА
+    // ✅ ЛОГИКА ОПРЕДЕЛЕНИЯ ЛОГОТИПА
     agreement.logoUrl = agreement.partner_logo_filename 
       ? `https://admin.novaestate.company/${agreement.partner_logo_filename}`
       : 'https://admin.novaestate.company/nova-logo.svg';
+
+    // ✅ ДОБАВЛЯЕМ ЦВЕТА ПАРТНЁРА (с дефолтными значениями)
+    agreement.primaryColor = agreement.partner_primary_color || '#1b273b';
+    agreement.secondaryColor = agreement.partner_secondary_color || '#5d666e';
+    agreement.accentColor = agreement.partner_accent_color || '#1b273b';
 
     res.json({
       success: true,
@@ -868,13 +875,16 @@ async getAgreementInternal(req: AuthRequest, res: Response): Promise<void> {
     // УВЕЛИЧИВАЕМ ЛИМИТ
     await db.query('SET SESSION group_concat_max_len = 1000000');
 
-    // ✅ ДОБАВЛЕН JOIN к partners для получения logo_filename
+    // ✅ ДОБАВЛЕН JOIN к partners для получения logo_filename и цветов
     const agreement = await db.queryOne(`
       SELECT 
         a.*,
         at.name as template_name,
         p.logo_filename as partner_logo_filename,
         p.partner_name,
+        p.primary_color as partner_primary_color,
+        p.secondary_color as partner_secondary_color,
+        p.accent_color as partner_accent_color,
         GROUP_CONCAT(DISTINCT CONCAT(s.id, '~|~', s.signer_name, '~|~', s.signer_role, '~|~', s.is_signed, '~|~', COALESCE(s.signature_data, ''), '~|~', COALESCE(s.signed_at, '')) SEPARATOR '|||') as signatures_data,
         GROUP_CONCAT(DISTINCT CONCAT(ap.id, '~|~', ap.role, '~|~', COALESCE(ap.name, ''), '~|~', COALESCE(ap.is_company, 0)) SEPARATOR '|||') as parties_data
       FROM agreements a
@@ -937,11 +947,16 @@ async getAgreementInternal(req: AuthRequest, res: Response): Promise<void> {
     agreement.signatures = signatures;
     agreement.parties = parties;
 
-    // ✅ ДОБАВЛЯЕМ ЛОГИКУ ОПРЕДЕЛЕНИЯ ЛОГОТИПА
+    // ✅ ЛОГИКА ОПРЕДЕЛЕНИЯ ЛОГОТИПА
     // Если у партнёра есть логотип - используем его, иначе стандартный
     agreement.logoUrl = agreement.partner_logo_filename 
       ? `https://admin.novaestate.company/${agreement.partner_logo_filename}`
       : 'https://admin.novaestate.company/nova-logo.svg';
+
+    // ✅ ДОБАВЛЯЕМ ЦВЕТА ПАРТНЁРА (с дефолтными значениями)
+    agreement.primaryColor = agreement.partner_primary_color || '#1b273b';
+    agreement.secondaryColor = agreement.partner_secondary_color || '#5d666e';
+    agreement.accentColor = agreement.partner_accent_color || '#1b273b';
 
     res.json({
       success: true,
@@ -1084,91 +1099,97 @@ async createPrintToken(req: AuthRequest, res: Response): Promise<void> {
   }
 }
 
-  /**
-   * Обновить договор
-   * PUT /api/agreements/:id
-   */
-  async update(req: AuthRequest, res: Response): Promise<void> {
-    const connection = await db.beginTransaction();
+/**
+ * Обновить договор
+ * PUT /api/agreements/:id
+ */
+async update(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
 
-    try {
-      const { id } = req.params;
-      const { content, structure, status, description } = req.body;
-      const userId = req.admin!.id;
+  try {
+    const { id } = req.params;
+    const { content, structure, status, description, show_qr_code } = req.body;
+    const userId = req.admin!.id;
 
-      // Проверяем существование
-      const agreement = await db.queryOne('SELECT * FROM agreements WHERE id = ? AND deleted_at IS NULL', [id]);
+    // Проверяем существование
+    const agreement = await db.queryOne('SELECT * FROM agreements WHERE id = ? AND deleted_at IS NULL', [id]);
 
-      if (!agreement) {
-        await db.rollback(connection);
-        res.status(404).json({
-          success: false,
-          message: 'Договор не найден'
-        });
-        return;
-      }
-
-      const fields: string[] = [];
-      const values: any[] = [];
-
-      if (content !== undefined) {
-        fields.push('content = ?');
-        values.push(content);
-      }
-
-      if (structure !== undefined) {
-        fields.push('structure = ?');
-        values.push(structure);
-      }
-
-      if (status !== undefined) {
-        fields.push('status = ?');
-        values.push(status);
-      }
-
-      if (description !== undefined) {
-        fields.push('description = ?');
-        values.push(description);
-      }
-
-      if (fields.length > 0) {
-        values.push(id);
-        await connection.query(
-          `UPDATE agreements SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ?`,
-          values
-        );
-
-        // Логируем
-        await connection.query(`
-          INSERT INTO agreement_logs (agreement_id, action, description, user_id)
-          VALUES (?, ?, ?, ?)
-        `, [id, 'updated', 'Договор обновлён', userId]);
-      }
-
-      await db.commit(connection);
-
-      // Регенерируем PDF после обновления
-      try {
-        await this.generatePDF(parseInt(id as string));
-      } catch (pdfError) {
-        logger.error('PDF regeneration failed:', pdfError);
-      }
-
-      logger.info(`Agreement updated: ${id} by user ${req.admin?.username}`);
-
-      res.json({
-        success: true,
-        message: 'Договор успешно обновлён'
-      });
-    } catch (error) {
+    if (!agreement) {
       await db.rollback(connection);
-      logger.error('Update agreement error:', error);
-      res.status(500).json({
+      res.status(404).json({
         success: false,
-        message: 'Ошибка обновления договора'
+        message: 'Договор не найден'
       });
+      return;
     }
+
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    if (content !== undefined) {
+      fields.push('content = ?');
+      values.push(content);
+    }
+
+    if (structure !== undefined) {
+      fields.push('structure = ?');
+      values.push(structure);
+    }
+
+    if (status !== undefined) {
+      fields.push('status = ?');
+      values.push(status);
+    }
+
+    if (description !== undefined) {
+      fields.push('description = ?');
+      values.push(description);
+    }
+
+    // ✅ НОВОЕ: Обработка show_qr_code
+    if (show_qr_code !== undefined) {
+      fields.push('show_qr_code = ?');
+      values.push(show_qr_code ? 1 : 0);
+    }
+
+    if (fields.length > 0) {
+      values.push(id);
+      await connection.query(
+        `UPDATE agreements SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ?`,
+        values
+      );
+
+      // Логируем
+      await connection.query(`
+        INSERT INTO agreement_logs (agreement_id, action, description, user_id)
+        VALUES (?, ?, ?, ?)
+      `, [id, 'updated', 'Договор обновлён', userId]);
+    }
+
+    await db.commit(connection);
+
+    // Регенерируем PDF после обновления
+    try {
+      await this.generatePDF(parseInt(id as string));
+    } catch (pdfError) {
+      logger.error('PDF regeneration failed:', pdfError);
+    }
+
+    logger.info(`Agreement updated: ${id} by user ${req.admin?.username}`);
+
+    res.json({
+      success: true,
+      message: 'Договор успешно обновлён'
+    });
+  } catch (error) {
+    await db.rollback(connection);
+    logger.error('Update agreement error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка обновления договора'
+    });
   }
+}
 
   /**
    * Удалить договор (мягкое удаление)
@@ -1884,12 +1905,15 @@ if (agreement.parties_data) {
     res.status(500).send('Error generating HTML');
   }
 }
-
 /**
  * Генерация полного HTML документа со стилями DocumentEditor
  */
 private generateFullDocumentHTML(agreement: any, signatures: any[], parties: any[], structure: any): string {
-  const logoUrl = 'https://admin.novaestate.company/nova-logo.svg';
+  const logoUrl = agreement.logoUrl || 'https://admin.novaestate.company/nova-logo.svg';
+  
+  // ✅ НОВОЕ: Проверяем нужно ли показывать QR-код
+  const showQrCode = agreement.show_qr_code === 1 || agreement.show_qr_code === true;
+  const qrCodeBase64 = agreement.qr_code_base64;
   
   // Функция форматирования роли
   const formatRole = (role: string): string => {
@@ -1958,6 +1982,20 @@ private generateFullDocumentHTML(agreement: any, signatures: any[], parties: any
     : (agreement.content || '');
 
   const titleText = structure?.title || 'LEASE AGREEMENT';
+
+  // ✅ НОВОЕ: HTML для блока QR-кода
+  const qrCodeHtml = showQrCode && qrCodeBase64 ? `
+    <div class="qr-verification">
+      <div class="qr-code-container">
+        <img src="${qrCodeBase64}" alt="QR Code" class="qr-code-img" />
+      </div>
+      <div class="qr-info">
+        <div class="qr-title">Document Verification</div>
+        <div class="qr-text">Scan QR code to verify authenticity</div>
+        <div class="qr-number">${agreement.agreement_number}</div>
+      </div>
+    </div>
+  ` : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -2239,6 +2277,52 @@ private generateFullDocumentHTML(agreement: any, signatures: any[], parties: any
     strong {
       font-weight: 700;
     }
+
+    /* ✅ НОВЫЕ СТИЛИ ДЛЯ QR-КОДА */
+    .qr-verification {
+      display: flex;
+      align-items: center;
+      gap: 5mm;
+      margin-top: 8mm;
+      padding: 4mm;
+      border: 1px solid #1b273b;
+      border-radius: 2mm;
+      background: #fff;
+      page-break-inside: avoid;
+    }
+
+    .qr-code-container {
+      flex-shrink: 0;
+    }
+
+    .qr-code-img {
+      width: 25mm;
+      height: 25mm;
+      object-fit: contain;
+    }
+
+    .qr-info {
+      flex: 1;
+    }
+
+    .qr-title {
+      font-size: 4mm;
+      font-weight: 700;
+      color: #1b273b;
+      margin-bottom: 1mm;
+    }
+
+    .qr-text {
+      font-size: 3mm;
+      color: #666;
+      margin-bottom: 1mm;
+    }
+
+    .qr-number {
+      font-size: 3mm;
+      color: #999;
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
@@ -2329,11 +2413,28 @@ private generateFullDocumentHTML(agreement: any, signatures: any[], parties: any
             `).join('')}
           </div>
         ` : ''}
+
+        ${qrCodeHtml}
+      </div>
+      <div class="page-number">Page 2 of 2</div>
+    </div>
+  </div>
+  ` : `
+  ${showQrCode && qrCodeBase64 ? `
+  <!-- Страница с QR-кодом (если нет подписей) -->
+  <div class="page">
+    <div class="page-inner not-first">
+      <div class="watermark">
+        <img src="${logoUrl}" alt="Logo" />
+      </div>
+      <div class="page-content">
+        ${qrCodeHtml}
       </div>
       <div class="page-number">Page 2 of 2</div>
     </div>
   </div>
   ` : ''}
+  `}
 </body>
 </html>`;
 }

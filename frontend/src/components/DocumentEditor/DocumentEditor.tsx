@@ -179,6 +179,7 @@ const Title = styled.h1<{ isEditing: boolean }>`
   cursor: ${props => props.isEditing ? 'text' : 'default'};
 `;
 
+// ✅ ИЗМЕНЕНО: LogoContainer теперь без жёсткого filter - SVG партнёров показываются как есть
 const LogoContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -198,7 +199,7 @@ const LogoContainer = styled.div`
     max-width: 60mm;
     height: auto;
     width: auto;
-    filter: brightness(0) saturate(100%) invert(11%) sepia(12%) saturate(1131%) hue-rotate(185deg) brightness(94%) contrast(91%);
+    /* SVG логотипы партнёров уже в нужных цветах, filter убран */
   }
 `;
 
@@ -357,8 +358,9 @@ const NodeContainer = styled.div<{ level: number; isEditing: boolean }>`
   `}
 `;
 
-const SectionHeader = styled.div<{ isEditing?: boolean }>`
-  background: #5d666e;
+// ✅ ИЗМЕНЕНО: SectionHeader теперь принимает bgColor для динамического цвета
+const SectionHeader = styled.div<{ isEditing?: boolean; bgColor?: string }>`
+  background: ${props => props.bgColor || '#5d666e'};
   color: white;
   padding: 1.5mm 4mm;
   font-size: 4.5mm;
@@ -373,7 +375,7 @@ const SectionHeader = styled.div<{ isEditing?: boolean }>`
   cursor: ${props => props.isEditing ? 'text' : 'default'};
   
   @media print {
-    background: #5d666e !important;
+    background: ${props => props.bgColor || '#5d666e'} !important;
     color: white !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -662,16 +664,19 @@ const calculateFullSectionHeight = (node: DocumentNode): number => {
   return totalHeight;
 };
 
+// ✅ ИЗМЕНЕНО: Добавлены props primaryColor и secondaryColor
 interface DocumentEditorProps {
   agreement?: any;
   template?: any;
   isEditing: boolean;
   onContentChange?: (content: string, structure?: string) => void;
   logoUrl?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
-  ({ agreement, template, isEditing, onContentChange, logoUrl }, ref) => {
+  ({ agreement, template, isEditing, onContentChange, logoUrl, secondaryColor }, ref) => {
     const [structure, setStructure] = useState<DocumentStructure>({
       title: '',
       city: '',
@@ -683,7 +688,10 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
     const [pages, setPages] = useState<PageContent[]>([]);
     const editInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
     
-    const [contextMenu, setContextMenu] = useState<{ 
+    // ✅ НОВОЕ: Цвет для заголовков секций (с дефолтом)
+    const sectionBgColor = secondaryColor || '#5d666e';
+
+const [contextMenu, setContextMenu] = useState<{ 
       show: boolean; 
       x: number; 
       y: number; 
@@ -696,6 +704,9 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
       selectedText: '',
       nodeId: undefined
     });
+
+    // Проверка отображения QR-кода
+    const showQrCode = agreement?.show_qr_code === 1 || agreement?.show_qr_code === true;
 
     // ФУНКЦИЯ ПЕРЕНУМЕРАЦИИ
     const renumberNodes = (nodes: DocumentNode[]): DocumentNode[] => {
@@ -1225,10 +1236,11 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
       selection.removeAllRanges();
     };
 
+    // ✅ ИЗМЕНЕНО: renderNode теперь использует sectionBgColor
     const renderNode = (node: DocumentNode, level: number = 0) => (
       <NodeContainer key={node.id} level={level} isEditing={isEditing}>
         {node.type === 'section' && (
-          <SectionHeader isEditing={isEditing} data-node-id={node.id}>
+          <SectionHeader isEditing={isEditing} bgColor={sectionBgColor} data-node-id={node.id}>
             {editingNode === node.id ? (
               <input
                 ref={editInputRef as React.RefObject<HTMLInputElement>}
@@ -1451,10 +1463,11 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
       </NodeContainer>
     );
 
+    // ✅ ИЗМЕНЕНО: renderNodeForPrint теперь использует sectionBgColor
     const renderNodeForPrint = (node: DocumentNode, level: number = 0) => (
       <NodeContainer key={node.id} level={level} isEditing={false}>
         {node.type === 'section' && (
-          <SectionHeader isEditing={false}>
+          <SectionHeader isEditing={false} bgColor={sectionBgColor}>
             <span dangerouslySetInnerHTML={{ __html: node.content }} />
           </SectionHeader>
         )}
@@ -1708,14 +1721,14 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
               {/* БЛОК ПОДПИСЕЙ НА ПЕРВОЙ СТРАНИЦЕ */}
               {renderPageSignatures()}
 
-              {agreement?.qr_code_base64 && (
-              <PageQRCode>
-                <img 
-                  src={agreement.qr_code_base64} 
-                  alt="Verification QR Code"
-                />
-              </PageQRCode>
-            )}
+              {showQrCode && agreement?.qr_code_base64 && (
+                <PageQRCode>
+                  <img 
+                    src={agreement.qr_code_base64} 
+                    alt="Verification QR Code"
+                  />
+                </PageQRCode>
+              )}
             <PageFooter>
               <PageFooterLeft>
                 <AgreementNumber>
@@ -1745,7 +1758,7 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                 {/* БЛОК ПОДПИСЕЙ НА ВСЕХ ПРОМЕЖУТОЧНЫХ СТРАНИЦАХ */}
                 {renderPageSignatures()}
 
-                {agreement?.qr_code_base64 && (
+                {showQrCode && agreement?.qr_code_base64 && (
                   <PageQRCode>
                     <img 
                       src={agreement.qr_code_base64} 
@@ -1778,7 +1791,8 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                 )}
 
                 <PageContentWithLimit>
-                  <SectionHeader isEditing={false}>SIGNATURES</SectionHeader>
+                  {/* ✅ ИЗМЕНЕНО: SectionHeader теперь с динамическим цветом */}
+                  <SectionHeader isEditing={false} bgColor={sectionBgColor}>SIGNATURES</SectionHeader>
                   
                   <SignatureSection>
                     <SignatureTable>
@@ -1849,7 +1863,8 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                   
                       return (
                         <DocumentsSection>
-                          <SectionHeader isEditing={false}>ATTACHED DOCUMENTS</SectionHeader>
+                          {/* ✅ ИЗМЕНЕНО: SectionHeader теперь с динамическим цветом */}
+                          <SectionHeader isEditing={false} bgColor={sectionBgColor}>ATTACHED DOCUMENTS</SectionHeader>
                           {signersWithDocuments.map((signer: any, index: number) => (
                             <DocumentBlock key={index}>
                               <DocumentLabel>{formatRole(signer.role)}'s Documents:</DocumentLabel>
@@ -1869,7 +1884,7 @@ const DocumentEditor = forwardRef<HTMLDivElement, DocumentEditorProps>(
                   })()}
               </PageContentWithLimit>
 
-              {agreement?.qr_code_base64 && (
+              {showQrCode && agreement?.qr_code_base64 && (
                 <PageQRCode>
                   <img 
                     src={agreement.qr_code_base64} 

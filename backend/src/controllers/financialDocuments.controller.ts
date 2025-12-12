@@ -395,77 +395,86 @@ async updateSavedBankDetails(req: AuthRequest, res: Response): Promise<void> {
     }
   }
 
-  /**
-   * Получить инвойс по ID
-   * GET /api/financial-documents/invoices/:id
-   */
-  async getInvoiceById(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
+/**
+ * Получить инвойс по ID
+ * GET /api/financial-documents/invoices/:id
+ */
+async getInvoiceById(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
 
-      const invoice = await db.queryOne(`
-        SELECT 
-          i.*,
-          a.agreement_number,
-          p.logo_filename as partner_logo_filename,
-          p.partner_name,
-          au.username as created_by_name,
-          (SELECT COUNT(*) FROM invoice_items WHERE invoice_id = i.id) as items_count,
-          (SELECT COUNT(*) FROM receipts WHERE invoice_id = i.id AND deleted_at IS NULL) as receipts_count
-        FROM invoices i
-        LEFT JOIN agreements a ON i.agreement_id = a.id
-        LEFT JOIN admin_users au ON i.created_by = au.id
-        LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
-        WHERE i.id = ? AND i.deleted_at IS NULL
-      `, [id]);
+    // ✅ ДОБАВЛЕНО: Получение цветов партнёра
+    const invoice = await db.queryOne(`
+      SELECT 
+        i.*,
+        a.agreement_number,
+        p.logo_filename as partner_logo_filename,
+        p.partner_name,
+        p.primary_color as partner_primary_color,
+        p.secondary_color as partner_secondary_color,
+        p.accent_color as partner_accent_color,
+        au.username as created_by_name,
+        (SELECT COUNT(*) FROM invoice_items WHERE invoice_id = i.id) as items_count,
+        (SELECT COUNT(*) FROM receipts WHERE invoice_id = i.id AND deleted_at IS NULL) as receipts_count
+      FROM invoices i
+      LEFT JOIN agreements a ON i.agreement_id = a.id
+      LEFT JOIN admin_users au ON i.created_by = au.id
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+      WHERE i.id = ? AND i.deleted_at IS NULL
+    `, [id]);
 
-      if (!invoice) {
-        res.status(404).json({
-          success: false,
-          message: 'Инвойс не найден'
-        });
-        return;
-      }
-
-      // ✅ ДОБАВЛЯЕМ LOGO URL
-      (invoice as any).logoUrl = (invoice as any).partner_logo_filename 
-        ? `https://admin.novaestate.company/${(invoice as any).partner_logo_filename}`
-        : 'https://admin.novaestate.company/nova-logo.svg';
-
-      // Получаем позиции инвойса
-      const items = await db.query(
-        'SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id',
-        [id]
-      );
-
-      // Получаем чеки
-      const receipts = await db.query(`
-        SELECT 
-          r.*,
-          au.username as created_by_name
-        FROM receipts r
-        LEFT JOIN admin_users au ON r.created_by = au.id
-        WHERE r.invoice_id = ? AND r.deleted_at IS NULL
-        ORDER BY r.receipt_date DESC
-      `, [id]);
-
-      res.json({
-        success: true,
-        data: {
-          ...invoice,
-          items: items,
-          receipts: receipts
-        }
-      });
-
-    } catch (error) {
-      logger.error('Get invoice by ID error:', error);
-      res.status(500).json({
+    if (!invoice) {
+      res.status(404).json({
         success: false,
-        message: 'Ошибка получения инвойса'
+        message: 'Инвойс не найден'
       });
+      return;
     }
+
+    // ✅ ДОБАВЛЯЕМ LOGO URL
+    (invoice as any).logoUrl = (invoice as any).partner_logo_filename 
+      ? `https://admin.novaestate.company/${(invoice as any).partner_logo_filename}`
+      : 'https://admin.novaestate.company/nova-logo.svg';
+
+    // ✅ ДОБАВЛЯЕМ ЦВЕТА ПАРТНЁРА (с дефолтными значениями)
+    (invoice as any).primaryColor = (invoice as any).partner_primary_color || '#1b273b';
+    (invoice as any).secondaryColor = (invoice as any).partner_secondary_color || '#5d666e';
+    (invoice as any).accentColor = (invoice as any).partner_accent_color || '#1b273b';
+
+    // Получаем позиции инвойса
+    const items = await db.query(
+      'SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id',
+      [id]
+    );
+
+    // Получаем чеки
+    const receipts = await db.query(`
+      SELECT 
+        r.*,
+        au.username as created_by_name
+      FROM receipts r
+      LEFT JOIN admin_users au ON r.created_by = au.id
+      WHERE r.invoice_id = ? AND r.deleted_at IS NULL
+      ORDER BY r.receipt_date DESC
+    `, [id]);
+
+    res.json({
+      success: true,
+      data: {
+        ...invoice,
+        items: items,
+        receipts: receipts
+      }
+    });
+
+  } catch (error) {
+    logger.error('Get invoice by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения инвойса'
+    });
   }
+}
 
   /**
    * Получить статусы оплаты позиций инвойса
@@ -594,6 +603,9 @@ async createInvoice(req: AuthRequest, res: Response): Promise<void> {
     const userPartnerId = req.admin?.partner_id;
     const data: CreateInvoiceDTO = req.body;
 
+    // ✅ ИЗВЛЕКАЕМ show_qr_code (по умолчанию 1 - показывать)
+    const showQrCode = data.show_qr_code !== undefined ? data.show_qr_code : 1;
+
     // ✅ ЗАГРУЗКА СОХРАНЕННЫХ РЕКВИЗИТОВ
     let bankDetails: any = {};
     if (data.saved_bank_details_id) {
@@ -668,7 +680,7 @@ async createInvoice(req: AuthRequest, res: Response): Promise<void> {
     const tax_amount = data.tax_amount || 0;
     const total_amount = subtotal + tax_amount;
 
-    // ✅ ИСПРАВЛЕНО: убран лишний ? из VALUES (было 43, стало 42)
+    // ✅ ДОБАВЛЕНО show_qr_code в INSERT (43 поля, 43 значения)
     const result = await connection.query(`
       INSERT INTO invoices (
         invoice_number, uuid, agreement_id, invoice_date, due_date,
@@ -682,8 +694,8 @@ async createInvoice(req: AuthRequest, res: Response): Promise<void> {
         bank_details_type, bank_name, bank_account_name, bank_account_number,
         bank_account_address, bank_currency, bank_code, bank_swift_code, 
         bank_address, bank_custom_details,
-        notes, status, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        notes, status, created_by, show_qr_code
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       invoice_number,
       invoiceUuid,
@@ -726,7 +738,8 @@ async createInvoice(req: AuthRequest, res: Response): Promise<void> {
       bankDetails.bank_custom_details || null,
       data.notes || null,
       'draft',
-      userId
+      userId,
+      showQrCode  // ✅ ДОБАВЛЕНО
     ]);
 
     const invoiceId = (result as any)[0].insertId;
@@ -1069,6 +1082,10 @@ if (data.saved_bank_details_id && Object.keys(bankDetails).length > 0) {
         fields.push('notes = ?');
         values.push(data.notes || null);
       }
+      if (data.show_qr_code !== undefined) {
+        fields.push('show_qr_code = ?');
+        values.push(data.show_qr_code);
+      }
 
       // Если переданы items - обновляем их
       if (data.items && data.items.length > 0) {
@@ -1389,250 +1406,201 @@ if (data.save_bank_details && data.bank_details_name) {
     }
   }
 
-  /**
-   * Получить чек по ID
-   * GET /api/financial-documents/receipts/:id
-   */
-  async getReceiptById(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
+/**
+ * Получить чек по ID
+ * GET /api/financial-documents/receipts/:id
+ */
+async getReceiptById(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
 
-      const receipt = await db.queryOne(`
-        SELECT 
-          r.*,
-          i.invoice_number,
-          i.agreement_id,
-          a.agreement_number,
-          p.logo_filename as partner_logo_filename,
-          p.partner_name,
-          au.username as created_by_name,
-          (SELECT COUNT(*) FROM receipt_files WHERE receipt_id = r.id) as files_count
-        FROM receipts r
-        LEFT JOIN invoices i ON r.invoice_id = i.id
-        LEFT JOIN agreements a ON i.agreement_id = a.id
-        LEFT JOIN admin_users au ON r.created_by = au.id
-        LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
-        WHERE r.id = ? AND r.deleted_at IS NULL
-      `, [id]);
+    // ✅ ДОБАВЛЕНО: Получение цветов партнёра
+    const receipt = await db.queryOne(`
+      SELECT 
+        r.*,
+        i.invoice_number,
+        i.agreement_id,
+        a.agreement_number,
+        p.logo_filename as partner_logo_filename,
+        p.partner_name,
+        p.primary_color as partner_primary_color,
+        p.secondary_color as partner_secondary_color,
+        p.accent_color as partner_accent_color,
+        au.username as created_by_name,
+        (SELECT COUNT(*) FROM receipt_files WHERE receipt_id = r.id) as files_count
+      FROM receipts r
+      LEFT JOIN invoices i ON r.invoice_id = i.id
+      LEFT JOIN agreements a ON i.agreement_id = a.id
+      LEFT JOIN admin_users au ON r.created_by = au.id
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+      WHERE r.id = ? AND r.deleted_at IS NULL
+    `, [id]);
 
-      if (!receipt) {
-        res.status(404).json({
-          success: false,
-          message: 'Чек не найден'
-        });
-        return;
-      }
-
-      // ✅ ДОБАВЛЯЕМ LOGO URL
-      (receipt as any).logoUrl = (receipt as any).partner_logo_filename 
-        ? `https://admin.novaestate.company/${(receipt as any).partner_logo_filename}`
-        : 'https://admin.novaestate.company/nova-logo.svg';
-
-      // Получаем оплаченные позиции
-      const items = await db.query(`
-        SELECT 
-          rii.*,
-          ii.description,
-          ii.quantity,
-          ii.unit_price,
-          ii.total_price
-        FROM receipt_invoice_items rii
-        LEFT JOIN invoice_items ii ON rii.invoice_item_id = ii.id
-        WHERE rii.receipt_id = ?
-      `, [id]);
-
-      // Получаем файлы
-      const files = await db.query(
-        'SELECT * FROM receipt_files WHERE receipt_id = ? ORDER BY uploaded_at DESC',
-        [id]
-      );
-
-      res.json({
-        success: true,
-        data: {
-          ...receipt,
-          items: items,
-          files: files
-        }
-      });
-
-    } catch (error) {
-      logger.error('Get receipt by ID error:', error);
-      res.status(500).json({
+    if (!receipt) {
+      res.status(404).json({
         success: false,
-        message: 'Ошибка получения чека'
+        message: 'Чек не найден'
       });
+      return;
     }
-  }
 
-  /**
-   * Создать чек
-   * POST /api/financial-documents/receipts
-   */
-  async createReceipt(req: AuthRequest, res: Response): Promise<void> {
-    const connection = await db.beginTransaction();
+    // ✅ ДОБАВЛЯЕМ LOGO URL
+    (receipt as any).logoUrl = (receipt as any).partner_logo_filename 
+      ? `https://admin.novaestate.company/${(receipt as any).partner_logo_filename}`
+      : 'https://admin.novaestate.company/nova-logo.svg';
 
-    try {
-      const userId = req.admin!.id;
-      const userPartnerId = req.admin?.partner_id;
-      const data: CreateReceiptDTO = req.body;
+    // ✅ ДОБАВЛЯЕМ ЦВЕТА ПАРТНЁРА (с дефолтными значениями)
+    (receipt as any).primaryColor = (receipt as any).partner_primary_color || '#1b273b';
+    (receipt as any).secondaryColor = (receipt as any).partner_secondary_color || '#5d666e';
+    (receipt as any).accentColor = (receipt as any).partner_accent_color || '#1b273b';
 
-      // Проверяем существование инвойса
-      const invoice = await connection.query(
-        'SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL',
-        [data.invoice_id]
-      );
+    // Получаем оплаченные позиции
+    const items = await db.query(`
+      SELECT 
+        rii.*,
+        ii.description,
+        ii.quantity,
+        ii.unit_price,
+        ii.total_price
+      FROM receipt_invoice_items rii
+      LEFT JOIN invoice_items ii ON rii.invoice_item_id = ii.id
+      WHERE rii.receipt_id = ?
+    `, [id]);
 
-      if (!invoice || (invoice as any).length === 0) {
-        await db.rollback(connection);
-        res.status(404).json({
-          success: false,
-          message: 'Инвойс не найден'
-        });
-        return;
+    // Получаем файлы
+    const files = await db.query(
+      'SELECT * FROM receipt_files WHERE receipt_id = ? ORDER BY uploaded_at DESC',
+      [id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        ...receipt,
+        items: items,
+        files: files
       }
+    });
 
-// ✅ ЗАГРУЗКА СОХРАНЕННЫХ РЕКВИЗИТОВ
-let bankDetails: any = {};
-if (data.saved_bank_details_id) {
-  const saved = await db.queryOne(
-    'SELECT * FROM saved_bank_details WHERE id = ?',
-    [data.saved_bank_details_id]
-  );
-  if (saved) {
-    bankDetails = {
-      bank_details_type: (saved as any).bank_details_type,
-      bank_name: (saved as any).bank_name,
-      bank_account_name: (saved as any).bank_account_name,
-      bank_account_number: (saved as any).bank_account_number,
-      bank_account_address: (saved as any).bank_account_address,
-      bank_currency: (saved as any).bank_currency,
-      bank_code: (saved as any).bank_code,
-      bank_swift_code: (saved as any).bank_swift_code,
-      bank_address: (saved as any).bank_address,
-      bank_custom_details: (saved as any).bank_custom_details
-    };
+  } catch (error) {
+    logger.error('Get receipt by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения чека'
+    });
   }
-} else {
-  bankDetails = {
-    bank_details_type: data.bank_details_type || 'simple',
-    bank_name: data.bank_name,
-    bank_account_name: data.bank_account_name,
-    bank_account_number: data.bank_account_number,
-    bank_account_address: data.bank_account_address,
-    bank_currency: data.bank_currency,
-    bank_code: data.bank_code,
-    bank_swift_code: data.bank_swift_code,
-    bank_address: data.bank_address,
-    bank_custom_details: data.bank_custom_details
-  };
 }
 
-      // ✅ ПОЛУЧАЕМ ДОМЕН ПАРТНЁРА СОЗДАТЕЛЯ ИНВОЙСА
-      const creatorPartner = await db.queryOne<any>(`
-        SELECT p.domain
-        FROM invoices inv
-        LEFT JOIN admin_users au ON inv.created_by = au.id
-        LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
-        WHERE inv.id = ?
-      `, [data.invoice_id]);
+/**
+ * Создать чек
+ * POST /api/financial-documents/receipts
+ */
+async createReceipt(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
 
-      const baseDomain = creatorPartner?.domain 
-        ? `agreement.${creatorPartner.domain}` 
-        : 'documents.novaestate.company';
-      console.log(`🌐 Using domain for receipt: ${baseDomain}`);
-
-      // Генерируем уникальный номер REC-2025-ABC0001
-      const year = new Date().getFullYear();
-      const randomPart = Math.random().toString(36).substring(2, 5).toUpperCase();
-      const { v4: uuidv4 } = require('uuid');
-      const receiptUuid = uuidv4();
-      const countResult = await connection.query(
-        'SELECT COUNT(*) as count FROM receipts WHERE receipt_number LIKE ?',
-        [`REC-${year}-%`]
-      );
-      const count = (countResult[0] as any)[0].count + 1;
-      const receipt_number = `REC-${year}-${randomPart}${count.toString().padStart(4, '0')}`;
-
-      // Создаем чек с новыми полями банковских реквизитов
-const result = await connection.query(`
-  INSERT INTO receipts (
-    receipt_number, uuid, invoice_id, agreement_id, receipt_date,
-    amount_paid, payment_method,
-    bank_details_type, bank_name, bank_account_name, bank_account_number,
-    bank_account_address, bank_currency, bank_code, bank_swift_code, 
-    bank_address, bank_custom_details,
-    notes, status, created_by
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`, [
-  receipt_number,
-  receiptUuid,
-  data.invoice_id,
-  data.agreement_id || null,
-  data.receipt_date,
-  data.amount_paid,
-  data.payment_method,
-  bankDetails.bank_details_type,
-  bankDetails.bank_name || null,
-  bankDetails.bank_account_name || null,
-  bankDetails.bank_account_number || null,
-  bankDetails.bank_account_address || null,
-  bankDetails.bank_currency || null,
-  bankDetails.bank_code || null,
-  bankDetails.bank_swift_code || null,
-  bankDetails.bank_address || null,
-  bankDetails.bank_custom_details || null,
-  data.notes || null,
-  'verified',
-  userId
-]);
-
-      const receiptId = (result as any)[0].insertId;
-
-      // Сохраняем привязку к позициям инвойса и обновляем их статус оплаты
-      if (data.selected_items && data.selected_items.length > 0) {
-        for (const itemId of data.selected_items) {
-          await connection.query(`
-            INSERT INTO receipt_invoice_items (receipt_id, invoice_item_id, amount_allocated)
-            VALUES (?, ?, ?)
-          `, [receiptId, itemId, 0]);
-
-          // ✅ ОБНОВЛЯЕМ СТАТУС ОПЛАТЫ ПОЗИЦИИ
-          await connection.query(`
-            UPDATE invoice_items
-            SET is_fully_paid = 1,
-                amount_paid = total_price
-            WHERE id = ?
-          `, [itemId]);
-        }
-      }
-
-      // Обновляем amount_paid в инвойсе
-      await connection.query(`
-        UPDATE invoices 
-        SET amount_paid = amount_paid + ?,
-            status = CASE
-              WHEN (amount_paid + ?) >= total_amount THEN 'paid'
-              WHEN (amount_paid + ?) > 0 THEN 'partially_paid'
-              ELSE status
-            END
-        WHERE id = ?
-      `, [data.amount_paid, data.amount_paid, data.amount_paid, data.invoice_id]);
-
-// ✅ СОХРАНЕНИЕ РЕКВИЗИТОВ ЕСЛИ НУЖНО
-if (data.save_bank_details && data.bank_details_name) {
   try {
-    await connection.query(`
-      INSERT INTO saved_bank_details (
-        name, bank_details_type,
-        bank_name, bank_account_name, bank_account_number,
-        bank_account_address, bank_currency, bank_code, bank_swift_code,
-        bank_address,
-        bank_custom_details,
-        created_by, partner_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    const userId = req.admin!.id;
+    const userPartnerId = req.admin?.partner_id;
+    const data: CreateReceiptDTO = req.body;
+
+    // ✅ ИЗВЛЕКАЕМ show_qr_code (по умолчанию 1 - показывать)
+    const showQrCode = data.show_qr_code !== undefined ? data.show_qr_code : 1;
+
+    // Проверяем существование инвойса
+    const invoice = await connection.query(
+      'SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL',
+      [data.invoice_id]
+    );
+
+    if (!invoice || (invoice as any).length === 0) {
+      await db.rollback(connection);
+      res.status(404).json({
+        success: false,
+        message: 'Инвойс не найден'
+      });
+      return;
+    }
+
+    // ✅ ЗАГРУЗКА СОХРАНЕННЫХ РЕКВИЗИТОВ
+    let bankDetails: any = {};
+    if (data.saved_bank_details_id) {
+      const saved = await db.queryOne(
+        'SELECT * FROM saved_bank_details WHERE id = ?',
+        [data.saved_bank_details_id]
+      );
+      if (saved) {
+        bankDetails = {
+          bank_details_type: (saved as any).bank_details_type,
+          bank_name: (saved as any).bank_name,
+          bank_account_name: (saved as any).bank_account_name,
+          bank_account_number: (saved as any).bank_account_number,
+          bank_account_address: (saved as any).bank_account_address,
+          bank_currency: (saved as any).bank_currency,
+          bank_code: (saved as any).bank_code,
+          bank_swift_code: (saved as any).bank_swift_code,
+          bank_address: (saved as any).bank_address,
+          bank_custom_details: (saved as any).bank_custom_details
+        };
+      }
+    } else {
+      bankDetails = {
+        bank_details_type: data.bank_details_type || 'simple',
+        bank_name: data.bank_name,
+        bank_account_name: data.bank_account_name,
+        bank_account_number: data.bank_account_number,
+        bank_account_address: data.bank_account_address,
+        bank_currency: data.bank_currency,
+        bank_code: data.bank_code,
+        bank_swift_code: data.bank_swift_code,
+        bank_address: data.bank_address,
+        bank_custom_details: data.bank_custom_details
+      };
+    }
+
+    // ✅ ПОЛУЧАЕМ ДОМЕН ПАРТНЁРА СОЗДАТЕЛЯ ИНВОЙСА
+    const creatorPartner = await db.queryOne<any>(`
+      SELECT p.domain
+      FROM invoices inv
+      LEFT JOIN admin_users au ON inv.created_by = au.id
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+      WHERE inv.id = ?
+    `, [data.invoice_id]);
+
+    const baseDomain = creatorPartner?.domain 
+      ? `agreement.${creatorPartner.domain}` 
+      : 'documents.novaestate.company';
+    console.log(`🌐 Using domain for receipt: ${baseDomain}`);
+
+    // Генерируем уникальный номер REC-2025-ABC0001
+    const year = new Date().getFullYear();
+    const randomPart = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const { v4: uuidv4 } = require('uuid');
+    const receiptUuid = uuidv4();
+    const countResult = await connection.query(
+      'SELECT COUNT(*) as count FROM receipts WHERE receipt_number LIKE ?',
+      [`REC-${year}-%`]
+    );
+    const count = (countResult[0] as any)[0].count + 1;
+    const receipt_number = `REC-${year}-${randomPart}${count.toString().padStart(4, '0')}`;
+
+    // ✅ ДОБАВЛЕНО show_qr_code в INSERT (21 поле, 21 значение)
+    const result = await connection.query(`
+      INSERT INTO receipts (
+        receipt_number, uuid, invoice_id, agreement_id, receipt_date,
+        amount_paid, payment_method,
+        bank_details_type, bank_name, bank_account_name, bank_account_number,
+        bank_account_address, bank_currency, bank_code, bank_swift_code, 
+        bank_address, bank_custom_details,
+        notes, status, created_by, show_qr_code
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      data.bank_details_name,
+      receipt_number,
+      receiptUuid,
+      data.invoice_id,
+      data.agreement_id || null,
+      data.receipt_date,
+      data.amount_paid,
+      data.payment_method,
       bankDetails.bank_details_type,
       bankDetails.bank_name || null,
       bankDetails.bank_account_name || null,
@@ -1643,60 +1611,122 @@ if (data.save_bank_details && data.bank_details_name) {
       bankDetails.bank_swift_code || null,
       bankDetails.bank_address || null,
       bankDetails.bank_custom_details || null,
+      data.notes || null,
+      'verified',
       userId,
-      userPartnerId || null
+      showQrCode  // ✅ ДОБАВЛЕНО
     ]);
-    logger.info(`Bank details saved: ${data.bank_details_name}`);
-  } catch (saveError) {
-    logger.error('Error saving bank details:', saveError);
+
+    const receiptId = (result as any)[0].insertId;
+
+    // Сохраняем привязку к позициям инвойса и обновляем их статус оплаты
+    if (data.selected_items && data.selected_items.length > 0) {
+      for (const itemId of data.selected_items) {
+        await connection.query(`
+          INSERT INTO receipt_invoice_items (receipt_id, invoice_item_id, amount_allocated)
+          VALUES (?, ?, ?)
+        `, [receiptId, itemId, 0]);
+
+        // ✅ ОБНОВЛЯЕМ СТАТУС ОПЛАТЫ ПОЗИЦИИ
+        await connection.query(`
+          UPDATE invoice_items
+          SET is_fully_paid = 1,
+              amount_paid = total_price
+          WHERE id = ?
+        `, [itemId]);
+      }
+    }
+
+    // Обновляем amount_paid в инвойсе
+    await connection.query(`
+      UPDATE invoices 
+      SET amount_paid = amount_paid + ?,
+          status = CASE
+            WHEN (amount_paid + ?) >= total_amount THEN 'paid'
+            WHEN (amount_paid + ?) > 0 THEN 'partially_paid'
+            ELSE status
+          END
+      WHERE id = ?
+    `, [data.amount_paid, data.amount_paid, data.amount_paid, data.invoice_id]);
+
+    // ✅ СОХРАНЕНИЕ РЕКВИЗИТОВ ЕСЛИ НУЖНО
+    if (data.save_bank_details && data.bank_details_name) {
+      try {
+        await connection.query(`
+          INSERT INTO saved_bank_details (
+            name, bank_details_type,
+            bank_name, bank_account_name, bank_account_number,
+            bank_account_address, bank_currency, bank_code, bank_swift_code,
+            bank_address,
+            bank_custom_details,
+            created_by, partner_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          data.bank_details_name,
+          bankDetails.bank_details_type,
+          bankDetails.bank_name || null,
+          bankDetails.bank_account_name || null,
+          bankDetails.bank_account_number || null,
+          bankDetails.bank_account_address || null,
+          bankDetails.bank_currency || null,
+          bankDetails.bank_code || null,
+          bankDetails.bank_swift_code || null,
+          bankDetails.bank_address || null,
+          bankDetails.bank_custom_details || null,
+          userId,
+          userPartnerId || null
+        ]);
+        logger.info(`Bank details saved: ${data.bank_details_name}`);
+      } catch (saveError) {
+        logger.error('Error saving bank details:', saveError);
+      }
+    }
+
+    // ✅ ГЕНЕРИРУЕМ QR-КОД С ДОМЕНОМ ПАРТНЁРА
+    try {
+      const verifyUrl = `https://${baseDomain}/receipt/${receiptUuid}`;
+      console.log(`📱 Generating QR code for: ${verifyUrl}`);
+      const qrCodeBase64 = await QRCode.toDataURL(verifyUrl, {
+        width: 300,
+        margin: 1
+      });
+      await connection.query(
+        'UPDATE receipts SET qr_code_base64 = ? WHERE id = ?',
+        [qrCodeBase64, receiptId]
+      );
+      logger.info(`QR code generated for receipt ${receiptId} with domain ${baseDomain}`);
+    } catch (qrError) {
+      logger.error('QR code generation failed:', qrError);
+    }
+
+    await db.commit(connection);
+
+    // Генерируем PDF сразу после создания
+    try {
+      await this.generateReceiptPDF(receiptId);
+    } catch (pdfError) {
+      logger.error('PDF generation failed:', pdfError);
+    }
+
+    logger.info(`Receipt created: ${receipt_number} (ID: ${receiptId}) by user ${req.admin?.username}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Чек успешно создан',
+      data: {
+        id: receiptId,
+        receipt_number
+      }
+    });
+  } catch (error) {
+    await db.rollback(connection);
+    logger.error('Create receipt error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка создания чека'
+    });
   }
 }
-
-      // ✅ ГЕНЕРИРУЕМ QR-КОД С ДОМЕНОМ ПАРТНЁРА
-      try {
-        const verifyUrl = `https://${baseDomain}/receipt/${receiptUuid}`;
-        console.log(`📱 Generating QR code for: ${verifyUrl}`);
-        const qrCodeBase64 = await QRCode.toDataURL(verifyUrl, {
-          width: 300,
-          margin: 1
-        });
-        await connection.query(
-          'UPDATE receipts SET qr_code_base64 = ? WHERE id = ?',
-          [qrCodeBase64, receiptId]
-        );
-        logger.info(`QR code generated for receipt ${receiptId} with domain ${baseDomain}`);
-      } catch (qrError) {
-        logger.error('QR code generation failed:', qrError);
-      }
-
-      await db.commit(connection);
-
-      // Генерируем PDF сразу после создания
-      try {
-        await this.generateReceiptPDF(receiptId);
-      } catch (pdfError) {
-        logger.error('PDF generation failed:', pdfError);
-      }
-
-      logger.info(`Receipt created: ${receipt_number} (ID: ${receiptId}) by user ${req.admin?.username}`);
-
-      res.status(201).json({
-        success: true,
-        message: 'Чек успешно создан',
-        data: {
-          id: receiptId,
-          receipt_number
-        }
-      });
-    } catch (error) {
-      await db.rollback(connection);
-      logger.error('Create receipt error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Ошибка создания чека'
-      });
-    }
-  }
 
   /**
    * Загрузить файлы чека
@@ -1909,6 +1939,10 @@ if (data.save_bank_details && data.bank_details_name) {
         if (data.bank_account_address !== undefined) {
           fields.push('bank_account_address = ?');
           values.push(data.bank_account_address || null);
+        }
+        if (data.show_qr_code !== undefined) {
+          fields.push('show_qr_code = ?');
+          values.push(data.show_qr_code);
         }
         if (data.bank_currency !== undefined) {
           fields.push('bank_currency = ?');
@@ -2190,205 +2224,219 @@ if (data.save_bank_details && data.bank_details_name) {
 
   // ==================== PDF GENERATION & HTML ====================
 
-  /**
-   * Получить HTML версию инвойса для генерации PDF
-   * GET /api/financial-documents/invoices/:id/html
-   */
-  async getInvoiceHTML(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { internalKey, selected_items } = req.query;
+/**
+ * Получить HTML версию инвойса для генерации PDF
+ * GET /api/financial-documents/invoices/:id/html
+ */
+async getInvoiceHTML(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { internalKey, selected_items } = req.query;
 
-      // Проверяем внутренний ключ для Puppeteer
-      const expectedKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
-      if (internalKey !== expectedKey) {
-        res.status(403).send('Доступ запрещен');
-        return;
-      }
-
-      // ✅ ПОЛУЧАЕМ ИНВОЙС С LOGO
-      const invoice = await db.queryOne(`
-        SELECT 
-          i.*,
-          p.logo_filename as partner_logo_filename
-        FROM invoices i
-        LEFT JOIN admin_users au ON i.created_by = au.id
-        LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
-        WHERE i.id = ? AND i.deleted_at IS NULL
-      `, [id]);
-
-      if (!invoice) {
-        res.status(404).send('Invoice not found');
-        return;
-      }
-
-      // ✅ ФОРМИРУЕМ LOGO URL
-      const logoUrl = (invoice as any).partner_logo_filename 
-        ? `https://admin.novaestate.company/${(invoice as any).partner_logo_filename}`
-        : 'https://admin.novaestate.company/nova-logo.svg';
-
-      // Получаем позиции
-      const items = await db.query(
-        'SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id',
-        [id]
-      );
-
-      // ✅ ПАРСИМ selected_items ЕСЛИ ЕСТЬ
-      let selectedItemsArray: number[] = [];
-      if (selected_items) {
-        try {
-          selectedItemsArray = JSON.parse(String(selected_items));
-        } catch (e) {
-          logger.error('Error parsing selected_items:', e);
-        }
-      }
-
-      // Получаем данные договора если есть
-      let agreementData = null;
-      if ((invoice as any).agreement_id) {
-        agreementData = await db.queryOne(`
-          SELECT 
-            a.agreement_number,
-            COALESCE(
-              a.property_name_override,
-              pt_ru.property_name, 
-              pt_en.property_name, 
-              p.complex_name, 
-              CONCAT('Объект ', p.property_number)
-            ) as property_name,
-            COALESCE(
-              a.property_number_override,
-              p.property_number
-            ) as property_number,
-            COALESCE(
-              a.property_address_override,
-              p.address
-            ) as address
-          FROM agreements a
-          LEFT JOIN properties p ON a.property_id = p.id
-          LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
-          LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
-          WHERE a.id = ?
-        `, [(invoice as any).agreement_id]);
-      }
-
-      // ✅ ГЕНЕРИРУЕМ HTML С LOGO URL И selected_items
-      const html = this.generateInvoiceHTML(invoice, items, agreementData, logoUrl, selectedItemsArray);
-      
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(html);
-
-    } catch (error) {
-      logger.error('Get invoice HTML error:', error);
-      res.status(500).send('Error generating HTML');
+    // Проверяем внутренний ключ для Puppeteer
+    const expectedKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
+    if (internalKey !== expectedKey) {
+      res.status(403).send('Доступ запрещен');
+      return;
     }
-  }
 
-  /**
-   * Получить HTML версию чека для генерации PDF
-   * GET /api/financial-documents/receipts/:id/html
-   */
-  async getReceiptHTML(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { internalKey } = req.query;
+    // ✅ ПОЛУЧАЕМ ИНВОЙС С LOGO И ЦВЕТАМИ ПАРТНЁРА
+    const invoice = await db.queryOne(`
+      SELECT 
+        i.*,
+        p.logo_filename as partner_logo_filename,
+        p.primary_color as partner_primary_color,
+        p.secondary_color as partner_secondary_color,
+        p.accent_color as partner_accent_color
+      FROM invoices i
+      LEFT JOIN admin_users au ON i.created_by = au.id
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+      WHERE i.id = ? AND i.deleted_at IS NULL
+    `, [id]);
 
-      // Проверяем внутренний ключ для Puppeteer
-      const expectedKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
-      if (internalKey !== expectedKey) {
-        res.status(403).send('Доступ запрещен');
-        return;
-      }
-
-      // ✅ ПОЛУЧАЕМ ЧЕК С LOGO
-      const receipt = await db.queryOne(`
-        SELECT 
-          r.*,
-          i.invoice_number,
-          i.agreement_id,
-          i.from_type,
-          i.from_company_name,
-          i.from_individual_name,
-          i.to_type,
-          i.to_company_name,
-          i.to_individual_name,
-          p.logo_filename as partner_logo_filename
-        FROM receipts r
-        LEFT JOIN invoices i ON r.invoice_id = i.id
-        LEFT JOIN admin_users au ON r.created_by = au.id
-        LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
-        WHERE r.id = ? AND r.deleted_at IS NULL
-      `, [id]);
-
-      if (!receipt) {
-        res.status(404).send('Receipt not found');
-        return;
-      }
-
-      // ✅ ФОРМИРУЕМ LOGO URL
-      const logoUrl = (receipt as any).partner_logo_filename 
-        ? `https://admin.novaestate.company/${(receipt as any).partner_logo_filename}`
-        : 'https://admin.novaestate.company/nova-logo.svg';
-
-      // Получаем оплаченные позиции
-      const items = await db.query(`
-        SELECT 
-          rii.*,
-          ii.description,
-          ii.quantity,
-          ii.unit_price,
-          ii.total_price
-        FROM receipt_invoice_items rii
-        LEFT JOIN invoice_items ii ON rii.invoice_item_id = ii.id
-        WHERE rii.receipt_id = ?
-      `, [id]);
-
-      // Получаем файлы чека
-      const files = await db.query(
-        'SELECT * FROM receipt_files WHERE receipt_id = ? ORDER BY uploaded_at',
-        [id]
-      );
-
-      // Получаем данные договора если есть
-      let agreementData = null;
-      if ((receipt as any).agreement_id) {
-        agreementData = await db.queryOne(`
-          SELECT 
-            a.agreement_number,
-            COALESCE(
-              a.property_name_override,
-              pt_ru.property_name, 
-              pt_en.property_name, 
-              p.complex_name, 
-              CONCAT('Объект ', p.property_number)
-            ) as property_name,
-            COALESCE(
-              a.property_number_override,
-              p.property_number
-            ) as property_number,
-            COALESCE(
-              a.property_address_override,
-              p.address
-            ) as address
-          FROM agreements a
-          LEFT JOIN properties p ON a.property_id = p.id
-          LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
-          LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
-          WHERE a.id = ?
-        `, [(receipt as any).agreement_id]);
-      }
-
-      // ✅ ГЕНЕРИРУЕМ HTML С LOGO URL
-      const html = this.generateReceiptHTML(receipt, items, files, agreementData, logoUrl);
-      
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(html);
-
-    } catch (error) {
-      logger.error('Get receipt HTML error:', error);
-      res.status(500).send('Error generating HTML');
+    if (!invoice) {
+      res.status(404).send('Invoice not found');
+      return;
     }
+
+    // ✅ ФОРМИРУЕМ LOGO URL
+    const logoUrl = (invoice as any).partner_logo_filename 
+      ? `https://admin.novaestate.company/${(invoice as any).partner_logo_filename}`
+      : 'https://admin.novaestate.company/nova-logo.svg';
+
+    // ✅ ФОРМИРУЕМ ЦВЕТА (с дефолтами)
+    const primaryColor = (invoice as any).partner_primary_color || '#1b273b';
+    const secondaryColor = (invoice as any).partner_secondary_color || '#5d666e';
+
+    // Получаем позиции
+    const items = await db.query(
+      'SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id',
+      [id]
+    );
+
+    // ✅ ПАРСИМ selected_items ЕСЛИ ЕСТЬ
+    let selectedItemsArray: number[] = [];
+    if (selected_items) {
+      try {
+        selectedItemsArray = JSON.parse(String(selected_items));
+      } catch (e) {
+        logger.error('Error parsing selected_items:', e);
+      }
+    }
+
+    // Получаем данные договора если есть
+    let agreementData = null;
+    if ((invoice as any).agreement_id) {
+      agreementData = await db.queryOne(`
+        SELECT 
+          a.agreement_number,
+          COALESCE(
+            a.property_name_override,
+            pt_ru.property_name, 
+            pt_en.property_name, 
+            p.complex_name, 
+            CONCAT('Объект ', p.property_number)
+          ) as property_name,
+          COALESCE(
+            a.property_number_override,
+            p.property_number
+          ) as property_number,
+          COALESCE(
+            a.property_address_override,
+            p.address
+          ) as address
+        FROM agreements a
+        LEFT JOIN properties p ON a.property_id = p.id
+        LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
+        LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
+        WHERE a.id = ?
+      `, [(invoice as any).agreement_id]);
+    }
+
+    // ✅ ГЕНЕРИРУЕМ HTML С LOGO URL, ЦВЕТАМИ И selected_items
+    const html = this.generateInvoiceHTML(invoice, items, agreementData, logoUrl, selectedItemsArray, primaryColor, secondaryColor);
+    
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+
+  } catch (error) {
+    logger.error('Get invoice HTML error:', error);
+    res.status(500).send('Error generating HTML');
   }
+}
+
+/**
+ * Получить HTML версию чека для генерации PDF
+ * GET /api/financial-documents/receipts/:id/html
+ */
+async getReceiptHTML(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { internalKey } = req.query;
+
+    // Проверяем внутренний ключ для Puppeteer
+    const expectedKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
+    if (internalKey !== expectedKey) {
+      res.status(403).send('Доступ запрещен');
+      return;
+    }
+
+    // ✅ ПОЛУЧАЕМ ЧЕК С LOGO И ЦВЕТАМИ ПАРТНЁРА
+    const receipt = await db.queryOne(`
+      SELECT 
+        r.*,
+        i.invoice_number,
+        i.agreement_id,
+        i.from_type,
+        i.from_company_name,
+        i.from_individual_name,
+        i.to_type,
+        i.to_company_name,
+        i.to_individual_name,
+        p.logo_filename as partner_logo_filename,
+        p.primary_color as partner_primary_color,
+        p.secondary_color as partner_secondary_color,
+        p.accent_color as partner_accent_color
+      FROM receipts r
+      LEFT JOIN invoices i ON r.invoice_id = i.id
+      LEFT JOIN admin_users au ON r.created_by = au.id
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+      WHERE r.id = ? AND r.deleted_at IS NULL
+    `, [id]);
+
+    if (!receipt) {
+      res.status(404).send('Receipt not found');
+      return;
+    }
+
+    // ✅ ФОРМИРУЕМ LOGO URL
+    const logoUrl = (receipt as any).partner_logo_filename 
+      ? `https://admin.novaestate.company/${(receipt as any).partner_logo_filename}`
+      : 'https://admin.novaestate.company/nova-logo.svg';
+
+    // ✅ ФОРМИРУЕМ ЦВЕТА (с дефолтами)
+    const primaryColor = (receipt as any).partner_primary_color || '#1b273b';
+    const secondaryColor = (receipt as any).partner_secondary_color || '#5d666e';
+
+    // Получаем оплаченные позиции
+    const items = await db.query(`
+      SELECT 
+        rii.*,
+        ii.description,
+        ii.quantity,
+        ii.unit_price,
+        ii.total_price
+      FROM receipt_invoice_items rii
+      LEFT JOIN invoice_items ii ON rii.invoice_item_id = ii.id
+      WHERE rii.receipt_id = ?
+    `, [id]);
+
+    // Получаем файлы чека
+    const files = await db.query(
+      'SELECT * FROM receipt_files WHERE receipt_id = ? ORDER BY uploaded_at',
+      [id]
+    );
+
+    // Получаем данные договора если есть
+    let agreementData = null;
+    if ((receipt as any).agreement_id) {
+      agreementData = await db.queryOne(`
+        SELECT 
+          a.agreement_number,
+          COALESCE(
+            a.property_name_override,
+            pt_ru.property_name, 
+            pt_en.property_name, 
+            p.complex_name, 
+            CONCAT('Объект ', p.property_number)
+          ) as property_name,
+          COALESCE(
+            a.property_number_override,
+            p.property_number
+          ) as property_number,
+          COALESCE(
+            a.property_address_override,
+            p.address
+          ) as address
+        FROM agreements a
+        LEFT JOIN properties p ON a.property_id = p.id
+        LEFT JOIN property_translations pt_ru ON p.id = pt_ru.property_id AND pt_ru.language_code = 'ru'
+        LEFT JOIN property_translations pt_en ON p.id = pt_en.property_id AND pt_en.language_code = 'en'
+        WHERE a.id = ?
+      `, [(receipt as any).agreement_id]);
+    }
+
+    // ✅ ГЕНЕРИРУЕМ HTML С LOGO URL И ЦВЕТАМИ
+    const html = this.generateReceiptHTML(receipt, items, files, agreementData, logoUrl, primaryColor, secondaryColor);
+    
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+
+  } catch (error) {
+    logger.error('Get receipt HTML error:', error);
+    res.status(500).send('Error generating HTML');
+  }
+}
 
   /**
    * Скачать PDF инвойса
@@ -2575,1196 +2623,1219 @@ if (data.save_bank_details && data.bank_details_name) {
     }
   }
 
-  /**
-   * Генерация HTML для инвойса
-   */
-  private generateInvoiceHTML(
-    invoice: any, 
-    items: any[], 
-    agreementData: any, 
-    logoUrl?: string,
-    selectedItems?: number[]
-  ): string {
-    const finalLogoUrl = logoUrl || 'https://admin.novaestate.company/nova-logo.svg';
-    
-    const formatDate = (date: Date): string => {
-      return new Date(date).toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-    };
-
-    const formatCurrency = (amount: number): string => {
-      return new Intl.NumberFormat('en-US').format(amount);
-    };
-
-// ✅ РАСЧЕТ СУММЫ К ОПЛАТЕ (только выбранные позиции) - ИСПРАВЛЕНО
-    let amountToPay = 0;
-    if (selectedItems && selectedItems.length > 0) {
-      items.forEach(item => {
-        if (selectedItems.includes(item.id)) {
-          const price = Number(item.total_price) || 0; // ✅ ЯВНОЕ ПРЕОБРАЗОВАНИЕ В ЧИСЛО
-          amountToPay += price;
-        }
-      });
-    } else {
-      amountToPay = Number(invoice.total_amount) - Number(invoice.amount_paid);
-    }
-
-    // Формируем информацию о сторонах
-    const fromInfo = invoice.from_type === 'company' 
-      ? `<div><strong>${invoice.from_company_name}</strong></div>
-         <div>Tax ID: ${invoice.from_company_tax_id}</div>
-         ${invoice.from_company_address ? `<div>${invoice.from_company_address}</div>` : ''}
-         ${invoice.from_director_name ? `<div>Director: ${invoice.from_director_name}</div>` : ''}`
-      : `<div><strong>${invoice.from_individual_name}</strong></div>
-         <div>${invoice.from_individual_country}</div>
-         <div>Passport: ${invoice.from_individual_passport}</div>`;
-
-    const toInfo = invoice.to_type === 'company'
-      ? `<div><strong>${invoice.to_company_name}</strong></div>
-         <div>Tax ID: ${invoice.to_company_tax_id}</div>
-         ${invoice.to_company_address ? `<div>${invoice.to_company_address}</div>` : ''}
-         ${invoice.to_director_name ? `<div>Director: ${invoice.to_director_name}</div>` : ''}`
-      : `<div><strong>${invoice.to_individual_name}</strong></div>
-         <div>${invoice.to_individual_country}</div>
-         <div>Passport: ${invoice.to_individual_passport}</div>`;
-
-// ✅ ФОРМАТИРОВАНИЕ БАНКОВСКИХ РЕКВИЗИТОВ
-let bankDetailsHTML = '';
-if (invoice.bank_details_type === 'international') {
-  bankDetailsHTML = `
-    <div class="bank-details">
-      <h3>BANK DETAILS FOR PAYMENT:</h3>
-      ${invoice.bank_account_name ? `<div><strong>Account Name:</strong> ${invoice.bank_account_name}</div>` : ''}
-      ${invoice.bank_account_address ? `<div><strong>Account Address:</strong> ${invoice.bank_account_address}</div>` : ''}
-      ${invoice.bank_currency ? `<div><strong>Currency:</strong> ${invoice.bank_currency}</div>` : ''}
-      ${invoice.bank_account_number ? `<div><strong>Account No:</strong> ${invoice.bank_account_number}</div>` : ''}
-      ${invoice.bank_name ? `<div><strong>Bank Name:</strong> ${invoice.bank_name}</div>` : ''}
-      ${invoice.bank_address ? `<div><strong>Bank Address:</strong> ${invoice.bank_address}</div>` : ''}
-      ${invoice.bank_code ? `<div><strong>Bank Code:</strong> ${invoice.bank_code}</div>` : ''}
-      ${invoice.bank_swift_code ? `<div><strong>Swift Code:</strong> ${invoice.bank_swift_code}</div>` : ''}
-    </div>
-  `;
-} else if (invoice.bank_details_type === 'custom') {
-  bankDetailsHTML = `
-    <div class="bank-details">
-      <h3>BANK DETAILS FOR PAYMENT:</h3>
-      <div style="white-space: pre-wrap;">${invoice.bank_custom_details || ''}</div>
-    </div>
-  `;
-} else if (invoice.bank_name || invoice.bank_account_name || invoice.bank_account_number) {
-  bankDetailsHTML = `
-    <div class="bank-details">
-      <h3>BANK DETAILS FOR PAYMENT:</h3>
-      ${invoice.bank_name ? `<div><strong>Bank:</strong> ${invoice.bank_name}</div>` : ''}
-      ${invoice.bank_account_name ? `<div><strong>Account Name:</strong> ${invoice.bank_account_name}</div>` : ''}
-      ${invoice.bank_account_number ? `<div><strong>Account Number:</strong> ${invoice.bank_account_number}</div>` : ''}
-    </div>
-  `;
-}
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice ${invoice.invoice_number}</title>
-  <style>
-    @page {
-      size: 210mm 297mm;
-      margin: 0;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-
-    body {
-      font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #1b273b;
-      background: #f9f6f3;
-      margin: 0;
-      padding: 0;
-    }
-
-    .page {
-      width: 210mm;
-      height: 297mm;
-      background: #f9f6f3;
-      padding: 10mm;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
-    }
-
-    .page-inner {
-      width: 190mm;
-      height: 277mm;
-      background: #f9f6f3;
-      border: 1px solid #1b273b;
-      padding: 8mm 15mm 15mm 15mm;
-      flex: 1;
-      position: relative;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .watermark {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.03;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .watermark img {
-      width: 80mm;
-      height: auto;
-    }
-
-    .page-content {
-      position: relative;
-      z-index: 4;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 3mm;
-    }
-
-    .logo-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 2mm;
-    }
-
-    .decorative-line {
-      height: 1px;
-      background: linear-gradient(90deg, transparent 0%, #1b273b 50%, transparent 100%);
-      flex: 1;
-    }
-
-    .decorative-line.left {
-      margin-right: 10mm;
-    }
-
-    .decorative-line.right {
-      margin-left: 10mm;
-    }
-
-    .logo-container {
-      background: #f9f6f3;
-      padding: 0 5mm;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2;
-      position: relative;
-    }
-
-    .logo-container img {
-      max-height: 16mm;
-      max-width: 60mm;
-      height: auto;
-      width: auto;
-      filter: brightness(0) saturate(100%) invert(11%) sepia(12%) saturate(1131%) hue-rotate(185deg) brightness(94%) contrast(91%);
-    }
-
-    h1 {
-      font-size: 8mm;
-      font-weight: 900;
-      text-align: center;
-      margin: 2mm 0 4mm 0;
-      letter-spacing: 0.5mm;
-      color: #1b273b;
-    }
-
-    .invoice-meta {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4mm;
-      font-size: 3.3mm;
-    }
-
-    .invoice-meta-item {
-      margin-bottom: 1mm;
-    }
-
-    .invoice-meta-item strong {
-      font-weight: 600;
-    }
-
-    .parties {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4mm;
-      gap: 10mm;
-    }
-
-    .party {
-      flex: 1;
-      font-size: 3mm;
-      line-height: 1.3;
-    }
-
-    .party-title {
-      font-size: 3.8mm;
-      font-weight: 700;
-      margin-bottom: 1.5mm;
-      padding-bottom: 1mm;
-      border-bottom: 2px solid #1b273b;
-    }
-
-    .party div {
-      margin-bottom: 0.8mm;
-    }
-
-    .property-details {
-      background: #e8e5e1;
-      padding: 2.5mm;
-      margin-bottom: 4mm;
-      border-radius: 2mm;
-    }
-
-    .property-details h3 {
-      font-size: 3.3mm;
-      font-weight: 700;
-      margin-bottom: 1.5mm;
-    }
-
-    .property-details div {
-      font-size: 3mm;
-      margin-bottom: 0.8mm;
-    }
-
-    .items-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 4mm;
-      font-size: 3mm;
-    }
-
-    .items-table th,
-    .items-table td {
-      border: 1px solid #1b273b;
-      padding: 2mm;
-      text-align: left;
-    }
-
-    .items-table th {
-      background: #5d666e !important;
-      color: white !important;
-      font-weight: 700;
-    }
-
-    .items-table td.number {
-      text-align: center;
-      width: 10mm;
-    }
-
-    .items-table td.qty {
-      text-align: center;
-      width: 20mm;
-    }
-
-    .items-table td.price {
-      text-align: right;
-      width: 30mm;
-    }
-
-    .items-table tr.selected {
-      background: #fff9e6 !important;
-      font-weight: 600;
-    }
-
-    .totals {
-      margin-left: auto;
-      width: 70mm;
-      font-size: 3.3mm;
-    }
-
-    .totals-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 1.2mm 0;
-      border-bottom: 1px solid #d0d0d0;
-    }
-
-    .totals-row.total {
-      font-size: 4.2mm;
-      font-weight: 700;
-      border-top: 2px solid #1b273b;
-      border-bottom: 2px solid #1b273b;
-      padding: 2mm 0;
-      margin-top: 1mm;
-    }
-
-    .totals-row.amount-to-pay {
-      font-size: 4.5mm;
-      font-weight: 700;
-      background: #2d5f3f;
-      color: white !important;
-      padding: 2mm;
-      border-radius: 2mm;
-      margin-top: 2mm;
-    }
-
-    .bank-details {
-      margin-top: 4mm;
-      padding: 2.5mm;
-      background: #e8e5e1;
-      border-radius: 2mm;
-    }
-
-    .bank-details h3 {
-      font-size: 3.8mm;
-      font-weight: 700;
-      margin-bottom: 1.5mm;
-    }
-
-    .bank-details div {
-      font-size: 3mm;
-      margin-bottom: 0.8mm;
-    }
-
-    .qr-section {
-      position: absolute;
-      bottom: 30mm;
-      right: 15mm;
-      opacity: 0.4;
-      z-index: 5;
-    }
-
-    .qr-section img {
-      width: 18mm;
-      height: 18mm;
-    }
-
-    .signatures-section {
-      position: absolute;
-      bottom: 23mm;
-      left: 15mm;
-      right: 15mm;
-      display: flex;
-      justify-content: space-between;
-      gap: 10mm;
-      z-index: 9;
-      border-top: 1px solid #d0d0d0;
-      padding-top: 2mm;
-    }
-
-    .signature-block {
-      flex: 1;
-    }
-
-    .signature-label {
-      font-size: 3mm;
-      font-weight: 600;
-      color: #1b273b;
-      margin-bottom: 1mm;
-    }
-
-    .signature-name {
-      font-size: 3.3mm;
-      font-weight: 400;
-      color: #1b273b;
-      margin-bottom: 0.5mm;
-    }
-
-    .signature-date {
-      font-size: 3mm;
-      color: #666;
-    }
-
-    .page-footer {
-      position: absolute;
-      bottom: 10mm;
-      left: 15mm;
-      right: 15mm;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      z-index: 10;
-    }
-
-    .page-footer-left {
-      display: flex;
-      flex-direction: column;
-      gap: 1mm;
-    }
-
-    .invoice-number {
-      font-size: 3mm;
-      font-weight: 600;
-      color: #666;
-      text-transform: uppercase;
-    }
-
-    .invoice-uuid {
-      font-size: 2.5mm;
-      font-weight: 300;
-      color: #999;
-      font-family: 'Courier New', monospace;
-    }
-
-    .page-number {
-      font-size: 3.5mm;
-      font-weight: 300;
-      color: #666;
-    }
-
-    strong {
-      font-weight: 700;
-    }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <div class="page-inner">
-      <div class="watermark">
-        <img src="${finalLogoUrl}" alt="Logo" />
-      </div>
-      <div class="page-content">
-        <div class="header">
-          <div class="logo-wrapper">
-            <div class="decorative-line left"></div>
-            <div class="logo-container">
-              <img src="${finalLogoUrl}" alt="Logo" />
-            </div>
-            <div class="decorative-line right"></div>
-          </div>
-        </div>
-        
-        <h1>INVOICE</h1>
-        
-        <div class="invoice-meta">
-          <div>
-            <div class="invoice-meta-item">
-              <strong>Invoice Number:</strong> ${invoice.invoice_number}
-            </div>
-            <div class="invoice-meta-item">
-              <strong>Date:</strong> ${formatDate(invoice.invoice_date)}
-            </div>
-            ${invoice.due_date ? `
-            <div class="invoice-meta-item">
-              <strong>Due Date:</strong> ${formatDate(invoice.due_date)}
-            </div>
-            ` : ''}
-            ${agreementData ? `
-            <div class="invoice-meta-item">
-              <strong>Agreement:</strong> ${agreementData.agreement_number}
-            </div>
-            ` : ''}
-          </div>
-        </div>
-
-${agreementData ? `
-<div class="property-details">
-  <h3>PROPERTY DETAILS:</h3>
-  <div><strong>Address:</strong> ${agreementData.address || 'N/A'}</div>
-  ${agreementData.property_name ? `<div><strong>Property:</strong> ${agreementData.property_name}</div>` : ''}
-  ${agreementData.property_number ? `<div><strong>Number:</strong> ${agreementData.property_number}</div>` : ''}
-</div>
-` : ''}
-
-        <div class="parties">
-          <div class="party">
-            <div class="party-title">BILL FROM:</div>
-            ${fromInfo}
-          </div>
-          <div class="party">
-            <div class="party-title">BILL TO:</div>
-            ${toInfo}
-          </div>
-        </div>
-
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th class="number">#</th>
-              <th>Description</th>
-              <th class="qty">Qty</th>
-              <th class="price">Unit Price</th>
-              <th class="price">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items.map((item, index) => {
-              const isSelected = selectedItems && selectedItems.length > 0 
-                ? selectedItems.includes(item.id) 
-                : true;
-              return `
-              <tr${isSelected ? ' class="selected"' : ''}>
-                <td class="number">${index + 1}</td>
-                <td>${item.description}${item.is_fully_paid ? ' <strong>[PAID]</strong>' : ''}</td>
-                <td class="qty">${item.quantity}</td>
-                <td class="price">${formatCurrency(item.unit_price)} ${invoice.currency}</td>
-                <td class="price">${formatCurrency(item.total_price)} ${invoice.currency}</td>
-              </tr>
-            `}).join('')}
-          </tbody>
-        </table>
-
-        <div class="totals">
-          <div class="totals-row">
-            <span>Subtotal:</span>
-            <span>${formatCurrency(invoice.subtotal)} ${invoice.currency}</span>
-          </div>
-          ${invoice.tax_amount > 0 ? `
-          <div class="totals-row">
-            <span>Tax:</span>
-            <span>${formatCurrency(invoice.tax_amount)} ${invoice.currency}</span>
-          </div>
-          ` : ''}
-          <div class="totals-row total">
-            <span>TOTAL:</span>
-            <span>${formatCurrency(invoice.total_amount)} ${invoice.currency}</span>
-          </div>
-          ${invoice.amount_paid > 0 ? `
-          <div class="totals-row">
-            <span>Already Paid:</span>
-            <span>${formatCurrency(invoice.amount_paid)} ${invoice.currency}</span>
-          </div>
-          ` : ''}
-          ${selectedItems && selectedItems.length > 0 ? `
-          <div class="totals-row amount-to-pay">
-            <span>PAY NOW:</span>
-            <span>${formatCurrency(amountToPay)} ${invoice.currency}</span>
-          </div>
-          ` : ''}
-        </div>
-
-        ${bankDetailsHTML}
-      </div>
-
-      ${invoice.qr_code_base64 ? `
-      <div class="qr-section">
-        <img src="${invoice.qr_code_base64}" alt="QR Code" />
-      </div>
-      ` : ''}
-
-      <div class="signatures-section">
-        <div class="signature-block">
-          <div class="signature-label">Delivered by</div>
-          <div class="signature-name">
-            ${invoice.from_type === 'company' 
-              ? `Name: ${invoice.from_company_name || 'N/A'}` 
-              : `Name: ${invoice.from_individual_name || 'N/A'}`}
-          </div>
-          <div class="signature-date">${formatDate(invoice.invoice_date)}</div>
-        </div>
-        <div class="signature-block">
-          <div class="signature-label">Received by</div>
-          <div class="signature-name">
-            ${invoice.to_type === 'company' 
-              ? `Name: ${invoice.to_company_name || 'N/A'}` 
-              : `Name: ${invoice.to_individual_name || 'N/A'}`}
-          </div>
-          <div class="signature-date">${formatDate(invoice.invoice_date)}</div>
-        </div>
-      </div>
-
-      <div class="page-footer">
-        <div class="page-footer-left">
-          <div class="invoice-number">${invoice.invoice_number}</div>
-          <div class="invoice-uuid">${invoice.uuid || ''}</div>
-        </div>
-        <div class="page-number">Page 1 of 1</div>
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
+/**
+ * Генерация HTML для инвойса
+ */
+private generateInvoiceHTML(
+  invoice: any, 
+  items: any[], 
+  agreementData: any, 
+  logoUrl?: string,
+  selectedItems?: number[],
+  _primaryColor?: string,
+  secondaryColor?: string
+): string {
+  const finalLogoUrl = logoUrl || 'https://admin.novaestate.company/nova-logo.svg';
+  
+  // ✅ ТОЛЬКО ЭТИ ДВА ПАРАМЕТРА ДИНАМИЧЕСКИЕ:
+  // 1. Цвет фона заголовка таблицы
+  const headerBgColor = secondaryColor || '#5d666e';
+  
+  // 2. CSS filter для логотипа (убираем для партнёрских SVG)
+  const hasPartnerLogo = logoUrl && !logoUrl.includes('nova-logo.svg');
+  const logoFilter = hasPartnerLogo 
+    ? 'none' 
+    : 'brightness(0) saturate(100%) invert(11%) sepia(12%) saturate(1131%) hue-rotate(185deg) brightness(94%) contrast(91%)';
+  
+  const formatDate = (date: Date): string => {
+    return new Date(date).toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-US').format(amount);
+  };
+
+  // ✅ РАСЧЕТ СУММЫ К ОПЛАТЕ (только выбранные позиции)
+  let amountToPay = 0;
+  if (selectedItems && selectedItems.length > 0) {
+    items.forEach(item => {
+      if (selectedItems.includes(item.id)) {
+        const price = Number(item.total_price) || 0;
+        amountToPay += price;
+      }
+    });
+  } else {
+    amountToPay = Number(invoice.total_amount) - Number(invoice.amount_paid);
   }
 
-  /**
-   * Генерация HTML для чека
-   */
-  private generateReceiptHTML(
-    receipt: any, 
-    items: any[], 
-    files: any[], 
-    agreementData: any, 
-    logoUrl?: string
-  ): string {
-    const finalLogoUrl = logoUrl || 'https://admin.novaestate.company/nova-logo.svg';
-    
-    const formatDate = (date: Date): string => {
-      return new Date(date).toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-    };
+  // Формируем информацию о сторонах
+  const fromInfo = invoice.from_type === 'company' 
+    ? `<div><strong>${invoice.from_company_name}</strong></div>
+       <div>Tax ID: ${invoice.from_company_tax_id}</div>
+       ${invoice.from_company_address ? `<div>${invoice.from_company_address}</div>` : ''}
+       ${invoice.from_director_name ? `<div>Director: ${invoice.from_director_name}</div>` : ''}`
+    : `<div><strong>${invoice.from_individual_name}</strong></div>
+       <div>${invoice.from_individual_country}</div>
+       <div>Passport: ${invoice.from_individual_passport}</div>`;
 
-    const formatCurrency = (amount: number): string => {
-      return new Intl.NumberFormat('en-US').format(amount);
-    };
+  const toInfo = invoice.to_type === 'company'
+    ? `<div><strong>${invoice.to_company_name}</strong></div>
+       <div>Tax ID: ${invoice.to_company_tax_id}</div>
+       ${invoice.to_company_address ? `<div>${invoice.to_company_address}</div>` : ''}
+       ${invoice.to_director_name ? `<div>Director: ${invoice.to_director_name}</div>` : ''}`
+    : `<div><strong>${invoice.to_individual_name}</strong></div>
+       <div>${invoice.to_individual_country}</div>
+       <div>Passport: ${invoice.to_individual_passport}</div>`;
 
-    const paymentMethods: Record<string, string> = {
-      bank_transfer: 'Bank Transfer',
-      cash: 'Cash',
-      crypto: 'Cryptocurrency',
-      barter: 'Barter'
-    };
-
-// ✅ ФОРМАТИРОВАНИЕ БАНКОВСКИХ РЕКВИЗИТОВ
-let bankDetailsHTML = '';
-if (receipt.bank_details_type === 'international') {
-  bankDetailsHTML = `
-    <div class="details-section">
-      <h3>BANK DETAILS:</h3>
-      <div class="detail-item">
-        ${receipt.bank_account_name ? `<div><strong>Account Name:</strong> ${receipt.bank_account_name}</div>` : ''}
-        ${receipt.bank_account_address ? `<div><strong>Account Address:</strong> ${receipt.bank_account_address}</div>` : ''}
-        ${receipt.bank_currency ? `<div><strong>Currency:</strong> ${receipt.bank_currency}</div>` : ''}
-        ${receipt.bank_account_number ? `<div><strong>Account No:</strong> ${receipt.bank_account_number}</div>` : ''}
-        ${receipt.bank_name ? `<div><strong>Bank Name:</strong> ${receipt.bank_name}</div>` : ''}
-        ${receipt.bank_address ? `<div><strong>Bank Address:</strong> ${receipt.bank_address}</div>` : ''}
-        ${receipt.bank_code ? `<div><strong>Bank Code:</strong> ${receipt.bank_code}</div>` : ''}
-        ${receipt.bank_swift_code ? `<div><strong>Swift Code:</strong> ${receipt.bank_swift_code}</div>` : ''}
+  // ✅ ФОРМАТИРОВАНИЕ БАНКОВСКИХ РЕКВИЗИТОВ
+  let bankDetailsHTML = '';
+  if (invoice.bank_details_type === 'international') {
+    bankDetailsHTML = `
+      <div class="bank-details">
+        <h3>BANK DETAILS FOR PAYMENT:</h3>
+        ${invoice.bank_account_name ? `<div><strong>Account Name:</strong> ${invoice.bank_account_name}</div>` : ''}
+        ${invoice.bank_account_address ? `<div><strong>Account Address:</strong> ${invoice.bank_account_address}</div>` : ''}
+        ${invoice.bank_currency ? `<div><strong>Currency:</strong> ${invoice.bank_currency}</div>` : ''}
+        ${invoice.bank_account_number ? `<div><strong>Account No:</strong> ${invoice.bank_account_number}</div>` : ''}
+        ${invoice.bank_name ? `<div><strong>Bank Name:</strong> ${invoice.bank_name}</div>` : ''}
+        ${invoice.bank_address ? `<div><strong>Bank Address:</strong> ${invoice.bank_address}</div>` : ''}
+        ${invoice.bank_code ? `<div><strong>Bank Code:</strong> ${invoice.bank_code}</div>` : ''}
+        ${invoice.bank_swift_code ? `<div><strong>Swift Code:</strong> ${invoice.bank_swift_code}</div>` : ''}
       </div>
-    </div>
-  `;
-} else if (receipt.bank_details_type === 'custom') {
-  bankDetailsHTML = `
-    <div class="details-section">
-      <h3>BANK DETAILS:</h3>
-      <div class="detail-item">
-        <div style="white-space: pre-wrap;">${receipt.bank_custom_details || ''}</div>
+    `;
+  } else if (invoice.bank_details_type === 'custom') {
+    bankDetailsHTML = `
+      <div class="bank-details">
+        <h3>BANK DETAILS FOR PAYMENT:</h3>
+        <div style="white-space: pre-wrap;">${invoice.bank_custom_details || ''}</div>
       </div>
-    </div>
-  `;
-} else if (receipt.bank_name || receipt.bank_account_name || receipt.bank_account_number) {
-  bankDetailsHTML = `
-    <div class="details-section">
-      <h3>BANK DETAILS:</h3>
-      <div class="detail-item">
-        ${receipt.bank_name ? `<div><strong>Bank:</strong> ${receipt.bank_name}</div>` : ''}
-        ${receipt.bank_account_name ? `<div><strong>Account Name:</strong> ${receipt.bank_account_name}</div>` : ''}
-        ${receipt.bank_account_number ? `<div><strong>Account Number:</strong> ${receipt.bank_account_number}</div>` : ''}
+    `;
+  } else if (invoice.bank_name || invoice.bank_account_name || invoice.bank_account_number) {
+    bankDetailsHTML = `
+      <div class="bank-details">
+        <h3>BANK DETAILS FOR PAYMENT:</h3>
+        ${invoice.bank_name ? `<div><strong>Bank:</strong> ${invoice.bank_name}</div>` : ''}
+        ${invoice.bank_account_name ? `<div><strong>Account Name:</strong> ${invoice.bank_account_name}</div>` : ''}
+        ${invoice.bank_account_number ? `<div><strong>Account Number:</strong> ${invoice.bank_account_number}</div>` : ''}
       </div>
-    </div>
-  `;
-}
+    `;
+  }
 
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Receipt ${receipt.receipt_number}</title>
-  <style>
-    @page {
-      size: 210mm 297mm;
-      margin: 0;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice ${invoice.invoice_number}</title>
+<style>
+  @page {
+    size: 210mm 297mm;
+    margin: 0;
+  }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 
-    body {
-      font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #1b273b;
-      background: #f9f6f3;
-      margin: 0;
-      padding: 0;
-    }
+  body {
+    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #1b273b;
+    background: #ffffff;
+    margin: 0;
+    padding: 0;
+  }
 
-    .page {
-      width: 210mm;
-      height: 297mm;
-      background: #f9f6f3;
-      padding: 10mm;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
-    }
+  .page {
+    width: 210mm;
+    height: 297mm;
+    background: #ffffff;
+    padding: 10mm;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
 
-    .page-inner {
-      width: 190mm;
-      height: 277mm;
-      background: #f9f6f3;
-      border: 1px solid #1b273b;
-      padding: 8mm 15mm 15mm 15mm;
-      flex: 1;
-      position: relative;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-    }
+  .page-inner {
+    width: 190mm;
+    height: 277mm;
+    background: #ffffff;
+    border: 1px solid #1b273b;
+    padding: 8mm 15mm 15mm 15mm;
+    flex: 1;
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
 
-    .watermark {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.03;
-      z-index: 0;
-      pointer-events: none;
-    }
+  .watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.03;
+    z-index: 0;
+    pointer-events: none;
+  }
 
-    .watermark img {
-      width: 80mm;
-      height: auto;
-    }
+  .watermark img {
+    width: 80mm;
+    height: auto;
+  }
 
-    .page-content {
-      position: relative;
-      z-index: 4;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+  .page-content {
+    position: relative;
+    z-index: 4;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
 
-    .header {
-      text-align: center;
-      margin-bottom: 3mm;
-    }
+  .header {
+    text-align: center;
+    margin-bottom: 3mm;
+  }
 
-    .logo-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 2mm;
-    }
+  .logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2mm;
+  }
 
-    .decorative-line {
-      height: 1px;
-      background: linear-gradient(90deg, transparent 0%, #1b273b 50%, transparent 100%);
-      flex: 1;
-    }
+  .decorative-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #1b273b 50%, transparent 100%);
+    flex: 1;
+  }
 
-    .decorative-line.left {
-      margin-right: 10mm;
-    }
+  .decorative-line.left {
+    margin-right: 10mm;
+  }
 
-    .decorative-line.right {
-      margin-left: 10mm;
-    }
+  .decorative-line.right {
+    margin-left: 10mm;
+  }
 
-    .logo-container {
-      background: #f9f6f3;
-      padding: 0 5mm;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2;
-      position: relative;
-    }
+  .logo-container {
+    background: #ffffff;
+    padding: 0 5mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    position: relative;
+  }
 
-    .logo-container img {
-      max-height: 16mm;
-      max-width: 60mm;
-      height: auto;
-      width: auto;
-      filter: brightness(0) saturate(100%) invert(11%) sepia(12%) saturate(1131%) hue-rotate(185deg) brightness(94%) contrast(91%);
-    }
+  /* ✅ ДИНАМИЧЕСКИЙ FILTER ДЛЯ ЛОГОТИПА */
+  .logo-container img {
+    max-height: 16mm;
+    max-width: 60mm;
+    height: auto;
+    width: auto;
+    filter: ${logoFilter};
+  }
 
-    h1 {
-      font-size: 8mm;
-      font-weight: 900;
-      text-align: center;
-      margin: 2mm 0 4mm 0;
-      letter-spacing: 0.5mm;
-      color: #1b273b;
-    }
+  h1 {
+    font-size: 8mm;
+    font-weight: 900;
+    text-align: center;
+    margin: 2mm 0 4mm 0;
+    letter-spacing: 0.5mm;
+    color: #1b273b;
+  }
 
-    .receipt-meta {
-      margin-bottom: 4mm;
-      font-size: 3.3mm;
-    }
+  .invoice-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4mm;
+    font-size: 3.3mm;
+  }
 
-    .receipt-meta-item {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 1mm;
-      padding-bottom: 1mm;
-      border-bottom: 1px solid #d0d0d0;
-    }
+  .invoice-meta-item {
+    margin-bottom: 1mm;
+  }
 
-    .receipt-meta-item:last-child {
-      border-bottom: none;
-    }
+  .invoice-meta-item strong {
+    font-weight: 600;
+  }
 
-    .receipt-meta-item strong {
-      font-weight: 600;
-    }
+  .parties {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4mm;
+    gap: 10mm;
+  }
 
-    .property-details {
-      background: #e8e5e1;
-      padding: 2.5mm;
-      margin-bottom: 4mm;
-      border-radius: 2mm;
-    }
+  .party {
+    flex: 1;
+    font-size: 3mm;
+    line-height: 1.3;
+  }
 
-    .property-details h3 {
-      font-size: 3.3mm;
-      font-weight: 700;
-      margin-bottom: 1.5mm;
-    }
+  .party-title {
+    font-size: 3.8mm;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+    padding-bottom: 1mm;
+    border-bottom: 2px solid #1b273b;
+  }
 
-    .property-details div {
-      font-size: 3mm;
-      margin-bottom: 0.8mm;
-    }
+  .party div {
+    margin-bottom: 0.8mm;
+  }
 
-    .details-section {
-      margin-bottom: 4mm;
-    }
+  .property-details {
+    background: #e8e5e1;
+    padding: 2.5mm;
+    margin-bottom: 4mm;
+    border-radius: 2mm;
+  }
 
-    .details-section h3 {
-      font-size: 3.8mm;
-      font-weight: 700;
-      margin-bottom: 1.5mm;
-      padding-bottom: 1mm;
-      border-bottom: 2px solid #1b273b;
-    }
+  .property-details h3 {
+    font-size: 3.3mm;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+  }
 
-    .detail-item {
-      padding: 2mm;
-      margin-bottom: 1mm;
-      background: #e8e5e1;
-      border-radius: 2mm;
-      font-size: 3mm;
-      line-height: 1.4;
-    }
+  .property-details div {
+    font-size: 3mm;
+    margin-bottom: 0.8mm;
+  }
 
-    .detail-item strong {
-      display: block;
-      margin-bottom: 0.8mm;
-    }
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 4mm;
+    font-size: 3mm;
+  }
 
-    .detail-item .small {
-      font-size: 2.7mm;
-      color: #666;
-    }
+  .items-table th,
+  .items-table td {
+    border: 1px solid #1b273b;
+    padding: 2mm;
+    text-align: left;
+  }
 
-    .detail-item div {
-      margin-bottom: 0.5mm;
-    }
+  /* ✅ ДИНАМИЧЕСКИЙ ЦВЕТ ЗАГОЛОВКА ТАБЛИЦЫ */
+  .items-table th {
+    background: ${headerBgColor} !important;
+    color: white !important;
+    font-weight: 700;
+  }
 
-    .payment-amount {
-      background: #2d5f3f;
-      color: white !important;
-      padding: 3mm 4mm;
-      text-align: center;
-      border-radius: 2mm;
-      margin: 4mm 0;
-    }
+  .items-table td.number {
+    text-align: center;
+    width: 10mm;
+  }
 
-    .payment-amount .label {
-      font-size: 3.2mm;
-      margin-bottom: 1mm;
-    }
+  .items-table td.qty {
+    text-align: center;
+    width: 20mm;
+  }
 
-    .payment-amount .amount {
-      font-size: 7mm;
-      font-weight: 900;
-    }
+  .items-table td.price {
+    text-align: right;
+    width: 30mm;
+  }
 
-    .payment-files {
-      margin-top: 4mm;
-    }
+  .items-table tr.selected {
+    background: #f0fff5 !important;
+    font-weight: 600;
+  }
 
-    .payment-files h3 {
-      font-size: 3.8mm;
-      font-weight: 700;
-      margin-bottom: 1.5mm;
-    }
+  .totals {
+    margin-left: auto;
+    width: 70mm;
+    font-size: 3.3mm;
+  }
 
-    .payment-files-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3mm;
-      justify-content: flex-start;
-      align-items: flex-start;
-    }
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1.2mm 0;
+    border-bottom: 1px solid #d0d0d0;
+  }
 
-    .payment-file-wrapper {
-      display: inline-block;
-      border: 1px solid #1b273b;
-      background: white;
-      line-height: 0;
-    }
+  .totals-row.total {
+    font-size: 4.2mm;
+    font-weight: 700;
+    border-top: 2px solid #1b273b;
+    border-bottom: 2px solid #1b273b;
+    padding: 2mm 0;
+    margin-top: 1mm;
+  }
 
-    .payment-file {
-      display: block;
-      width: auto;
-      height: auto;
-      max-width: 85mm;
-      max-height: 55mm;
-      object-fit: contain;
-    }
+  .totals-row.amount-to-pay {
+    font-size: 4.5mm;
+    font-weight: 700;
+    background: #2d5f3f;
+    color: white !important;
+    padding: 2mm;
+    border-radius: 2mm;
+    margin-top: 2mm;
+  }
 
-    .remarks {
-      margin-top: 4mm;
-      padding: 2.5mm;
-      background: #e8e5e1;
-      border-radius: 2mm;
-    }
+  .bank-details {
+    margin-top: 4mm;
+    padding: 2.5mm;
+    background: #e8e5e1;
+    border-radius: 2mm;
+  }
 
-    .remarks h3 {
-      font-size: 3.3mm;
-      font-weight: 700;
-      margin-bottom: 1mm;
-    }
+  .bank-details h3 {
+    font-size: 3.8mm;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+  }
 
-    .remarks p {
-      font-size: 3mm;
-      line-height: 1.4;
-    }
+  .bank-details div {
+    font-size: 3mm;
+    margin-bottom: 0.8mm;
+  }
 
-    .qr-section {
-      position: absolute;
-      bottom: 25mm;
-      right: 15mm;
-      opacity: 0.4;
-      z-index: 5;
-    }
+  .qr-section {
+    position: absolute;
+    bottom: 30mm;
+    right: 15mm;
+    opacity: 0.4;
+    z-index: 5;
+  }
 
-    .qr-section img {
-      width: 18mm;
-      height: 18mm;
-    }
+  .qr-section img {
+    width: 18mm;
+    height: 18mm;
+  }
 
-    .signatures-section {
-      position: absolute;
-      bottom: 23mm;
-      left: 15mm;
-      right: 15mm;
-      display: flex;
-      justify-content: space-between;
-      gap: 10mm;
-      z-index: 9;
-      border-top: 1px solid #d0d0d0;
-      padding-top: 2mm;
-    }
+  .signatures-section {
+    position: absolute;
+    bottom: 23mm;
+    left: 15mm;
+    right: 15mm;
+    display: flex;
+    justify-content: space-between;
+    gap: 10mm;
+    z-index: 9;
+    border-top: 1px solid #d0d0d0;
+    padding-top: 2mm;
+  }
 
-    .signature-block {
-      flex: 1;
-    }
+  .signature-block {
+    flex: 1;
+  }
 
-    .signature-label {
-      font-size: 3mm;
-      font-weight: 600;
-      color: #1b273b;
-      margin-bottom: 1mm;
-    }
+  .signature-label {
+    font-size: 3mm;
+    font-weight: 600;
+    color: #1b273b;
+    margin-bottom: 1mm;
+  }
 
-    .signature-name {
-      font-size: 3.3mm;
-      font-weight: 400;
-      color: #1b273b;
-      margin-bottom: 0.5mm;
-    }
+  .signature-name {
+    font-size: 3.3mm;
+    font-weight: 400;
+    color: #1b273b;
+    margin-bottom: 0.5mm;
+  }
 
-    .signature-date {
-      font-size: 3mm;
-      color: #666;
-    }
+  .signature-date {
+    font-size: 3mm;
+    color: #666;
+  }
 
-    .page-footer {
-      position: absolute;
-      bottom: 10mm;
-      left: 15mm;
-      right: 15mm;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      z-index: 10;
-    }
+  .page-footer {
+    position: absolute;
+    bottom: 10mm;
+    left: 15mm;
+    right: 15mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    z-index: 10;
+  }
 
-    .page-footer-left {
-      display: flex;
-      flex-direction: column;
-      gap: 1mm;
-    }
+  .page-footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1mm;
+  }
 
-    .receipt-number {
-      font-size: 3mm;
-      font-weight: 600;
-      color: #666;
-      text-transform: uppercase;
-    }
+  .invoice-number {
+    font-size: 3mm;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+  }
 
-    .receipt-uuid {
-      font-size: 2.5mm;
-      font-weight: 300;
-      color: #999;
-      font-family: 'Courier New', monospace;
-    }
-    .page-number {
-      font-size: 3.5mm;
-      font-weight: 300;
-      color: #666;
-    }
+  .invoice-uuid {
+    font-size: 2.5mm;
+    font-weight: 300;
+    color: #999;
+    font-family: 'Courier New', monospace;
+  }
 
-    strong {
-      font-weight: 700;
-    }
-  </style>
+  .page-number {
+    font-size: 3.5mm;
+    font-weight: 300;
+    color: #666;
+  }
+
+  strong {
+    font-weight: 700;
+  }
+</style>
 </head>
 <body>
-  <div class="page">
-    <div class="page-inner">
-      <div class="watermark">
-        <img src="${finalLogoUrl}" alt="Logo" />
-      </div>
-      <div class="page-content">
-        <div class="header">
-          <div class="logo-wrapper">
-            <div class="decorative-line left"></div>
-            <div class="logo-container">
-              <img src="${finalLogoUrl}" alt="Logo" />
-            </div>
-            <div class="decorative-line right"></div>
+<div class="page">
+  <div class="page-inner">
+    <div class="watermark">
+      <img src="${finalLogoUrl}" alt="Logo" />
+    </div>
+    <div class="page-content">
+      <div class="header">
+        <div class="logo-wrapper">
+          <div class="decorative-line left"></div>
+          <div class="logo-container">
+            <img src="${finalLogoUrl}" alt="Logo" />
           </div>
+          <div class="decorative-line right"></div>
         </div>
-        
-        <h1>RECEIPT</h1>
-        
-        <div class="receipt-meta">
-          <div class="receipt-meta-item">
-            <strong>Document Number:</strong>
-            <span>${receipt.receipt_number}</span>
+      </div>
+      
+      <h1>INVOICE</h1>
+      
+      <div class="invoice-meta">
+        <div>
+          <div class="invoice-meta-item">
+            <strong>Invoice Number:</strong> ${invoice.invoice_number}
           </div>
-          <div class="receipt-meta-item">
-            <strong>Date:</strong>
-            <span>${formatDate(receipt.receipt_date)}</span>
+          <div class="invoice-meta-item">
+            <strong>Date:</strong> ${formatDate(invoice.invoice_date)}
           </div>
-          ${receipt.invoice_number ? `
-          <div class="receipt-meta-item">
-            <strong>Invoice:</strong>
-            <span>${receipt.invoice_number}</span>
+          ${invoice.due_date ? `
+          <div class="invoice-meta-item">
+            <strong>Due Date:</strong> ${formatDate(invoice.due_date)}
           </div>
           ` : ''}
           ${agreementData ? `
-          <div class="receipt-meta-item">
-            <strong>Agreement:</strong>
-            <span>${agreementData.agreement_number}</span>
+          <div class="invoice-meta-item">
+            <strong>Agreement:</strong> ${agreementData.agreement_number}
           </div>
           ` : ''}
         </div>
+      </div>
 
 ${agreementData ? `
 <div class="property-details">
-  <h3>PROPERTY DETAILS:</h3>
-  <div><strong>Address:</strong> ${agreementData.address || 'N/A'}</div>
-  ${agreementData.property_name ? `<div><strong>Property:</strong> ${agreementData.property_name}</div>` : ''}
-  ${agreementData.property_number ? `<div><strong>Number:</strong> ${agreementData.property_number}</div>` : ''}
+<h3>PROPERTY DETAILS:</h3>
+<div><strong>Address:</strong> ${agreementData.address || 'N/A'}</div>
+${agreementData.property_name ? `<div><strong>Property:</strong> ${agreementData.property_name}</div>` : ''}
+${agreementData.property_number ? `<div><strong>Number:</strong> ${agreementData.property_number}</div>` : ''}
 </div>
 ` : ''}
 
-        <div class="payment-amount">
-          <div class="label">Payment Received</div>
-          <div class="amount">${formatCurrency(receipt.amount_paid)} THB</div>
+      <div class="parties">
+        <div class="party">
+          <div class="party-title">BILL FROM:</div>
+          ${fromInfo}
         </div>
-
-        <div class="details-section">
-          <h3>PAYMENT DETAILS:</h3>
-          <div class="detail-item">
-            <strong>Payment Method:</strong>
-            ${paymentMethods[receipt.payment_method] || receipt.payment_method}
-          </div>
+        <div class="party">
+          <div class="party-title">BILL TO:</div>
+          ${toInfo}
         </div>
+      </div>
 
-        ${bankDetailsHTML}
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th class="number">#</th>
+            <th>Description</th>
+            <th class="qty">Qty</th>
+            <th class="price">Unit Price</th>
+            <th class="price">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map((item, index) => {
+            const isSelected = selectedItems && selectedItems.length > 0 
+              ? selectedItems.includes(item.id) 
+              : true;
+            return `
+            <tr${isSelected ? ' class="selected"' : ''}>
+              <td class="number">${index + 1}</td>
+              <td>${item.description}${item.is_fully_paid ? ' <strong>[PAID]</strong>' : ''}</td>
+              <td class="qty">${item.quantity}</td>
+              <td class="price">${formatCurrency(item.unit_price)} ${invoice.currency}</td>
+              <td class="price">${formatCurrency(item.total_price)} ${invoice.currency}</td>
+            </tr>
+          `}).join('')}
+        </tbody>
+      </table>
 
-        ${items && items.length > 0 ? `
-        <div class="details-section">
-          <h3>PAID ITEMS:</h3>
-          ${items.map(item => `
-            <div class="detail-item">
-              <strong>${item.description}</strong>
-              <div class="small">
-                ${item.quantity} x ${formatCurrency(item.unit_price)} THB = ${formatCurrency(item.total_price)} THB
-              </div>
-            </div>
-          `).join('')}
+      <div class="totals">
+        <div class="totals-row">
+          <span>Subtotal:</span>
+          <span>${formatCurrency(invoice.subtotal)} ${invoice.currency}</span>
+        </div>
+        ${invoice.tax_amount > 0 ? `
+        <div class="totals-row">
+          <span>Tax:</span>
+          <span>${formatCurrency(invoice.tax_amount)} ${invoice.currency}</span>
         </div>
         ` : ''}
-
-        ${files && files.length > 0 ? `
-        <div class="payment-files">
-          <h3>PAYMENT CONFIRMATION:</h3>
-          <div class="payment-files-grid">
-            ${files.slice(0, 2).map(file => `
-              <div class="payment-file-wrapper">
-                <img src="https://admin.novaestate.company${file.file_path}" class="payment-file" alt="Payment confirmation" />
-              </div>
-            `).join('')}
-          </div>
+        <div class="totals-row total">
+          <span>TOTAL:</span>
+          <span>${formatCurrency(invoice.total_amount)} ${invoice.currency}</span>
+        </div>
+        ${invoice.amount_paid > 0 ? `
+        <div class="totals-row">
+          <span>Already Paid:</span>
+          <span>${formatCurrency(invoice.amount_paid)} ${invoice.currency}</span>
         </div>
         ` : ''}
-
-        ${receipt.notes ? `
-        <div class="remarks">
-          <h3>REMARKS:</h3>
-          <p>${receipt.notes}</p>
+        ${selectedItems && selectedItems.length > 0 ? `
+        <div class="totals-row amount-to-pay">
+          <span>PAY NOW:</span>
+          <span>${formatCurrency(amountToPay)} ${invoice.currency}</span>
         </div>
         ` : ''}
       </div>
 
-      ${receipt.qr_code_base64 ? `
-      <div class="qr-section">
-        <img src="${receipt.qr_code_base64}" alt="QR Code" />
+      ${bankDetailsHTML}
+    </div>
+
+  ${(invoice.show_qr_code === 1 || invoice.show_qr_code === true) && invoice.qr_code_base64 ? `
+    <div class="qr-section">
+      <img src="${invoice.qr_code_base64}" alt="QR Code" />
+    </div>
+    ` : ''}
+
+    <div class="signatures-section">
+      <div class="signature-block">
+        <div class="signature-label">Delivered by</div>
+        <div class="signature-name">
+          ${invoice.from_type === 'company' 
+            ? `Name: ${invoice.from_company_name || 'N/A'}` 
+            : `Name: ${invoice.from_individual_name || 'N/A'}`}
+        </div>
+        <div class="signature-date">${formatDate(invoice.invoice_date)}</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-label">Received by</div>
+        <div class="signature-name">
+          ${invoice.to_type === 'company' 
+            ? `Name: ${invoice.to_company_name || 'N/A'}` 
+            : `Name: ${invoice.to_individual_name || 'N/A'}`}
+        </div>
+        <div class="signature-date">${formatDate(invoice.invoice_date)}</div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <div class="page-footer-left">
+        <div class="invoice-number">${invoice.invoice_number}</div>
+        <div class="invoice-uuid">${invoice.uuid || ''}</div>
+      </div>
+      <div class="page-number">Page 1 of 1</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+/**
+ * Генерация HTML для чека
+ */
+private generateReceiptHTML(
+  receipt: any, 
+  items: any[], 
+  files: any[], 
+  agreementData: any, 
+  logoUrl?: string,
+  _primaryColor?: string,
+  _secondaryColor?: string
+): string {
+  const finalLogoUrl = logoUrl || 'https://admin.novaestate.company/nova-logo.svg';
+  
+  // ✅ ТОЛЬКО CSS filter для логотипа (убираем для партнёрских SVG)
+  const hasPartnerLogo = logoUrl && !logoUrl.includes('nova-logo.svg');
+  const logoFilter = hasPartnerLogo 
+    ? 'none' 
+    : 'brightness(0) saturate(100%) invert(11%) sepia(12%) saturate(1131%) hue-rotate(185deg) brightness(94%) contrast(91%)';
+  
+  const formatDate = (date: Date): string => {
+    return new Date(date).toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-US').format(amount);
+  };
+
+  const paymentMethods: Record<string, string> = {
+    bank_transfer: 'Bank Transfer',
+    cash: 'Cash',
+    crypto: 'Cryptocurrency',
+    barter: 'Barter'
+  };
+
+  // ✅ ФОРМАТИРОВАНИЕ БАНКОВСКИХ РЕКВИЗИТОВ
+  let bankDetailsHTML = '';
+  if (receipt.bank_details_type === 'international') {
+    bankDetailsHTML = `
+      <div class="details-section">
+        <h3>BANK DETAILS:</h3>
+        <div class="detail-item">
+          ${receipt.bank_account_name ? `<div><strong>Account Name:</strong> ${receipt.bank_account_name}</div>` : ''}
+          ${receipt.bank_account_address ? `<div><strong>Account Address:</strong> ${receipt.bank_account_address}</div>` : ''}
+          ${receipt.bank_currency ? `<div><strong>Currency:</strong> ${receipt.bank_currency}</div>` : ''}
+          ${receipt.bank_account_number ? `<div><strong>Account No:</strong> ${receipt.bank_account_number}</div>` : ''}
+          ${receipt.bank_name ? `<div><strong>Bank Name:</strong> ${receipt.bank_name}</div>` : ''}
+          ${receipt.bank_address ? `<div><strong>Bank Address:</strong> ${receipt.bank_address}</div>` : ''}
+          ${receipt.bank_code ? `<div><strong>Bank Code:</strong> ${receipt.bank_code}</div>` : ''}
+          ${receipt.bank_swift_code ? `<div><strong>Swift Code:</strong> ${receipt.bank_swift_code}</div>` : ''}
+        </div>
+      </div>
+    `;
+  } else if (receipt.bank_details_type === 'custom') {
+    bankDetailsHTML = `
+      <div class="details-section">
+        <h3>BANK DETAILS:</h3>
+        <div class="detail-item">
+          <div style="white-space: pre-wrap;">${receipt.bank_custom_details || ''}</div>
+        </div>
+      </div>
+    `;
+  } else if (receipt.bank_name || receipt.bank_account_name || receipt.bank_account_number) {
+    bankDetailsHTML = `
+      <div class="details-section">
+        <h3>BANK DETAILS:</h3>
+        <div class="detail-item">
+          ${receipt.bank_name ? `<div><strong>Bank:</strong> ${receipt.bank_name}</div>` : ''}
+          ${receipt.bank_account_name ? `<div><strong>Account Name:</strong> ${receipt.bank_account_name}</div>` : ''}
+          ${receipt.bank_account_number ? `<div><strong>Account Number:</strong> ${receipt.bank_account_number}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipt ${receipt.receipt_number}</title>
+<style>
+  @page {
+    size: 210mm 297mm;
+    margin: 0;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #1b273b;
+    background: #ffffff;
+    margin: 0;
+    padding: 0;
+  }
+
+  .page {
+    width: 210mm;
+    height: 297mm;
+    background: #ffffff;
+    padding: 10mm;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+
+  .page-inner {
+    width: 190mm;
+    height: 277mm;
+    background: #ffffff;
+    border: 1px solid #1b273b;
+    padding: 8mm 15mm 15mm 15mm;
+    flex: 1;
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.03;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .watermark img {
+    width: 80mm;
+    height: auto;
+  }
+
+  .page-content {
+    position: relative;
+    z-index: 4;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 3mm;
+  }
+
+  .logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2mm;
+  }
+
+  .decorative-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #1b273b 50%, transparent 100%);
+    flex: 1;
+  }
+
+  .decorative-line.left {
+    margin-right: 10mm;
+  }
+
+  .decorative-line.right {
+    margin-left: 10mm;
+  }
+
+  .logo-container {
+    background: #ffffff;
+    padding: 0 5mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    position: relative;
+  }
+
+  /* ✅ ДИНАМИЧЕСКИЙ FILTER ДЛЯ ЛОГОТИПА */
+  .logo-container img {
+    max-height: 16mm;
+    max-width: 60mm;
+    height: auto;
+    width: auto;
+    filter: ${logoFilter};
+  }
+
+  h1 {
+    font-size: 8mm;
+    font-weight: 900;
+    text-align: center;
+    margin: 2mm 0 4mm 0;
+    letter-spacing: 0.5mm;
+    color: #1b273b;
+  }
+
+  .receipt-meta {
+    margin-bottom: 4mm;
+    font-size: 3.3mm;
+  }
+
+  .receipt-meta-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1mm;
+    padding-bottom: 1mm;
+    border-bottom: 1px solid #d0d0d0;
+  }
+
+  .receipt-meta-item:last-child {
+    border-bottom: none;
+  }
+
+  .receipt-meta-item strong {
+    font-weight: 600;
+  }
+
+  .property-details {
+    background: #e8e5e1;
+    padding: 2.5mm;
+    margin-bottom: 4mm;
+    border-radius: 2mm;
+  }
+
+  .property-details h3 {
+    font-size: 3.3mm;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+  }
+
+  .property-details div {
+    font-size: 3mm;
+    margin-bottom: 0.8mm;
+  }
+
+  .details-section {
+    margin-bottom: 4mm;
+  }
+
+  .details-section h3 {
+    font-size: 3.8mm;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+    padding-bottom: 1mm;
+    border-bottom: 2px solid #1b273b;
+  }
+
+  .detail-item {
+    padding: 2mm;
+    margin-bottom: 1mm;
+    background: #e8e5e1;
+    border-radius: 2mm;
+    font-size: 3mm;
+    line-height: 1.4;
+  }
+
+  .detail-item strong {
+    display: block;
+    margin-bottom: 0.8mm;
+  }
+
+  .detail-item .small {
+    font-size: 2.7mm;
+    color: #666;
+  }
+
+  .detail-item div {
+    margin-bottom: 0.5mm;
+  }
+
+  .payment-amount {
+    background: #2d5f3f;
+    color: white !important;
+    padding: 3mm 4mm;
+    text-align: center;
+    border-radius: 2mm;
+    margin: 4mm 0;
+  }
+
+  .payment-amount .label {
+    font-size: 3.2mm;
+    margin-bottom: 1mm;
+  }
+
+  .payment-amount .amount {
+    font-size: 7mm;
+    font-weight: 900;
+  }
+
+  .payment-files {
+    margin-top: 4mm;
+  }
+
+  .payment-files h3 {
+    font-size: 3.8mm;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+  }
+
+  .payment-files-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3mm;
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  .payment-file-wrapper {
+    display: inline-block;
+    border: 1px solid #1b273b;
+    background: white;
+    line-height: 0;
+  }
+
+  .payment-file {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 85mm;
+    max-height: 55mm;
+    object-fit: contain;
+  }
+
+  .remarks {
+    margin-top: 4mm;
+    padding: 2.5mm;
+    background: #e8e5e1;
+    border-radius: 2mm;
+  }
+
+  .remarks h3 {
+    font-size: 3.3mm;
+    font-weight: 700;
+    margin-bottom: 1mm;
+  }
+
+  .remarks p {
+    font-size: 3mm;
+    line-height: 1.4;
+  }
+
+  .qr-section {
+    position: absolute;
+    bottom: 25mm;
+    right: 15mm;
+    opacity: 0.4;
+    z-index: 5;
+  }
+
+  .qr-section img {
+    width: 18mm;
+    height: 18mm;
+  }
+
+  .signatures-section {
+    position: absolute;
+    bottom: 23mm;
+    left: 15mm;
+    right: 15mm;
+    display: flex;
+    justify-content: space-between;
+    gap: 10mm;
+    z-index: 9;
+    border-top: 1px solid #d0d0d0;
+    padding-top: 2mm;
+  }
+
+  .signature-block {
+    flex: 1;
+  }
+
+  .signature-label {
+    font-size: 3mm;
+    font-weight: 600;
+    color: #1b273b;
+    margin-bottom: 1mm;
+  }
+
+  .signature-name {
+    font-size: 3.3mm;
+    font-weight: 400;
+    color: #1b273b;
+    margin-bottom: 0.5mm;
+  }
+
+  .signature-date {
+    font-size: 3mm;
+    color: #666;
+  }
+
+  .page-footer {
+    position: absolute;
+    bottom: 10mm;
+    left: 15mm;
+    right: 15mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    z-index: 10;
+  }
+
+  .page-footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1mm;
+  }
+
+  .receipt-number {
+    font-size: 3mm;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+  }
+
+  .receipt-uuid {
+    font-size: 2.5mm;
+    font-weight: 300;
+    color: #999;
+    font-family: 'Courier New', monospace;
+  }
+  .page-number {
+    font-size: 3.5mm;
+    font-weight: 300;
+    color: #666;
+  }
+
+  strong {
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-inner">
+    <div class="watermark">
+      <img src="${finalLogoUrl}" alt="Logo" />
+    </div>
+    <div class="page-content">
+      <div class="header">
+        <div class="logo-wrapper">
+          <div class="decorative-line left"></div>
+          <div class="logo-container">
+            <img src="${finalLogoUrl}" alt="Logo" />
+          </div>
+          <div class="decorative-line right"></div>
+        </div>
+      </div>
+      
+      <h1>RECEIPT</h1>
+      
+      <div class="receipt-meta">
+        <div class="receipt-meta-item">
+          <strong>Document Number:</strong>
+          <span>${receipt.receipt_number}</span>
+        </div>
+        <div class="receipt-meta-item">
+          <strong>Date:</strong>
+          <span>${formatDate(receipt.receipt_date)}</span>
+        </div>
+        ${receipt.invoice_number ? `
+        <div class="receipt-meta-item">
+          <strong>Invoice:</strong>
+          <span>${receipt.invoice_number}</span>
+        </div>
+        ` : ''}
+        ${agreementData ? `
+        <div class="receipt-meta-item">
+          <strong>Agreement:</strong>
+          <span>${agreementData.agreement_number}</span>
+        </div>
+        ` : ''}
+      </div>
+
+${agreementData ? `
+<div class="property-details">
+<h3>PROPERTY DETAILS:</h3>
+<div><strong>Address:</strong> ${agreementData.address || 'N/A'}</div>
+${agreementData.property_name ? `<div><strong>Property:</strong> ${agreementData.property_name}</div>` : ''}
+${agreementData.property_number ? `<div><strong>Number:</strong> ${agreementData.property_number}</div>` : ''}
+</div>
+` : ''}
+
+      <div class="payment-amount">
+        <div class="label">Payment Received</div>
+        <div class="amount">${formatCurrency(receipt.amount_paid)} THB</div>
+      </div>
+
+      <div class="details-section">
+        <h3>PAYMENT DETAILS:</h3>
+        <div class="detail-item">
+          <strong>Payment Method:</strong>
+          ${paymentMethods[receipt.payment_method] || receipt.payment_method}
+        </div>
+      </div>
+
+      ${bankDetailsHTML}
+
+      ${items && items.length > 0 ? `
+      <div class="details-section">
+        <h3>PAID ITEMS:</h3>
+        ${items.map(item => `
+          <div class="detail-item">
+            <strong>${item.description}</strong>
+            <div class="small">
+              ${item.quantity} x ${formatCurrency(item.unit_price)} THB = ${formatCurrency(item.total_price)} THB
+            </div>
+          </div>
+        `).join('')}
       </div>
       ` : ''}
 
-      <div class="signatures-section">
-        <div class="signature-block">
-          <div class="signature-label">Delivered by</div>
-          <div class="signature-name">
-            ${receipt.from_type === 'company' 
-              ? `Name: ${receipt.from_company_name || 'N/A'}` 
-              : `Name: ${receipt.from_individual_name || 'N/A'}`}
-          </div>
-          <div class="signature-date">${formatDate(receipt.receipt_date)}</div>
-        </div>
-        <div class="signature-block">
-          <div class="signature-label">Received by</div>
-          <div class="signature-name">
-            ${receipt.to_type === 'company' 
-              ? `Name: ${receipt.to_company_name || 'N/A'}` 
-              : `Name: ${receipt.to_individual_name || 'N/A'}`}
-          </div>
-          <div class="signature-date">${formatDate(receipt.receipt_date)}</div>
+      ${files && files.length > 0 ? `
+      <div class="payment-files">
+        <h3>PAYMENT CONFIRMATION:</h3>
+        <div class="payment-files-grid">
+          ${files.slice(0, 2).map(file => `
+            <div class="payment-file-wrapper">
+              <img src="https://admin.novaestate.company${file.file_path}" class="payment-file" alt="Payment confirmation" />
+            </div>
+          `).join('')}
         </div>
       </div>
+      ` : ''}
 
-      <div class="page-footer">
-        <div class="page-footer-left">
-          <div class="receipt-number">${receipt.receipt_number}</div>
-          <div class="receipt-uuid">${receipt.uuid || ''}</div>
+      ${receipt.notes ? `
+      <div class="remarks">
+        <h3>REMARKS:</h3>
+        <p>${receipt.notes}</p>
+      </div>
+      ` : ''}
+    </div>
+
+  ${(receipt.show_qr_code === 1 || receipt.show_qr_code === true) && receipt.qr_code_base64 ? `
+    <div class="qr-section">
+      <img src="${receipt.qr_code_base64}" alt="QR Code" />
+    </div>
+    ` : ''}
+
+    <div class="signatures-section">
+      <div class="signature-block">
+        <div class="signature-label">Delivered by</div>
+        <div class="signature-name">
+          ${receipt.from_type === 'company' 
+            ? `Name: ${receipt.from_company_name || 'N/A'}` 
+            : `Name: ${receipt.from_individual_name || 'N/A'}`}
         </div>
-        <div class="page-number">Page 1 of 1</div>
+        <div class="signature-date">${formatDate(receipt.receipt_date)}</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-label">Received by</div>
+        <div class="signature-name">
+          ${receipt.to_type === 'company' 
+            ? `Name: ${receipt.to_company_name || 'N/A'}` 
+            : `Name: ${receipt.to_individual_name || 'N/A'}`}
+        </div>
+        <div class="signature-date">${formatDate(receipt.receipt_date)}</div>
       </div>
     </div>
+
+    <div class="page-footer">
+      <div class="page-footer-left">
+        <div class="receipt-number">${receipt.receipt_number}</div>
+        <div class="receipt-uuid">${receipt.uuid || ''}</div>
+      </div>
+      <div class="page-number">Page 1 of 1</div>
+    </div>
   </div>
+</div>
 </body>
 </html>`;
-  }
+}
 
   // ==================== PUBLIC ACCESS ====================
 

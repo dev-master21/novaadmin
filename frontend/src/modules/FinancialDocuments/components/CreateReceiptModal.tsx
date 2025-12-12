@@ -16,6 +16,7 @@ import {
   Stepper,
   Alert,
   Checkbox,
+  Switch,
   FileButton,
   Image,
   ActionIcon,
@@ -47,7 +48,8 @@ import {
   IconAlertCircle,
   IconBuildingBank,
   IconUser,
-  IconDeviceFloppy
+  IconDeviceFloppy,
+  IconQrcode
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -120,6 +122,9 @@ const CreateReceiptModal = ({
   const [saveBankDetails, setSaveBankDetails] = useState(false);
   const [bankDetailsName, setBankDetailsName] = useState('');
 
+  // ✅ QR Code toggle
+  const [showQrCode, setShowQrCode] = useState<boolean>(true);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -183,6 +188,9 @@ const CreateReceiptModal = ({
           setBankCustomDetails(receipt.bank_custom_details || '');
         }
       }
+
+      // ✅ QR Code setting
+      setShowQrCode(receipt.show_qr_code === 1);
 
       notifications.show({
         title: t('common.success'),
@@ -433,6 +441,7 @@ const CreateReceiptModal = ({
     setBankCustomDetails('');
     setSaveBankDetails(false);
     setBankDetailsName('');
+    setShowQrCode(true);
     setErrors({});
   };
 
@@ -547,7 +556,9 @@ const CreateReceiptModal = ({
         bank_custom_details: bankDetailsType === 'custom' ? bankCustomDetails : undefined,
         
         save_bank_details: saveBankDetails,
-        bank_details_name: saveBankDetails ? bankDetailsName : undefined
+        bank_details_name: saveBankDetails ? bankDetailsName : undefined,
+        
+        show_qr_code: showQrCode ? 1 : 0
       };
 
       let receiptIdForFiles: number;
@@ -1097,6 +1108,35 @@ const CreateReceiptModal = ({
                     required
                   />
                 )}
+              </Stack>
+            </Card>
+
+            {/* ✅ НАСТРОЙКИ ДОКУМЕНТА */}
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Stack gap="md">
+                <Group gap="sm">
+                  <ThemeIcon size="lg" radius="md" variant="light" color="gray">
+                    <IconQrcode size={20} />
+                  </ThemeIcon>
+                  <Text size="md" fw={600}>
+                    {t('createReceiptModal.sections.documentSettings')}
+                  </Text>
+                </Group>
+
+                <Switch
+                  label={t('createReceiptModal.fields.showQrCode')}
+                  description={t('createReceiptModal.fields.showQrCodeDesc')}
+                  checked={showQrCode}
+                  onChange={(e) => setShowQrCode(e.currentTarget.checked)}
+                  size="md"
+                  thumbIcon={
+                    showQrCode ? (
+                      <IconCheck size={12} color={theme.colors.teal[6]} stroke={3} />
+                    ) : (
+                      <IconX size={12} color={theme.colors.red[6]} stroke={3} />
+                    )
+                  }
+                />
               </Stack>
             </Card>
           </Stack>

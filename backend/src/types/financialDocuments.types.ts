@@ -167,6 +167,7 @@ export interface CreateInvoiceDTO {
   due_date?: string;
   
   // Данные отправителя
+  show_qr_code?: number;
   from_type: 'company' | 'individual';
   from_company_name?: string;
   from_company_tax_id?: string;
@@ -299,6 +300,7 @@ export interface CreateReceiptDTO {
   // НОВЫЕ ПОЛЯ: Банковские реквизиты
   bank_details_type?: BankDetailsType;
   saved_bank_details_id?: number; // ID сохраненных реквизитов
+  show_qr_code?: number;
   
   // Простые реквизиты
   bank_name?: string;

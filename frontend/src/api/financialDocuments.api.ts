@@ -63,7 +63,8 @@ export interface Invoice {
   agreement_id?: number;
   invoice_date: string;
   due_date?: string;
-  
+  show_qr_code?: number;
+
   from_type: 'company' | 'individual';
   from_company_name?: string;
   from_company_tax_id?: string;
@@ -152,6 +153,7 @@ export interface CreateInvoiceDTO {
   agreement_id?: number;
   invoice_date: string;
   due_date?: string;
+  show_qr_code?: number;
   
   from_type: 'company' | 'individual';
   from_company_name?: string;
@@ -219,6 +221,7 @@ export interface Receipt {
   receipt_date: string;
   amount_paid: number;
   payment_method: 'bank_transfer' | 'cash' | 'crypto' | 'barter';
+  show_qr_code?: number;
   
   // НОВЫЕ ПОЛЯ: Банковские реквизиты
   bank_details_type?: BankDetailsType;
@@ -290,7 +293,8 @@ export interface CreateReceiptDTO {
   bank_name?: string;
   bank_account_name?: string;
   bank_account_number?: string;
-  
+  show_qr_code?: number;
+
   // Международные реквизиты
   bank_account_address?: string;
   bank_currency?: string;

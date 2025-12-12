@@ -14,7 +14,10 @@ import {
   ActionIcon,
   FileInput,
   Alert,
-  LoadingOverlay
+  LoadingOverlay,
+  ColorInput,
+  Box,
+  Divider
 } from '@mantine/core';
 import {
   IconPlus,
@@ -23,7 +26,8 @@ import {
   IconUpload,
   IconAlertCircle,
   IconCheck,
-  IconInfoCircle
+  IconInfoCircle,
+  IconPalette
 } from '@tabler/icons-react';
 import { partnersApi, Partner, CreatePartnerDTO, UpdatePartnerDTO } from '@/api/partners.api';
 import { notifications } from '@mantine/notifications';
@@ -41,6 +45,11 @@ const PartnersTab: React.FC = () => {
   const [isActive, setIsActive] = useState(true);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Color state
+  const [primaryColor, setPrimaryColor] = useState('');
+  const [secondaryColor, setSecondaryColor] = useState('');
+  const [accentColor, setAccentColor] = useState('');
 
   useEffect(() => {
     loadPartners();
@@ -68,11 +77,19 @@ const PartnersTab: React.FC = () => {
       setPartnerName(partner.partner_name || '');
       setDomain(partner.domain || '');
       setIsActive(partner.is_active);
+      // Загружаем цвета
+      setPrimaryColor(partner.primary_color || '');
+      setSecondaryColor(partner.secondary_color || '');
+      setAccentColor(partner.accent_color || '');
     } else {
       setEditingPartner(null);
       setPartnerName('');
       setDomain('');
       setIsActive(true);
+      // Сбрасываем цвета
+      setPrimaryColor('');
+      setSecondaryColor('');
+      setAccentColor('');
     }
     setLogoFile(null);
     setModalOpened(true);
@@ -85,6 +102,10 @@ const PartnersTab: React.FC = () => {
     setDomain('');
     setIsActive(true);
     setLogoFile(null);
+    // Сбрасываем цвета
+    setPrimaryColor('');
+    setSecondaryColor('');
+    setAccentColor('');
   };
 
   const handleSubmit = async () => {
@@ -96,7 +117,10 @@ const PartnersTab: React.FC = () => {
         const updateData: UpdatePartnerDTO = {
           partner_name: partnerName || undefined,
           domain: domain || undefined,
-          is_active: isActive
+          is_active: isActive,
+          primary_color: primaryColor || undefined,
+          secondary_color: secondaryColor || undefined,
+          accent_color: accentColor || undefined
         };
         if (logoFile) {
           updateData.logo = logoFile;
@@ -113,7 +137,10 @@ const PartnersTab: React.FC = () => {
         const createData: CreatePartnerDTO = {
           partner_name: partnerName || undefined,
           domain: domain || undefined,
-          is_active: isActive
+          is_active: isActive,
+          primary_color: primaryColor || undefined,
+          secondary_color: secondaryColor || undefined,
+          accent_color: accentColor || undefined
         };
         if (logoFile) {
           createData.logo = logoFile;
@@ -162,6 +189,25 @@ const PartnersTab: React.FC = () => {
     }
   };
 
+  // Компонент для отображения цветов в таблице
+  const ColorPreview = ({ color, label }: { color: string | null; label: string }) => {
+    if (!color) return null;
+    return (
+      <Group gap={4}>
+        <Box
+          style={{
+            width: 16,
+            height: 16,
+            borderRadius: 4,
+            backgroundColor: color,
+            border: '1px solid #dee2e6'
+          }}
+        />
+        <Text size="xs" c="dimmed">{label}</Text>
+      </Group>
+    );
+  };
+
   return (
     <Stack gap="xl">
       <Group justify="space-between">
@@ -205,6 +251,7 @@ const PartnersTab: React.FC = () => {
                 <Table.Th>Название</Table.Th>
                 <Table.Th>Домен</Table.Th>
                 <Table.Th>Логотип</Table.Th>
+                <Table.Th>Цвета</Table.Th>
                 <Table.Th>Статус</Table.Th>
                 <Table.Th>Создан</Table.Th>
                 <Table.Th>Действия</Table.Th>
@@ -232,6 +279,16 @@ const PartnersTab: React.FC = () => {
                         </Text>
                       </Group>
                     )}
+                  </Table.Td>
+                  <Table.Td>
+                    <Stack gap={4}>
+                      <ColorPreview color={partner.primary_color} label="Осн." />
+                      <ColorPreview color={partner.secondary_color} label="Втор." />
+                      <ColorPreview color={partner.accent_color} label="Поб." />
+                      {!partner.primary_color && !partner.secondary_color && !partner.accent_color && (
+                        <Text size="xs" c="dimmed">-</Text>
+                      )}
+                    </Stack>
                   </Table.Td>
                   <Table.Td>
                     <Badge color={partner.is_active ? 'green' : 'gray'}>
@@ -306,6 +363,38 @@ const PartnersTab: React.FC = () => {
               Текущий логотип: {editingPartner.logo_filename}
             </Alert>
           )}
+
+          <Divider label={<Group gap={6}><IconPalette size={14} /><Text size="sm">Цветовая схема</Text></Group>} labelPosition="center" />
+
+          <ColorInput
+            label="Основной цвет (Primary)"
+            placeholder="#4096ff"
+            value={primaryColor}
+            onChange={setPrimaryColor}
+            format="hex"
+            swatches={['#4096ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96', '#fa541c']}
+            description="Основной цвет бренда партнёра"
+          />
+
+          <ColorInput
+            label="Вторичный цвет (Secondary)"
+            placeholder="#f0f5ff"
+            value={secondaryColor}
+            onChange={setSecondaryColor}
+            format="hex"
+            swatches={['#f0f5ff', '#f6ffed', '#fffbe6', '#fff2f0', '#f9f0ff', '#e6fffb', '#fff0f6', '#fff7e6']}
+            description="Вторичный/фоновый цвет"
+          />
+
+          <ColorInput
+            label="Побочный цвет (Accent)"
+            placeholder="#1890ff"
+            value={accentColor}
+            onChange={setAccentColor}
+            format="hex"
+            swatches={['#1890ff', '#389e0d', '#d48806', '#cf1322', '#531dab', '#08979c', '#c41d7f', '#d4380d']}
+            description="Акцентный цвет для выделения элементов"
+          />
 
           <Switch
             label="Активен"
