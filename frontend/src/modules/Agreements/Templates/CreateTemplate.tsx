@@ -78,6 +78,143 @@ const CreateTemplate = () => {
     return Number(pathParts[3]);
   };
 
+  /**
+   * 🔄 ФУНКЦИЯ ПАРСИНГА HTML В СТРУКТУРУ
+   * Преобразует HTML из ReactQuill в структуру DocumentEditor
+   */
+  const parseHTMLToStructure = (html: string, type: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    const structure = {
+      title: getAgreementTitle(type),
+      city: 'Phuket',
+      date: new Date().toISOString(),
+      nodes: [] as any[]
+    };
+
+    let sectionCounter = 1;
+    let currentSection: any = null;
+
+    doc.body.childNodes.forEach((element: any) => {
+      if (!element.tagName) return;
+
+      const tagName = element.tagName.toLowerCase();
+      const content = element.textContent?.trim() || '';
+
+      if (!content) return;
+
+      if (tagName === 'h1') {
+        // Это заголовок договора - пропускаем или используем как title
+        structure.title = content;
+        return;
+      } else if (tagName === 'h2') {
+        // Новая секция
+        if (currentSection) {
+          structure.nodes.push(currentSection);
+        }
+        currentSection = {
+          id: `section-${Date.now()}-${sectionCounter}`,
+          type: 'section',
+          content: content,
+          number: sectionCounter.toString(),
+          level: 0,
+          children: []
+        };
+        sectionCounter++;
+      } else if ((tagName === 'h3' || tagName === 'p') && currentSection) {
+        if (tagName === 'h3') {
+          // Подсекция
+          const subsectionNum = currentSection.children.filter((c: any) => c.type === 'subsection').length + 1;
+          currentSection.children.push({
+            id: `subsection-${Date.now()}-${Math.random()}`,
+            type: 'subsection',
+            content: content.replace(/^\d+(\.\d+)*\.\s*/, ''),
+            number: `${currentSection.number}.${subsectionNum}`,
+            level: 1
+          });
+        } else if (content) {
+          // Параграф
+          currentSection.children.push({
+            id: `paragraph-${Date.now()}-${Math.random()}`,
+            type: 'paragraph',
+            content: content
+          });
+        }
+      } else if (tagName === 'ul' && currentSection) {
+        // Список
+        const items: string[] = [];
+        element.querySelectorAll('li').forEach((li: any) => {
+          const itemText = li.textContent?.trim();
+          if (itemText) items.push(itemText);
+        });
+        if (items.length > 0) {
+          currentSection.children.push({
+            id: `bulletlist-${Date.now()}-${Math.random()}`,
+            type: 'bulletList',
+            items: items
+          });
+        }
+      } else if (tagName === 'ol' && currentSection) {
+        // Нумерованный список (обрабатываем как bulletList)
+        const items: string[] = [];
+        element.querySelectorAll('li').forEach((li: any) => {
+          const itemText = li.textContent?.trim();
+          if (itemText) items.push(itemText);
+        });
+        if (items.length > 0) {
+          currentSection.children.push({
+            id: `bulletlist-${Date.now()}-${Math.random()}`,
+            type: 'bulletList',
+            items: items
+          });
+        }
+      }
+    });
+
+    if (currentSection) {
+      structure.nodes.push(currentSection);
+    }
+
+    // Если нет секций, создаем базовую структуру из контента
+    if (structure.nodes.length === 0) {
+      const plainText = doc.body.textContent?.trim() || '';
+      if (plainText) {
+        structure.nodes.push({
+          id: `section-${Date.now()}-1`,
+          type: 'section',
+          content: 'GENERAL PROVISIONS',
+          number: '1',
+          level: 0,
+          children: [
+            {
+              id: `paragraph-${Date.now()}-1`,
+              type: 'paragraph',
+              content: plainText.substring(0, 1000)
+            }
+          ]
+        });
+      }
+    }
+
+    return structure;
+  };
+
+  /**
+   * 📝 ОПРЕДЕЛЕНИЕ ЗАГОЛОВКА ПО ТИПУ ДОГОВОРА
+   */
+  const getAgreementTitle = (type: string): string => {
+    const titles: { [key: string]: string } = {
+      rent: 'LEASE AGREEMENT',
+      sale: 'SALE AGREEMENT',
+      bilateral: 'LEASE AGREEMENT',
+      trilateral: 'LEASE AGREEMENT',
+      agency: 'AGENCY AGREEMENT',
+      transfer_act: 'TRANSFER ACT'
+    };
+    return titles[type] || 'AGREEMENT';
+  };
+
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -89,11 +226,14 @@ const CreateTemplate = () => {
         return;
       }
 
+      // ✅ ГЕНЕРИРУЕМ СТРУКТУРУ ИЗ HTML
+      const structure = parseHTMLToStructure(editorContent, values.type);
+
       const data = {
         name: values.name,
         type: values.type,
         content: editorContent,
-        structure: undefined,
+        structure: JSON.stringify(structure), // ✅ ТЕПЕРЬ ПЕРЕДАЕМ СТРУКТУРУ
         is_active: values.is_active ?? true
       };
 
