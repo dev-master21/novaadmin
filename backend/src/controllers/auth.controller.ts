@@ -155,7 +155,7 @@ async refresh(req: AuthRequest, res: Response): Promise<void> {
 
     logger.info('Refresh token request started');
 
-    // ✅ ОПТИМИЗАЦИЯ: Объединяем 2 запроса в 1
+    // Проверяем токен в БД и получаем данные пользователя
     const result = await db.query<any>(
       `SELECT 
         rt.*,
@@ -175,7 +175,7 @@ async refresh(req: AuthRequest, res: Response): Promise<void> {
     if (!result || result.length === 0) {
       logger.warn('Invalid or expired refresh token');
       
-      // ✅ Очищаем просроченные токены этого пользователя
+      // Очищаем невалидный токен
       await db.query(
         'DELETE FROM admin_refresh_tokens WHERE token = ? OR expires_at <= NOW()',
         [refreshToken]
@@ -198,13 +198,46 @@ async refresh(req: AuthRequest, res: Response): Promise<void> {
     };
 
     const accessToken = generateAccessToken(tokenPayload);
+    
+    // ✅ НОВОЕ: Генерируем новый refresh token (rotation)
+    const newRefreshToken = generateRefreshToken(tokenPayload);
+    
+    // Удаляем старый refresh token
+    await db.query(
+      'DELETE FROM admin_refresh_tokens WHERE token = ?',
+      [refreshToken]
+    );
+    
+    // Сохраняем новый refresh token
+    await db.query(
+      'INSERT INTO admin_refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))',
+      [userData.user_id, newRefreshToken]
+    );
+    
+    // ✅ Очищаем старые токены этого пользователя (оставляем только последние 5)
+    await db.query(
+      `DELETE FROM admin_refresh_tokens 
+       WHERE user_id = ? 
+       AND id NOT IN (
+         SELECT id FROM (
+           SELECT id FROM admin_refresh_tokens 
+           WHERE user_id = ? 
+           ORDER BY created_at DESC 
+           LIMIT 5
+         ) as recent
+       )`,
+      [userData.user_id, userData.user_id]
+    );
 
     const duration = Date.now() - startTime;
     logger.info(`Refresh token successful for user ${userData.username} (${duration}ms)`);
 
     res.json({
       success: true,
-      data: { accessToken }
+      data: { 
+        accessToken,
+        refreshToken: newRefreshToken  // ✅ Отправляем новый refresh token
+      }
     });
   } catch (error) {
     const duration = Date.now() - startTime;
