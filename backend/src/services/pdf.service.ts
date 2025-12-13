@@ -252,4 +252,71 @@ export class PDFService {
       throw new Error('Failed to generate receipt PDF');
     }
   }
+  /**
+   * Генерация PDF для подтверждения бронирования
+   */
+  static async generateReservationConfirmationPDF(confirmationId: number): Promise<string> {
+    try {
+      const uploadsDir = path.join(__dirname, '../../uploads/confirmations-pdf');
+      await fs.ensureDir(uploadsDir);
+
+      const filename = `confirmation-${confirmationId}-${Date.now()}.pdf`;
+      const filepath = path.join(uploadsDir, filename);
+      const publicPath = `/uploads/confirmations-pdf/${filename}`;
+
+      const internalKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
+      const htmlUrl = `https://admin.novaestate.company/api/financial-documents/reservation-confirmations/${confirmationId}/html?internalKey=${internalKey}`;
+
+      logger.info(`Opening reservation confirmation HTML URL: ${htmlUrl}`);
+
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=IsolateOrigins,site-per-process'
+        ]
+      });
+
+      const page = await browser.newPage();
+      await page.setViewport({
+        width: 1920,
+        height: 1080,
+        deviceScaleFactor: 2
+      });
+
+      await page.goto(htmlUrl, {
+        waitUntil: 'networkidle0',
+        timeout: 60000
+      });
+
+      logger.info('Reservation confirmation HTML loaded successfully');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      await page.pdf({
+        path: filepath,
+        format: 'A4',
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: {
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0
+        }
+      });
+
+      await browser.close();
+
+      logger.info(`Reservation confirmation PDF generated successfully: ${publicPath}`);
+      return publicPath;
+
+    } catch (error) {
+      logger.error('Reservation confirmation PDF generation error:', error);
+      throw new Error('Failed to generate reservation confirmation PDF');
+    }
+  }
 }

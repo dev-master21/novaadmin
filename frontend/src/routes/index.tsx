@@ -32,6 +32,8 @@ import InvoiceDetail from '@/modules/FinancialDocuments/InvoiceDetail';
 import ReceiptDetail from '@/modules/FinancialDocuments/ReceiptDetail';
 import InvoiceVerify from '@/modules/FinancialDocuments/Public/InvoiceVerify';
 import ReceiptVerify from '@/modules/FinancialDocuments/Public/ReceiptVerify';
+import ReservationConfirmationDetail from '@/modules/FinancialDocuments/ReservationConfirmationDetail';
+import ConfirmationTemplates from '@/modules/FinancialDocuments/ConfirmationTemplates';
 
 import { RequestsList } from '@/modules/Requests';
 import ChatHistory from '@/modules/Requests/Public/ChatHistory';
@@ -251,6 +253,22 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute permission="agreements.view">
                 <ReceiptDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="confirmations/:id"
+            element={
+              <ProtectedRoute permission="agreements.view">
+                <ReservationConfirmationDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="confirmation-templates"
+            element={
+              <ProtectedRoute permission="agreements.view">
+                <ConfirmationTemplates />
               </ProtectedRoute>
             }
           />

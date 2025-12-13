@@ -23,6 +23,13 @@ router.use(authenticate);
 router.get('/', partnersController.getAll);
 
 /**
+ * Получить партнёра текущего пользователя
+ * GET /api/partners/current
+ * ВАЖНО: Должен быть ДО /:id чтобы не перехватывался как ID
+ */
+router.get('/current', partnersController.getCurrentPartner);
+
+/**
  * Получить партнёра по ID
  * GET /api/partners/:id
  */

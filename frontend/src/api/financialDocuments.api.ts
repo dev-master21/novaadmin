@@ -341,6 +341,157 @@ export interface CheckExistingInvoicesResponse {
   allInvoices?: any[];
 }
 
+// ==================== RESERVATION CONFIRMATIONS ====================
+
+export interface ConfirmationTemplate {
+  id: number;
+  name: string;
+  content: string;
+  is_active: boolean;
+  created_by: number;
+  partner_id?: number;
+  created_at: string;
+  updated_at: string;
+  created_by_name?: string;
+}
+
+export interface CreateConfirmationTemplateDTO {
+  name: string;
+  content: string;
+  is_active?: boolean;
+}
+
+export interface ConfirmationGuest {
+  id?: number;
+  confirmation_id?: number;
+  guest_name: string;
+  passport_number?: string;
+  passport_country?: string;
+  phone?: string;
+  email?: string;
+  sort_order?: number;
+}
+
+export interface ReservationConfirmation {
+  id: number;
+  confirmation_number: string;
+  agreement_id?: number;
+  template_id?: number;
+  
+  // Property Info
+  property_name?: string;
+  property_address?: string;
+  
+  // From (Company/Sender)
+  from_company_name?: string;
+  from_telephone?: string;
+  from_email?: string;
+  
+  // Dates
+  confirmation_date: string;
+  arrival_date?: string;
+  departure_date?: string;
+  arrival_time?: string;
+  departure_time?: string;
+  check_in_time?: string;
+  check_out_time?: string;
+  
+  // Booking Details
+  room_type?: string;
+  rate_type: 'daily' | 'monthly';
+  rate_amount?: number;
+  num_rooms?: number;
+  num_guests?: number;
+  deposit_amount?: number;
+  
+  // Services
+  pick_up_service: boolean;
+  drop_off_service: boolean;
+  arrival_flight?: string;
+  departure_flight?: string;
+  
+  // Remarks
+  remarks?: string;
+  
+  // Notice & Policy
+  notice_content?: string;
+  cancellation_policy?: string;
+  welcome_message?: string;
+  
+  // Rates
+  electricity_rate?: number;
+  water_rate?: number;
+  
+  // PDF
+  pdf_path?: string;
+  pdf_generated_at?: string;
+  
+  // Meta
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
+  
+  // Relations
+  agreement_number?: string;
+  template_name?: string;
+  template_content?: string;
+  created_by_name?: string;
+  guests_count?: number;
+  guest_names?: string;
+  guests?: ConfirmationGuest[];
+  
+  // Partner info
+  logoUrl?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  partner_phone?: string;
+  partner_email?: string;
+}
+
+export interface CreateReservationConfirmationDTO {
+  agreement_id?: number;
+  template_id?: number;
+  
+  property_name?: string;
+  property_address?: string;
+  
+  from_company_name?: string;
+  from_telephone?: string;
+  from_email?: string;
+  
+  confirmation_date?: string;
+  arrival_date?: string;
+  departure_date?: string;
+  arrival_time?: string;
+  departure_time?: string;
+  check_in_time?: string;
+  check_out_time?: string;
+  
+  room_type?: string;
+  rate_type?: 'daily' | 'monthly';
+  rate_amount?: number;
+  num_rooms?: number;
+  num_guests?: number;
+  
+  pick_up_service?: boolean;
+  drop_off_service?: boolean;
+  arrival_flight?: string;
+  departure_flight?: string;
+  deposit_amount?: number; 
+  
+  remarks?: string;
+  notice_content?: string;
+  cancellation_policy?: string;
+  welcome_message?: string;
+  
+  electricity_rate?: number;
+  water_rate?: number;
+  
+  guests?: ConfirmationGuest[];
+}
+
 // ==================== API МЕТОДЫ ====================
 
 export const financialDocumentsApi = {
@@ -473,5 +624,56 @@ export const financialDocumentsApi = {
     return publicApi.get(`/financial-documents/public/receipt/${uuid}/pdf`, {
       responseType: 'blob'
     });
-  }
+  },
+  // ========== CONFIRMATION TEMPLATES ==========
+
+  getAllConfirmationTemplates: () =>
+    api.get<{ success: boolean; data: ConfirmationTemplate[] }>('/financial-documents/confirmation-templates'),
+
+  getConfirmationTemplateById: (id: number) =>
+    api.get<{ success: boolean; data: ConfirmationTemplate }>(`/financial-documents/confirmation-templates/${id}`),
+
+  createConfirmationTemplate: (data: CreateConfirmationTemplateDTO) =>
+    api.post<{ success: boolean; message: string; data: { id: number } }>('/financial-documents/confirmation-templates', data),
+
+  updateConfirmationTemplate: (id: number, data: Partial<CreateConfirmationTemplateDTO>) =>
+    api.put<{ success: boolean; message: string }>(`/financial-documents/confirmation-templates/${id}`, data),
+
+  deleteConfirmationTemplate: (id: number) =>
+    api.delete<{ success: boolean; message: string }>(`/financial-documents/confirmation-templates/${id}`),
+
+  // ========== RESERVATION CONFIRMATIONS ==========
+
+  getAllReservationConfirmations: (params?: {
+    agreement_id?: number;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get<{ success: boolean; data: ReservationConfirmation[]; pagination?: any }>('/financial-documents/reservation-confirmations', { params }),
+
+  getReservationConfirmationById: (id: number) =>
+    api.get<{ success: boolean; data: ReservationConfirmation }>(`/financial-documents/reservation-confirmations/${id}`),
+
+  createReservationConfirmation: (data: CreateReservationConfirmationDTO) =>
+    api.post<{ success: boolean; message: string; data: { id: number; confirmation_number: string } }>('/financial-documents/reservation-confirmations', data),
+
+  updateReservationConfirmation: (id: number, data: Partial<CreateReservationConfirmationDTO>) =>
+    api.put<{ success: boolean; message: string }>(`/financial-documents/reservation-confirmations/${id}`, data),
+
+  deleteReservationConfirmation: (id: number) =>
+    api.delete<{ success: boolean; message: string }>(`/financial-documents/reservation-confirmations/${id}`),
+
+  downloadReservationConfirmationPDF: (id: number) => {
+    const token = localStorage.getItem('token');
+    return api.get(`/financial-documents/reservation-confirmations/${id}/pdf`, {
+      responseType: 'blob',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  // Публичный доступ к подтверждению
+  getConfirmationByNumber: (number: string) =>
+    publicApi.get<{ success: boolean; data: ReservationConfirmation }>(`/financial-documents/public/confirmation/${number}`),
 };

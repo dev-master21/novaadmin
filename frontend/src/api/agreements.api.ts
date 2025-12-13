@@ -69,6 +69,8 @@ export interface AgreementParty {
   company_name?: string;
   company_address?: string;
   company_tax_id?: string;
+  company_phone?: string;
+  company_email?: string;
   director_name?: string;
   director_passport?: string;
   director_country?: string;
@@ -78,6 +80,8 @@ export interface AgreementParty {
   individual_name?: string;
   individual_country?: string;
   individual_passport?: string;
+  individual_phone?: string;
+  individual_email?: string;
 }
 
 export interface AgreementSignature {

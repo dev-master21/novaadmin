@@ -9,6 +9,8 @@ export interface Partner {
   primary_color: string | null;
   secondary_color: string | null;
   accent_color: string | null;
+  phone: string | null;
+  email: string | null;
   is_active: boolean;
   created_by: number | null;
   created_at: string;
@@ -23,6 +25,8 @@ export interface CreatePartnerDTO {
   primary_color?: string;
   secondary_color?: string;
   accent_color?: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface UpdatePartnerDTO {
@@ -33,6 +37,8 @@ export interface UpdatePartnerDTO {
   primary_color?: string;
   secondary_color?: string;
   accent_color?: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface PartnerInfo {
@@ -41,6 +47,8 @@ export interface PartnerInfo {
   primary_color: string | null;
   secondary_color: string | null;
   accent_color: string | null;
+  phone: string | null;
+  email: string | null;
 }
 
 export const partnersApi = {
@@ -96,6 +104,13 @@ export const partnersApi = {
     if (data.accent_color) {
       formData.append('accent_color', data.accent_color);
     }
+    // Контакты
+    if (data.phone) {
+      formData.append('phone', data.phone);
+    }
+    if (data.email) {
+      formData.append('email', data.email);
+    }
 
     const response = await api.post('/partners', formData, {
       headers: {
@@ -133,6 +148,13 @@ export const partnersApi = {
     }
     if (data.accent_color !== undefined) {
       formData.append('accent_color', data.accent_color || '');
+    }
+    // Контакты
+    if (data.phone !== undefined) {
+      formData.append('phone', data.phone || '');
+    }
+    if (data.email !== undefined) {
+      formData.append('email', data.email || '');
     }
 
     const response = await api.put(`/partners/${id}`, formData, {

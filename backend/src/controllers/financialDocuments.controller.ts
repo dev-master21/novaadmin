@@ -4119,6 +4119,1608 @@ ${agreementData.property_number ? `<div><strong>Number:</strong> ${agreementData
       });
     }
   }
+
+  // ==================== RESERVATION CONFIRMATION TEMPLATES ====================
+
+  /**
+   * Получить все шаблоны Notice
+   * GET /api/financial-documents/confirmation-templates
+   */
+  async getAllConfirmationTemplates(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const userPartnerId = req.admin?.partner_id;
+      const whereConditions: string[] = ['rct.is_active = 1'];
+      const queryParams: any[] = [];
+
+      // Фильтрация по партнёру (показываем общие + партнёрские)
+      if (userPartnerId !== null && userPartnerId !== undefined) {
+        whereConditions.push('(rct.partner_id IS NULL OR rct.partner_id = ?)');
+        queryParams.push(userPartnerId);
+      } else {
+        whereConditions.push('rct.partner_id IS NULL');
+      }
+
+      const whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+
+      const templates = await db.query(`
+        SELECT 
+          rct.*,
+          au.username as created_by_name
+        FROM reservation_confirmation_templates rct
+        LEFT JOIN admin_users au ON rct.created_by = au.id
+        ${whereClause}
+        ORDER BY rct.created_at DESC
+      `, queryParams);
+
+      res.json({
+        success: true,
+        data: templates
+      });
+    } catch (error) {
+      logger.error('Get all confirmation templates error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка получения шаблонов'
+      });
+    }
+  }
+
+  /**
+   * Получить шаблон Notice по ID
+   * GET /api/financial-documents/confirmation-templates/:id
+   */
+  async getConfirmationTemplateById(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const template = await db.queryOne(`
+        SELECT 
+          rct.*,
+          au.username as created_by_name
+        FROM reservation_confirmation_templates rct
+        LEFT JOIN admin_users au ON rct.created_by = au.id
+        WHERE rct.id = ?
+      `, [id]);
+
+      if (!template) {
+        res.status(404).json({
+          success: false,
+          message: 'Шаблон не найден'
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: template
+      });
+    } catch (error) {
+      logger.error('Get confirmation template by ID error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка получения шаблона'
+      });
+    }
+  }
+
+  /**
+   * Создать шаблон Notice
+   * POST /api/financial-documents/confirmation-templates
+   */
+  async createConfirmationTemplate(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.admin!.id;
+      const userPartnerId = req.admin?.partner_id;
+      const { name, content, is_active } = req.body;
+
+      if (!name || !content) {
+        res.status(400).json({
+          success: false,
+          message: 'Название и содержимое обязательны'
+        });
+        return;
+      }
+
+      const result = await db.query(`
+        INSERT INTO reservation_confirmation_templates (name, content, is_active, created_by, partner_id)
+        VALUES (?, ?, ?, ?, ?)
+      `, [
+        name,
+        content,
+        is_active !== undefined ? is_active : 1,
+        userId,
+        userPartnerId || null
+      ]);
+
+      const templateId = (result as any).insertId;
+
+      logger.info(`Confirmation template created: ${templateId} by user ${req.admin?.username}`);
+
+      res.status(201).json({
+        success: true,
+        message: 'Шаблон успешно создан',
+        data: { id: templateId }
+      });
+    } catch (error) {
+      logger.error('Create confirmation template error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка создания шаблона'
+      });
+    }
+  }
+
+  /**
+   * Обновить шаблон Notice
+   * PUT /api/financial-documents/confirmation-templates/:id
+   */
+  async updateConfirmationTemplate(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { name, content, is_active } = req.body;
+
+      const existing = await db.queryOne(
+        'SELECT * FROM reservation_confirmation_templates WHERE id = ?',
+        [id]
+      );
+
+      if (!existing) {
+        res.status(404).json({
+          success: false,
+          message: 'Шаблон не найден'
+        });
+        return;
+      }
+
+      const fields: string[] = [];
+      const values: any[] = [];
+
+      if (name !== undefined) {
+        fields.push('name = ?');
+        values.push(name);
+      }
+      if (content !== undefined) {
+        fields.push('content = ?');
+        values.push(content);
+      }
+      if (is_active !== undefined) {
+        fields.push('is_active = ?');
+        values.push(is_active ? 1 : 0);
+      }
+
+      if (fields.length > 0) {
+        values.push(id);
+        await db.query(
+          `UPDATE reservation_confirmation_templates SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ?`,
+          values
+        );
+      }
+
+      logger.info(`Confirmation template updated: ${id} by user ${req.admin?.username}`);
+
+      res.json({
+        success: true,
+        message: 'Шаблон успешно обновлён'
+      });
+    } catch (error) {
+      logger.error('Update confirmation template error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка обновления шаблона'
+      });
+    }
+  }
+
+  /**
+   * Удалить шаблон Notice
+   * DELETE /api/financial-documents/confirmation-templates/:id
+   */
+  async deleteConfirmationTemplate(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const result = await db.query(
+        'DELETE FROM reservation_confirmation_templates WHERE id = ?',
+        [id]
+      );
+
+      if ((result as any).affectedRows === 0) {
+        res.status(404).json({
+          success: false,
+          message: 'Шаблон не найден'
+        });
+        return;
+      }
+
+      logger.info(`Confirmation template deleted: ${id} by user ${req.admin?.username}`);
+
+      res.json({
+        success: true,
+        message: 'Шаблон успешно удалён'
+      });
+    } catch (error) {
+      logger.error('Delete confirmation template error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка удаления шаблона'
+      });
+    }
+  }
+
+  // ==================== RESERVATION CONFIRMATIONS ====================
+
+  /**
+   * Получить список всех подтверждений бронирования
+   * GET /api/financial-documents/reservation-confirmations
+   */
+  async getAllReservationConfirmations(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { agreement_id, search, page = 1, limit = 20 } = req.query;
+
+      const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
+      const limitNum = Math.max(1, Math.min(100, parseInt(String(limit), 10) || 20));
+      const offset = (pageNum - 1) * limitNum;
+
+      const whereConditions: string[] = ['rc.deleted_at IS NULL'];
+      const queryParams: any[] = [];
+
+      // Фильтрация по партнёру
+      const userPartnerId = req.admin?.partner_id;
+      if (userPartnerId !== null && userPartnerId !== undefined) {
+        whereConditions.push('au.partner_id = ?');
+        queryParams.push(userPartnerId);
+      }
+
+      if (agreement_id) {
+        whereConditions.push('rc.agreement_id = ?');
+        queryParams.push(agreement_id);
+      }
+
+      if (search) {
+        whereConditions.push('(rc.confirmation_number LIKE ? OR rc.property_name LIKE ?)');
+        queryParams.push(`%${search}%`, `%${search}%`);
+      }
+
+      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+      // Получаем общее количество
+      const countQuery = `
+        SELECT COUNT(*) as total 
+        FROM reservation_confirmations rc 
+        LEFT JOIN admin_users au ON rc.created_by = au.id
+        ${whereClause}
+      `;
+      const countResult = await db.queryOne<{ total: number }>(countQuery, queryParams);
+      const total = countResult?.total || 0;
+
+      // Получаем подтверждения
+      const query = `
+        SELECT 
+          rc.*,
+          a.agreement_number,
+          u.username as created_by_name,
+          (SELECT COUNT(*) FROM reservation_confirmation_guests WHERE confirmation_id = rc.id) as guests_count,
+          (SELECT GROUP_CONCAT(guest_name SEPARATOR ', ') FROM reservation_confirmation_guests WHERE confirmation_id = rc.id ORDER BY sort_order LIMIT 3) as guest_names
+        FROM reservation_confirmations rc
+        LEFT JOIN agreements a ON rc.agreement_id = a.id
+        LEFT JOIN admin_users u ON rc.created_by = u.id
+        LEFT JOIN admin_users au ON rc.created_by = au.id
+        ${whereClause}
+        ORDER BY rc.created_at DESC
+        LIMIT ? OFFSET ?
+      `;
+
+      queryParams.push(limitNum, offset);
+      const confirmations = await db.query(query, queryParams);
+
+      res.json({
+        success: true,
+        data: confirmations,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum)
+        }
+      });
+    } catch (error) {
+      logger.error('Get all reservation confirmations error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка получения подтверждений'
+      });
+    }
+  }
+
+  /**
+   * Получить подтверждение бронирования по ID
+   * GET /api/financial-documents/reservation-confirmations/:id
+   */
+  async getReservationConfirmationById(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const confirmation = await db.queryOne(`
+        SELECT 
+          rc.*,
+          a.agreement_number,
+          rct.name as template_name,
+          rct.content as template_content,
+          p.logo_filename as partner_logo_filename,
+          p.partner_name,
+          p.primary_color as partner_primary_color,
+          p.secondary_color as partner_secondary_color,
+          p.accent_color as partner_accent_color,
+          p.phone as partner_phone,
+          p.email as partner_email,
+          au.username as created_by_name
+        FROM reservation_confirmations rc
+        LEFT JOIN agreements a ON rc.agreement_id = a.id
+        LEFT JOIN reservation_confirmation_templates rct ON rc.template_id = rct.id
+        LEFT JOIN admin_users au ON rc.created_by = au.id
+        LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+        WHERE rc.id = ? AND rc.deleted_at IS NULL
+      `, [id]);
+
+      if (!confirmation) {
+        res.status(404).json({
+          success: false,
+          message: 'Подтверждение не найдено'
+        });
+        return;
+      }
+
+      // Получаем гостей
+      const guests = await db.query(
+        'SELECT * FROM reservation_confirmation_guests WHERE confirmation_id = ? ORDER BY sort_order, id',
+        [id]
+      );
+
+      // Добавляем logo URL и цвета
+      (confirmation as any).logoUrl = (confirmation as any).partner_logo_filename 
+        ? `https://admin.novaestate.company/${(confirmation as any).partner_logo_filename}`
+        : 'https://admin.novaestate.company/nova-logo.svg';
+
+      (confirmation as any).primaryColor = (confirmation as any).partner_primary_color || '#1b273b';
+      (confirmation as any).secondaryColor = (confirmation as any).partner_secondary_color || '#5d666e';
+      (confirmation as any).accentColor = (confirmation as any).partner_accent_color || '#1b273b';
+
+      res.json({
+        success: true,
+        data: {
+          ...confirmation,
+          guests
+        }
+      });
+    } catch (error) {
+      logger.error('Get reservation confirmation by ID error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка получения подтверждения'
+      });
+    }
+  }
+/**
+ * Создать подтверждение бронирования
+ * POST /api/financial-documents/reservation-confirmations
+ */
+async createReservationConfirmation(req: AuthRequest, res: Response): Promise<void> {
+  const connection = await db.beginTransaction();
+
+  try {
+    const userId = req.admin!.id;
+    const data = req.body;
+
+    // Генерируем уникальный номер RC-{timestamp}-{random}
+    const timestamp = Date.now();
+    const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const confirmation_number = `RC-${timestamp}-${randomPart}`;
+
+    // Получаем данные партнёра для контактов
+    const userPartner = await db.queryOne<any>(`
+      SELECT p.phone, p.email, p.domain
+      FROM admin_users au
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+      WHERE au.id = ?
+    `, [userId]);
+
+    // Дефолтные контакты
+    const defaultPhone = '+6661008937';
+    const defaultEmail = 'service@novaestate.company';
+
+    // Определяем контакты (приоритет: из формы -> партнёр -> дефолт)
+    const fromTelephone = data.from_telephone || userPartner?.phone || defaultPhone;
+    const fromEmail = data.from_email || userPartner?.email || defaultEmail;
+
+    // Получаем и обрабатываем шаблон Notice если указан
+    let noticeContent = data.notice_content || null;
+    if (data.template_id && !noticeContent) {
+      const template = await db.queryOne<any>(
+        'SELECT content FROM reservation_confirmation_templates WHERE id = ?',
+        [data.template_id]
+      );
+      if (template) {
+        noticeContent = this.replaceConfirmationTemplateVariables(template.content, data);
+      }
+    }
+
+    // Создаём подтверждение
+    const result = await connection.query(`
+      INSERT INTO reservation_confirmations (
+        confirmation_number, agreement_id, template_id,
+        property_name, property_address,
+        from_company_name, from_telephone, from_email,
+        confirmation_date, arrival_date, departure_date,
+        arrival_time, departure_time, check_in_time, check_out_time,
+        room_type, rate_type, rate_amount, num_rooms, num_guests, deposit_amount,
+        pick_up_service, drop_off_service, arrival_flight, departure_flight,
+        remarks, notice_content, cancellation_policy, welcome_message,
+        electricity_rate, water_rate,
+        created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      confirmation_number,
+      data.agreement_id || null,
+      data.template_id || null,
+      data.property_name || null,
+      data.property_address || null,
+      data.from_company_name || null,
+      fromTelephone,
+      fromEmail,
+      data.confirmation_date || new Date().toISOString().split('T')[0],
+      data.arrival_date || null,
+      data.departure_date || null,
+      data.arrival_time || '15:00',
+      data.departure_time || '12:00',
+      data.check_in_time || '15:00PM',
+      data.check_out_time || '12:00 Noon',
+      data.room_type || null,
+      data.rate_type || 'daily',
+      data.rate_amount || null,
+      data.num_rooms || null,
+      data.num_guests || null,
+      data.deposit_amount || null,
+      data.pick_up_service ? 1 : 0,
+      data.drop_off_service ? 1 : 0,
+      data.arrival_flight || null,
+      data.departure_flight || null,
+      data.remarks || null,
+      noticeContent,
+      data.cancellation_policy || 'Order confirmed, No change, No refund',
+      data.welcome_message || 'Thank you for making a reservation at our Villa. We\'re delighted to confirm the details for your upcoming stay.',
+      data.electricity_rate || null,
+      data.water_rate || null,
+      userId
+    ]);
+
+    const confirmationId = (result as any)[0].insertId;
+
+    // Создаём гостей
+    if (data.guests && data.guests.length > 0) {
+      for (let i = 0; i < data.guests.length; i++) {
+        const guest = data.guests[i];
+        if (guest.guest_name) {
+          await connection.query(`
+            INSERT INTO reservation_confirmation_guests (
+              confirmation_id, guest_name, passport_number, passport_country, phone, email, sort_order
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          `, [
+            confirmationId,
+            guest.guest_name,
+            guest.passport_number || null,
+            guest.passport_country || null,
+            guest.phone || null,
+            guest.email || null,
+            i
+          ]);
+        }
+      }
+    }
+
+    await db.commit(connection);
+
+    // Генерируем PDF сразу после создания
+    try {
+      await this.generateReservationConfirmationPDF(confirmationId);
+    } catch (pdfError) {
+      logger.error('PDF generation failed:', pdfError);
+    }
+
+    logger.info(`Reservation confirmation created: ${confirmation_number} (ID: ${confirmationId}) by user ${req.admin?.username}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Подтверждение успешно создано',
+      data: {
+        id: confirmationId,
+        confirmation_number
+      }
+    });
+  } catch (error) {
+    await db.rollback(connection);
+    logger.error('Create reservation confirmation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка создания подтверждения'
+    });
+  }
+}
+  /**
+   * Обновить подтверждение бронирования
+   * PUT /api/financial-documents/reservation-confirmations/:id
+   */
+  async updateReservationConfirmation(req: AuthRequest, res: Response): Promise<void> {
+    const connection = await db.beginTransaction();
+
+    try {
+      const { id } = req.params;
+      const data = req.body;
+
+      const existing = await db.queryOne(
+        'SELECT * FROM reservation_confirmations WHERE id = ? AND deleted_at IS NULL',
+        [id]
+      );
+
+      if (!existing) {
+        await db.rollback(connection);
+        res.status(404).json({
+          success: false,
+          message: 'Подтверждение не найдено'
+        });
+        return;
+      }
+
+      const fields: string[] = [];
+      const values: any[] = [];
+
+      // Обновляем поля
+      const updateFields = [
+        'agreement_id', 'template_id', 'property_name', 'property_address',
+        'from_company_name', 'from_telephone', 'from_email',
+        'confirmation_date', 'arrival_date', 'departure_date',
+        'arrival_time', 'departure_time', 'check_in_time', 'check_out_time',
+        'room_type', 'rate_type', 'rate_amount', 'num_rooms', 'num_guests',
+        'arrival_flight', 'departure_flight', 'remarks',
+        'notice_content', 'cancellation_policy', 'welcome_message',
+        'electricity_rate', 'water_rate'
+      ];
+
+      for (const field of updateFields) {
+        if (data[field] !== undefined) {
+          fields.push(`${field} = ?`);
+          values.push(data[field] || null);
+        }
+      }
+
+      // Булевые поля
+      if (data.pick_up_service !== undefined) {
+        fields.push('pick_up_service = ?');
+        values.push(data.pick_up_service ? 1 : 0);
+      }
+      if (data.drop_off_service !== undefined) {
+        fields.push('drop_off_service = ?');
+        values.push(data.drop_off_service ? 1 : 0);
+      }
+
+      // Если изменился шаблон - обновляем notice_content
+      if (data.template_id && data.template_id !== (existing as any).template_id) {
+        const template = await db.queryOne<any>(
+          'SELECT content FROM reservation_confirmation_templates WHERE id = ?',
+          [data.template_id]
+        );
+        if (template) {
+          const mergedData = { ...(existing as any), ...data };
+          const newNoticeContent = this.replaceConfirmationTemplateVariables(template.content, mergedData);
+          fields.push('notice_content = ?');
+          values.push(newNoticeContent);
+        }
+      }
+
+      if (fields.length > 0) {
+        fields.push('pdf_path = ?', 'pdf_generated_at = ?');
+        values.push(null, null);
+        
+        values.push(id);
+        await connection.query(
+          `UPDATE reservation_confirmations SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ?`,
+          values
+        );
+      }
+
+      // Обновляем гостей если переданы
+      if (data.guests !== undefined) {
+        // Удаляем старых гостей
+        await connection.query('DELETE FROM reservation_confirmation_guests WHERE confirmation_id = ?', [id]);
+
+        // Создаём новых
+        if (data.guests && data.guests.length > 0) {
+          for (let i = 0; i < data.guests.length; i++) {
+            const guest = data.guests[i];
+            if (guest.guest_name) {
+              await connection.query(`
+                INSERT INTO reservation_confirmation_guests (
+                  confirmation_id, guest_name, passport_number, passport_country, phone, email, sort_order
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+              `, [
+                id,
+                guest.guest_name,
+                guest.passport_number || null,
+                guest.passport_country || null,
+                guest.phone || null,
+                guest.email || null,
+                i
+              ]);
+            }
+          }
+        }
+      }
+
+      await db.commit(connection);
+
+      // Регенерируем PDF
+      try {
+        await this.generateReservationConfirmationPDF(parseInt(id));
+      } catch (pdfError) {
+        logger.error('PDF regeneration failed:', pdfError);
+      }
+
+      logger.info(`Reservation confirmation updated: ${id} by user ${req.admin?.username}`);
+
+      res.json({
+        success: true,
+        message: 'Подтверждение успешно обновлено'
+      });
+    } catch (error) {
+      await db.rollback(connection);
+      logger.error('Update reservation confirmation error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка обновления подтверждения'
+      });
+    }
+  }
+
+  /**
+   * Удалить подтверждение бронирования (мягкое удаление)
+   * DELETE /api/financial-documents/reservation-confirmations/:id
+   */
+  async deleteReservationConfirmation(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const result = await db.query(
+        'UPDATE reservation_confirmations SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL',
+        [id]
+      );
+
+      if ((result as any).affectedRows === 0) {
+        res.status(404).json({
+          success: false,
+          message: 'Подтверждение не найдено'
+        });
+        return;
+      }
+
+      logger.info(`Reservation confirmation deleted: ${id} by user ${req.admin?.username}`);
+
+      res.json({
+        success: true,
+        message: 'Подтверждение успешно удалено'
+      });
+    } catch (error) {
+      logger.error('Delete reservation confirmation error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка удаления подтверждения'
+      });
+    }
+  }
+
+  /**
+   * Получить HTML версию подтверждения для генерации PDF
+   * GET /api/financial-documents/reservation-confirmations/:id/html
+   */
+  async getReservationConfirmationHTML(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { internalKey } = req.query;
+
+      // Проверяем внутренний ключ для Puppeteer
+      const expectedKey = process.env.INTERNAL_API_KEY || 'your-secret-internal-key';
+      if (internalKey !== expectedKey) {
+        res.status(403).send('Доступ запрещен');
+        return;
+      }
+
+      const confirmation = await db.queryOne(`
+        SELECT 
+          rc.*,
+          a.agreement_number,
+          p.logo_filename as partner_logo_filename,
+          p.primary_color as partner_primary_color,
+          p.secondary_color as partner_secondary_color,
+          p.accent_color as partner_accent_color
+        FROM reservation_confirmations rc
+        LEFT JOIN agreements a ON rc.agreement_id = a.id
+        LEFT JOIN admin_users au ON rc.created_by = au.id
+        LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+        WHERE rc.id = ? AND rc.deleted_at IS NULL
+      `, [id]);
+
+      if (!confirmation) {
+        res.status(404).send('Confirmation not found');
+        return;
+      }
+
+      // Получаем гостей
+      const guests = await db.query(
+        'SELECT * FROM reservation_confirmation_guests WHERE confirmation_id = ? ORDER BY sort_order, id',
+        [id]
+      );
+
+      // Формируем logo URL
+      const logoUrl = (confirmation as any).partner_logo_filename 
+        ? `https://admin.novaestate.company/${(confirmation as any).partner_logo_filename}`
+        : 'https://admin.novaestate.company/nova-logo.svg';
+
+      const primaryColor = (confirmation as any).partner_primary_color || '#1b273b';
+      const secondaryColor = (confirmation as any).partner_secondary_color || '#5d666e';
+
+      // Генерируем HTML
+      const html = this.generateReservationConfirmationHTMLTemplate(
+        confirmation, 
+        guests as any[], 
+        logoUrl, 
+        primaryColor, 
+        secondaryColor
+      );
+      
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+
+    } catch (error) {
+      logger.error('Get reservation confirmation HTML error:', error);
+      res.status(500).send('Error generating HTML');
+    }
+  }
+
+  /**
+   * Скачать PDF подтверждения
+   * GET /api/financial-documents/reservation-confirmations/:id/pdf
+   */
+  async downloadReservationConfirmationPDF(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const confirmation = await db.queryOne<any>(
+        'SELECT pdf_path, confirmation_number FROM reservation_confirmations WHERE id = ? AND deleted_at IS NULL',
+        [id]
+      );
+
+      if (!confirmation) {
+        res.status(404).json({
+          success: false,
+          message: 'Подтверждение не найдено'
+        });
+        return;
+      }
+
+      if (!confirmation.pdf_path) {
+        await this.generateReservationConfirmationPDF(parseInt(id));
+        
+        const updated = await db.queryOne<any>(
+          'SELECT pdf_path FROM reservation_confirmations WHERE id = ?',
+          [id]
+        );
+        
+        confirmation.pdf_path = updated.pdf_path;
+      }
+
+      const path = require('path');
+      const filePath = path.join(__dirname, '../../uploads', confirmation.pdf_path.replace('/uploads/', ''));
+
+      const fs = require('fs-extra');
+      if (!await fs.pathExists(filePath)) {
+        res.status(404).json({
+          success: false,
+          message: 'PDF файл не найден'
+        });
+        return;
+      }
+
+      res.download(filePath, `${confirmation.confirmation_number}.pdf`, (err) => {
+        if (err) {
+          logger.error('Error downloading confirmation PDF:', err);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: 'Ошибка скачивания PDF'
+            });
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error('Download reservation confirmation PDF error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка скачивания PDF'
+      });
+    }
+  }
+
+  /**
+   * Публичный доступ к подтверждению по номеру
+   * GET /api/financial-documents/public/confirmation/:number
+   */
+  async getReservationConfirmationByNumber(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { number } = req.params;
+
+      const confirmation = await db.queryOne(`
+        SELECT 
+          rc.*,
+          a.agreement_number
+        FROM reservation_confirmations rc
+        LEFT JOIN agreements a ON rc.agreement_id = a.id
+        WHERE rc.confirmation_number = ? AND rc.deleted_at IS NULL
+      `, [number]);
+
+      if (!confirmation) {
+        res.status(404).json({
+          success: false,
+          message: 'Confirmation not found'
+        });
+        return;
+      }
+
+      // Получаем гостей
+      const guests = await db.query(
+        'SELECT guest_name, passport_country FROM reservation_confirmation_guests WHERE confirmation_id = ? ORDER BY sort_order',
+        [(confirmation as any).id]
+      );
+
+      res.json({
+        success: true,
+        data: {
+          ...confirmation,
+          guests
+        }
+      });
+    } catch (error) {
+      logger.error('Get confirmation by number error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error retrieving confirmation'
+      });
+    }
+  }
+
+  /**
+   * Генерация PDF для подтверждения бронирования
+   */
+  private async generateReservationConfirmationPDF(confirmationId: number): Promise<void> {
+    try {
+      const PDFService = require('../services/pdf.service').PDFService;
+      const pdfPath = await PDFService.generateReservationConfirmationPDF(confirmationId);
+      
+      await db.query(
+        'UPDATE reservation_confirmations SET pdf_path = ?, pdf_generated_at = NOW() WHERE id = ?',
+        [pdfPath, confirmationId]
+      );
+      
+      logger.info(`Reservation confirmation PDF generated: ${pdfPath}`);
+    } catch (error) {
+      logger.error(`Error generating reservation confirmation PDF ${confirmationId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Замена переменных в шаблоне Notice
+   */
+  private replaceConfirmationTemplateVariables(template: string, data: any): string {
+    const variables: Record<string, string> = {
+      '{{check_in_time}}': data.check_in_time || '15:00PM',
+      '{{check_out_time}}': data.check_out_time || '12:00 Noon',
+      '{{deposit_amount}}': data.deposit_amount || '________',
+      '{{electricity_rate}}': data.electricity_rate ? `${data.electricity_rate}` : '________',
+      '{{water_rate}}': data.water_rate ? `${data.water_rate}` : '________',
+      '{{property_name}}': data.property_name || '________',
+      '{{property_address}}': data.property_address || '________',
+      '{{arrival_date}}': data.arrival_date || '________',
+      '{{departure_date}}': data.departure_date || '________',
+      '{{rate_amount}}': data.rate_amount ? `${data.rate_amount}` : '________',
+      '{{num_guests}}': data.num_guests ? `${data.num_guests}` : '________',
+      '{{num_rooms}}': data.num_rooms ? `${data.num_rooms}` : '________',
+    };
+
+    let result = template;
+    for (const [key, value] of Object.entries(variables)) {
+      result = result.replace(new RegExp(key.replace(/[{}]/g, '\\$&'), 'g'), value);
+    }
+
+    return result;
+  }
+/**
+   * Генерация HTML для подтверждения бронирования
+   */
+  private generateReservationConfirmationHTMLTemplate(
+    confirmation: any, 
+    guests: any[], 
+    logoUrl: string,
+    _primaryColor: string,
+    secondaryColor: string
+  ): string {
+    const hasPartnerLogo = logoUrl && !logoUrl.includes('nova-logo.svg');
+    const logoFilter = hasPartnerLogo 
+      ? 'none' 
+      : 'brightness(0) saturate(100%) invert(11%) sepia(12%) saturate(1131%) hue-rotate(185deg) brightness(94%) contrast(91%)';
+    
+    const headerBgColor = secondaryColor || '#5d666e';
+    
+    const formatDate = (date: string | Date | null): string => {
+      if (!date) return 'N/A';
+      return new Date(date).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    };
+
+    const formatCurrency = (amount: number | null): string => {
+      if (!amount) return 'N/A';
+      return new Intl.NumberFormat('en-US').format(amount);
+    };
+
+    // Мягкое адаптивное масштабирование в зависимости от количества гостей
+    const guestCount = guests.length;
+    let scaleFactor = 1;
+    let tableFontSize = '2.8mm';
+    let tablePadding = '1.5mm 2mm';
+    let sectionMargin = '4mm';
+    let welcomeDisplay = 'block';
+
+    if (guestCount === 4) {
+      scaleFactor = 0.97;
+      tableFontSize = '2.7mm';
+      tablePadding = '1.3mm 1.8mm';
+      sectionMargin = '3.5mm';
+    } else if (guestCount === 5) {
+      scaleFactor = 0.95;
+      tableFontSize = '2.6mm';
+      tablePadding = '1.2mm 1.6mm';
+      sectionMargin = '3.2mm';
+    } else if (guestCount === 6) {
+      scaleFactor = 0.93;
+      tableFontSize = '2.5mm';
+      tablePadding = '1.1mm 1.5mm';
+      sectionMargin = '3mm';
+    } else if (guestCount === 7) {
+      scaleFactor = 0.91;
+      tableFontSize = '2.4mm';
+      tablePadding = '1mm 1.4mm';
+      sectionMargin = '2.8mm';
+    } else if (guestCount === 8) {
+      scaleFactor = 0.89;
+      tableFontSize = '2.3mm';
+      tablePadding = '0.9mm 1.3mm';
+      sectionMargin = '2.6mm';
+      welcomeDisplay = 'none';
+    } else if (guestCount === 9) {
+      scaleFactor = 0.87;
+      tableFontSize = '2.2mm';
+      tablePadding = '0.8mm 1.2mm';
+      sectionMargin = '2.4mm';
+      welcomeDisplay = 'none';
+    } else if (guestCount >= 10) {
+      scaleFactor = 0.85;
+      tableFontSize = '2.1mm';
+      tablePadding = '0.7mm 1.1mm';
+      sectionMargin = '2.2mm';
+      welcomeDisplay = 'none';
+    }
+
+    // Формируем список гостей
+    const guestsHTML = guests.map((guest, index) => `
+      <tr>
+        <td class="number">${index + 1}</td>
+        <td><strong>${guest.guest_name}</strong></td>
+        <td>${guest.passport_number || '-'}</td>
+        <td>${guest.passport_country || '-'}</td>
+        <td>${guest.phone || '-'}</td>
+        <td>${guest.email || '-'}</td>
+      </tr>
+    `).join('');
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reservation Confirmation ${confirmation.confirmation_number}</title>
+<style>
+  @page {
+    size: 210mm 297mm;
+    margin: 0;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #1b273b;
+    background: #ffffff;
+    margin: 0;
+    padding: 0;
+  }
+
+  .page {
+    width: 210mm;
+    height: 297mm;
+    background: #ffffff;
+    padding: 10mm;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .page-inner {
+    width: 190mm;
+    height: 277mm;
+    background: #ffffff;
+    border: 1px solid #1b273b;
+    padding: 8mm 15mm 15mm 15mm;
+    flex: 1;
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.03;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .watermark img {
+    width: 80mm;
+    height: auto;
+  }
+
+  .page-content {
+    position: relative;
+    z-index: 4;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    transform: scale(${scaleFactor});
+    transform-origin: top center;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 3mm;
+  }
+
+  .logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2mm;
+  }
+
+  .decorative-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #1b273b 50%, transparent 100%);
+    flex: 1;
+  }
+
+  .decorative-line.left {
+    margin-right: 10mm;
+  }
+
+  .decorative-line.right {
+    margin-left: 10mm;
+  }
+
+  .logo-container {
+    background: #ffffff;
+    padding: 0 5mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    position: relative;
+  }
+
+  .logo-container img {
+    max-height: 16mm;
+    max-width: 60mm;
+    height: auto;
+    width: auto;
+    filter: ${logoFilter};
+  }
+
+  h1 {
+    font-size: 7mm;
+    font-weight: 900;
+    text-align: center;
+    margin: 2mm 0 3mm 0;
+    letter-spacing: 0.5mm;
+    color: #1b273b;
+  }
+
+  .status-badge {
+    display: inline-block;
+    background: #2d5f3f;
+    color: white;
+    padding: 1.5mm 4mm;
+    border-radius: 2mm;
+    font-size: 3.5mm;
+    font-weight: 700;
+    margin-bottom: ${sectionMargin};
+  }
+
+  .meta-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: ${sectionMargin};
+    gap: 10mm;
+  }
+
+  .meta-block {
+    flex: 1;
+  }
+
+  .meta-block h3 {
+    font-size: 3.5mm;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+    padding-bottom: 1mm;
+    border-bottom: 2px solid ${headerBgColor};
+    color: ${headerBgColor};
+  }
+
+  .meta-item {
+    font-size: 3mm;
+    margin-bottom: 1mm;
+    line-height: 1.4;
+  }
+
+  .meta-item strong {
+    font-weight: 600;
+  }
+
+  .welcome-message {
+    display: ${welcomeDisplay};
+    background: #f5f5f5;
+    padding: 3mm;
+    margin-bottom: ${sectionMargin};
+    border-radius: 2mm;
+    font-size: 3.2mm;
+    font-style: italic;
+    text-align: center;
+    color: #444;
+  }
+
+  /* Property Details - inline вариант */
+  .property-inline {
+    background: #e8e5e1;
+    padding: 2.5mm;
+    margin-bottom: ${sectionMargin};
+    border-radius: 2mm;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2mm 5mm;
+    font-size: 3mm;
+  }
+
+  .property-inline h3 {
+    font-size: 3.3mm;
+    font-weight: 700;
+    color: ${headerBgColor};
+    margin-right: 2mm;
+  }
+
+  .property-inline .prop-name {
+    font-weight: 600;
+  }
+
+  .property-inline .prop-item {
+    display: flex;
+    gap: 2mm;
+  }
+
+  .property-inline .prop-item .label {
+    color: #666;
+  }
+
+  .property-inline .prop-item .value {
+    font-weight: 600;
+  }
+
+  .property-inline .separator {
+    color: #999;
+  }
+
+  .booking-details {
+    display: flex;
+    gap: 5mm;
+    margin-bottom: ${sectionMargin};
+  }
+
+  .booking-box {
+    flex: 1;
+    background: #f5f5f5;
+    padding: 3mm;
+    border-radius: 2mm;
+    text-align: center;
+  }
+
+  .booking-box .label {
+    font-size: 2.8mm;
+    color: #666;
+    margin-bottom: 1mm;
+  }
+
+  .booking-box .value {
+    font-size: 4mm;
+    font-weight: 700;
+    color: #1b273b;
+  }
+
+  .booking-box.highlight {
+    background: ${headerBgColor};
+    color: white;
+  }
+
+  .booking-box.highlight .label {
+    color: rgba(255,255,255,0.8);
+  }
+
+  .booking-box.highlight .value {
+    color: white;
+  }
+
+  .guests-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: ${sectionMargin};
+    font-size: ${tableFontSize};
+  }
+
+  .guests-table th,
+  .guests-table td {
+    border: 1px solid #1b273b;
+    padding: ${tablePadding};
+    text-align: left;
+  }
+
+  .guests-table th {
+    background: ${headerBgColor} !important;
+    color: white !important;
+    font-weight: 700;
+  }
+
+  .guests-table td.number {
+    text-align: center;
+    width: 8mm;
+  }
+
+  .services-section {
+    display: flex;
+    gap: 5mm;
+    margin-bottom: ${sectionMargin};
+  }
+
+  .service-item {
+    flex: 1;
+    background: #f5f5f5;
+    padding: 2mm 3mm;
+    border-radius: 2mm;
+    font-size: 3mm;
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+  }
+
+  .service-item .icon {
+    width: 4mm;
+    height: 4mm;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3mm;
+  }
+
+  .service-item .icon.yes {
+    background: #2d5f3f;
+    color: white;
+  }
+
+  .service-item .icon.no {
+    background: #ccc;
+    color: #666;
+  }
+
+  .notice-section {
+    background: #fffbe6;
+    border: 1px solid #faad14;
+    padding: 3mm;
+    margin-bottom: ${sectionMargin};
+    border-radius: 2mm;
+  }
+
+  .notice-section h3 {
+    font-size: 3.5mm;
+    font-weight: 700;
+    margin-bottom: 2mm;
+    color: #d48806;
+  }
+
+  .notice-section .content {
+    font-size: 3mm;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .cancellation-section {
+    background: #fff2f0;
+    border: 1px solid #ff4d4f;
+    padding: 3mm;
+    margin-bottom: ${sectionMargin};
+    border-radius: 2mm;
+  }
+
+  .cancellation-section h3 {
+    font-size: 3.5mm;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+    color: #cf1322;
+  }
+
+  .cancellation-section .content {
+    font-size: 3mm;
+    color: #cf1322;
+  }
+
+  .remarks-section {
+    background: #f5f5f5;
+    padding: 3mm;
+    margin-bottom: ${sectionMargin};
+    border-radius: 2mm;
+  }
+
+  .remarks-section h3 {
+    font-size: 3.5mm;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+  }
+
+  .remarks-section .content {
+    font-size: 3mm;
+    line-height: 1.4;
+  }
+
+  .page-footer {
+    margin-top: auto;
+    padding-top: 3mm;
+    border-top: 1px solid #d0d0d0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .page-footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1mm;
+  }
+
+  .confirmation-number {
+    font-size: 3mm;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+  }
+
+  .confirmation-date {
+    font-size: 2.5mm;
+    color: #999;
+  }
+
+  .page-number {
+    font-size: 3.5mm;
+    font-weight: 300;
+    color: #666;
+  }
+
+  strong {
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-inner">
+    <div class="watermark">
+      <img src="${logoUrl}" alt="Logo" />
+    </div>
+    <div class="page-content">
+      <div class="header">
+        <div class="logo-wrapper">
+          <div class="decorative-line left"></div>
+          <div class="logo-container">
+            <img src="${logoUrl}" alt="Logo" />
+          </div>
+          <div class="decorative-line right"></div>
+        </div>
+      </div>
+      
+      <h1>RESERVATION CONFIRMATION</h1>
+      
+      <div style="text-align: center;">
+        <span class="status-badge">✓ SUCCESS</span>
+      </div>
+
+      ${confirmation.welcome_message ? `
+      <div class="welcome-message">
+        ${confirmation.welcome_message}
+      </div>
+      ` : ''}
+
+      <div class="meta-section">
+        <div class="meta-block">
+          <h3>CONFIRMATION DETAILS</h3>
+          <div class="meta-item"><strong>Confirmation #:</strong> ${confirmation.confirmation_number}</div>
+          <div class="meta-item"><strong>Date:</strong> ${formatDate(confirmation.confirmation_date)}</div>
+          ${confirmation.agreement_number ? `<div class="meta-item"><strong>Agreement:</strong> ${confirmation.agreement_number}</div>` : ''}
+        </div>
+        <div class="meta-block">
+          <h3>CONTACT</h3>
+          ${confirmation.from_company_name ? `<div class="meta-item"><strong>Company:</strong> ${confirmation.from_company_name}</div>` : ''}
+          ${confirmation.from_telephone ? `<div class="meta-item"><strong>Tel:</strong> ${confirmation.from_telephone}</div>` : ''}
+          ${confirmation.from_email ? `<div class="meta-item"><strong>Email:</strong> ${confirmation.from_email}</div>` : ''}
+        </div>
+      </div>
+
+      ${confirmation.property_name || confirmation.property_address ? `
+      <div class="property-inline">
+        <h3>Property:</h3>
+        ${confirmation.property_name ? `<span class="prop-name">${confirmation.property_name}</span>` : ''}
+        ${confirmation.property_name && confirmation.property_address ? `<span class="separator">|</span>` : ''}
+        ${confirmation.property_address ? `
+        <div class="prop-item">
+          <span class="label">Address:</span>
+          <span class="value">${confirmation.property_address}</span>
+        </div>
+        ` : ''}
+      </div>
+      ` : ''}
+
+      <div class="booking-details">
+        <div class="booking-box">
+          <div class="label">ARRIVAL</div>
+          <div class="value">${formatDate(confirmation.arrival_date)}</div>
+          <div class="label">${confirmation.arrival_time || '15:00'}</div>
+        </div>
+        <div class="booking-box">
+          <div class="label">DEPARTURE</div>
+          <div class="value">${formatDate(confirmation.departure_date)}</div>
+          <div class="label">${confirmation.departure_time || '12:00'}</div>
+        </div>
+        <div class="booking-box highlight">
+          <div class="label">${confirmation.rate_type === 'monthly' ? 'MONTHLY RATE' : 'DAILY RATE'}</div>
+          <div class="value">${confirmation.rate_amount ? `${formatCurrency(confirmation.rate_amount)} THB` : 'N/A'}</div>
+        </div>
+      </div>
+
+      <div class="booking-details">
+        ${confirmation.room_type ? `
+        <div class="booking-box">
+          <div class="label">ROOM TYPE</div>
+          <div class="value">${confirmation.room_type}</div>
+        </div>
+        ` : ''}
+        ${confirmation.num_rooms ? `
+        <div class="booking-box">
+          <div class="label">ROOMS</div>
+          <div class="value">${confirmation.num_rooms}</div>
+        </div>
+        ` : ''}
+        ${confirmation.num_guests ? `
+        <div class="booking-box">
+          <div class="label">GUESTS</div>
+          <div class="value">${confirmation.num_guests}</div>
+        </div>
+        ` : ''}
+      </div>
+
+      ${guests.length > 0 ? `
+      <h3 style="font-size: 3.5mm; margin-bottom: 2mm; color: ${headerBgColor};">GUEST INFORMATION</h3>
+      <table class="guests-table">
+        <thead>
+          <tr>
+            <th class="number">#</th>
+            <th>Guest Name</th>
+            <th>Passport No.</th>
+            <th>Country</th>
+            <th>Phone</th>
+            <th>Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${guestsHTML}
+        </tbody>
+      </table>
+      ` : ''}
+
+      <div class="services-section">
+        <div class="service-item">
+          <div class="icon ${confirmation.pick_up_service ? 'yes' : 'no'}">${confirmation.pick_up_service ? '✓' : '✗'}</div>
+          <span><strong>Pick-up Service:</strong> ${confirmation.pick_up_service ? 'Yes' : 'No'}</span>
+          ${confirmation.arrival_flight ? `<span style="margin-left: auto; color: #666;">Flight: ${confirmation.arrival_flight}</span>` : ''}
+        </div>
+        <div class="service-item">
+          <div class="icon ${confirmation.drop_off_service ? 'yes' : 'no'}">${confirmation.drop_off_service ? '✓' : '✗'}</div>
+          <span><strong>Drop-off Service:</strong> ${confirmation.drop_off_service ? 'Yes' : 'No'}</span>
+          ${confirmation.departure_flight ? `<span style="margin-left: auto; color: #666;">Flight: ${confirmation.departure_flight}</span>` : ''}
+        </div>
+      </div>
+
+      ${confirmation.notice_content ? `
+      <div class="notice-section">
+        <h3>⚠ IMPORTANT NOTICE</h3>
+        <div class="content">${confirmation.notice_content}</div>
+      </div>
+      ` : ''}
+
+      ${confirmation.cancellation_policy ? `
+      <div class="cancellation-section">
+        <h3>CANCELLATION POLICY</h3>
+        <div class="content">${confirmation.cancellation_policy}</div>
+      </div>
+      ` : ''}
+
+      ${confirmation.remarks ? `
+      <div class="remarks-section">
+        <h3>REMARKS</h3>
+        <div class="content">${confirmation.remarks}</div>
+      </div>
+      ` : ''}
+
+      <div class="page-footer">
+        <div class="page-footer-left">
+          <div class="confirmation-number">${confirmation.confirmation_number}</div>
+          <div class="confirmation-date">Generated: ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+        </div>
+        <div class="page-number">Page 1 of 1</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+  }
 }
 
 export default new FinancialDocumentsController();

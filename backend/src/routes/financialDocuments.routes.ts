@@ -36,6 +36,10 @@ router.get('/receipts/:id/html', (req, res) => {
   financialDocumentsController.getReceiptHTML(req as AuthRequest, res);
 });
 
+router.get('/reservation-confirmations/:id/html', (req, res) => {
+  financialDocumentsController.getReservationConfirmationHTML(req as AuthRequest, res);
+});
+
 // Публичные эндпоинты для верификации (БЕЗ авторизации)
 router.get('/public/invoice/:uuid', (req, res) => {
   financialDocumentsController.getInvoiceByUuid(req as AuthRequest, res);
@@ -51,6 +55,11 @@ router.get('/public/invoice/:uuid/pdf', (req, res) => {
 
 router.get('/public/receipt/:uuid/pdf', (req, res) => {
   financialDocumentsController.downloadReceiptPDFByUuid(req as AuthRequest, res);
+});
+
+// Публичный доступ к подтверждению по номеру
+router.get('/public/confirmation/:number', (req, res) => {
+  financialDocumentsController.getReservationConfirmationByNumber(req as AuthRequest, res);
 });
 
 // ========== ЗАЩИЩЕННЫЕ РОУТЫ (С АВТОРИЗАЦИЕЙ) ==========
@@ -96,6 +105,98 @@ router.delete('/saved-bank-details/:id',
   requirePermission('financial_documents.delete_invoices'),
   (req, res) => {
     financialDocumentsController.deleteSavedBankDetails(req as AuthRequest, res);
+  }
+);
+
+// ========== CONFIRMATION TEMPLATES ==========
+
+// Получить все шаблоны Notice
+router.get('/confirmation-templates',
+  requirePermission('financial_documents.view_invoices'),
+  (req, res) => {
+    financialDocumentsController.getAllConfirmationTemplates(req as AuthRequest, res);
+  }
+);
+
+// Получить шаблон Notice по ID
+router.get('/confirmation-templates/:id',
+  requirePermission('financial_documents.view_invoices'),
+  (req, res) => {
+    financialDocumentsController.getConfirmationTemplateById(req as AuthRequest, res);
+  }
+);
+
+// Создать шаблон Notice
+router.post('/confirmation-templates',
+  requirePermission('financial_documents.create_invoices'),
+  (req, res) => {
+    financialDocumentsController.createConfirmationTemplate(req as AuthRequest, res);
+  }
+);
+
+// Обновить шаблон Notice
+router.put('/confirmation-templates/:id',
+  requirePermission('financial_documents.edit_invoices'),
+  (req, res) => {
+    financialDocumentsController.updateConfirmationTemplate(req as AuthRequest, res);
+  }
+);
+
+// Удалить шаблон Notice
+router.delete('/confirmation-templates/:id',
+  requirePermission('financial_documents.delete_invoices'),
+  (req, res) => {
+    financialDocumentsController.deleteConfirmationTemplate(req as AuthRequest, res);
+  }
+);
+
+// ========== RESERVATION CONFIRMATIONS ==========
+
+// Получить список подтверждений бронирования
+router.get('/reservation-confirmations',
+  requirePermission('financial_documents.view_invoices'),
+  (req, res) => {
+    financialDocumentsController.getAllReservationConfirmations(req as AuthRequest, res);
+  }
+);
+
+// Получить подтверждение бронирования по ID
+router.get('/reservation-confirmations/:id',
+  requirePermission('financial_documents.view_invoices'),
+  (req, res) => {
+    financialDocumentsController.getReservationConfirmationById(req as AuthRequest, res);
+  }
+);
+
+// Создать подтверждение бронирования
+router.post('/reservation-confirmations',
+  requirePermission('financial_documents.create_invoices'),
+  (req, res) => {
+    financialDocumentsController.createReservationConfirmation(req as AuthRequest, res);
+  }
+);
+
+// Обновить подтверждение бронирования
+router.put('/reservation-confirmations/:id',
+  requirePermission('financial_documents.edit_invoices'),
+  (req, res) => {
+    financialDocumentsController.updateReservationConfirmation(req as AuthRequest, res);
+  }
+);
+
+// Удалить подтверждение бронирования
+router.delete('/reservation-confirmations/:id',
+  requirePermission('financial_documents.delete_invoices'),
+  (req, res) => {
+    financialDocumentsController.deleteReservationConfirmation(req as AuthRequest, res);
+  }
+);
+
+// PDF download endpoint для подтверждения
+router.get('/reservation-confirmations/:id/pdf',
+  requirePermission('financial_documents.view_invoices'),
+  (req, res) => {
+    financialDocumentsController.downloadReservationConfirmationPDF(req as AuthRequest, res);
   }
 );
 

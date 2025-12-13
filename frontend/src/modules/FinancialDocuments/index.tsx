@@ -57,15 +57,19 @@ import {
   IconUser,
   IconIdBadge,
   IconWriting,
-  IconExternalLink
+  IconExternalLink,
+  IconCalendarEvent,
+  IconHome,
+  IconUsers
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { financialDocumentsApi, Invoice, Receipt } from '@/api/financialDocuments.api';
+import { financialDocumentsApi, Invoice, Receipt, ReservationConfirmation } from '@/api/financialDocuments.api';
 import { agreementsApi, Agreement, AgreementParty, AgreementSignature } from '@/api/agreements.api';
 import CreateInvoiceModal from './components/CreateInvoiceModal';
 import CreateReceiptModal from './components/CreateReceiptModal';
 import DeleteInvoiceModal from './components/DeleteInvoiceModal';
+import CreateReservationConfirmationModal from './components/CreateReservationConfirmationModal';
 import dayjs from 'dayjs';
 
 const FinancialDocuments = () => {
@@ -88,9 +92,15 @@ const FinancialDocuments = () => {
   const [receiptSearch, setReceiptSearch] = useState('');
   const [receiptStatus, setReceiptStatus] = useState<string>('');
   
+  // Confirmations state
+  const [confirmations, setConfirmations] = useState<ReservationConfirmation[]>([]);
+  const [loadingConfirmations, setLoadingConfirmations] = useState(false);
+  const [confirmationSearch, setConfirmationSearch] = useState('');
+  
   // Modals
   const [createInvoiceModalVisible, setCreateInvoiceModalVisible] = useState(false);
   const [createReceiptModalVisible, setCreateReceiptModalVisible] = useState(false);
+  const [createConfirmationModalVisible, setCreateConfirmationModalVisible] = useState(false);
   const [agreementModalVisible, setAgreementModalVisible] = useState(false);
   const [selectedAgreement, setSelectedAgreement] = useState<Agreement | null>(null);
   const [loadingAgreement, setLoadingAgreement] = useState(false);
@@ -112,10 +122,12 @@ const FinancialDocuments = () => {
   useEffect(() => {
     if (activeTab === 'invoices') {
       fetchInvoices();
-    } else {
+    } else if (activeTab === 'receipts') {
       fetchReceipts();
+    } else if (activeTab === 'confirmations') {
+      fetchConfirmations();
     }
-  }, [activeTab, invoiceSearch, invoiceStatus, receiptSearch, receiptStatus]);
+  }, [activeTab, invoiceSearch, invoiceStatus, receiptSearch, receiptStatus, confirmationSearch]);
 
   const fetchInvoices = async () => {
     setLoadingInvoices(true);
@@ -166,6 +178,25 @@ const FinancialDocuments = () => {
       });
     } finally {
       setLoadingReceipts(false);
+    }
+  };
+
+  const fetchConfirmations = async () => {
+    setLoadingConfirmations(true);
+    try {
+      const response = await financialDocumentsApi.getAllReservationConfirmations({
+        search: confirmationSearch || undefined
+      });
+      setConfirmations(response.data.data);
+    } catch (error: any) {
+      notifications.show({
+        title: t('errors.generic'),
+        message: t('financialDocuments.messages.confirmationsLoadError'),
+        color: 'red',
+        icon: <IconX size={18} />
+      });
+    } finally {
+      setLoadingConfirmations(false);
     }
   };
 
@@ -316,6 +347,49 @@ const FinancialDocuments = () => {
     }
   };
 
+  const handleDownloadConfirmationPDF = async (id: number, confirmationNumber: string) => {
+    try {
+      notifications.show({
+        id: 'pdf-download',
+        loading: true,
+        title: t('financialDocuments.messages.downloadingPDF'),
+        message: t('common.pleaseWait'),
+        autoClose: false,
+        withCloseButton: false
+      });
+
+      const response = await financialDocumentsApi.downloadReservationConfirmationPDF(id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `confirmation-${confirmationNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      notifications.update({
+        id: 'pdf-download',
+        color: 'green',
+        title: t('common.success'),
+        message: t('financialDocuments.messages.pdfDownloaded'),
+        icon: <IconCheck size={18} />,
+        loading: false,
+        autoClose: 3000
+      });
+    } catch (error: any) {
+      notifications.update({
+        id: 'pdf-download',
+        color: 'red',
+        title: t('errors.generic'),
+        message: t('financialDocuments.messages.pdfDownloadError'),
+        icon: <IconX size={18} />,
+        loading: false,
+        autoClose: 3000
+      });
+    }
+  };
+
   // Новый обработчик для открытия модалки удаления инвойса
   const handleDeleteInvoiceClick = (id: number) => {
     setDeleteInvoiceId(id);
@@ -349,6 +423,41 @@ const FinancialDocuments = () => {
           notifications.show({
             title: t('errors.generic'),
             message: t('financialDocuments.messages.receiptDeleteError'),
+            color: 'red',
+            icon: <IconX size={18} />
+          });
+        }
+      }
+    });
+  };
+
+  const handleDeleteConfirmation = (id: number) => {
+    modals.openConfirmModal({
+      title: t('financialDocuments.confirm.deleteConfirmationTitle'),
+      children: (
+        <Text size="sm">
+          {t('financialDocuments.confirm.deleteDescription')}
+        </Text>
+      ),
+      labels: {
+        confirm: t('common.delete'),
+        cancel: t('common.cancel')
+      },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        try {
+          await financialDocumentsApi.deleteReservationConfirmation(id);
+          notifications.show({
+            title: t('common.success'),
+            message: t('financialDocuments.messages.confirmationDeleted'),
+            color: 'green',
+            icon: <IconCheck size={18} />
+          });
+          fetchConfirmations();
+        } catch (error: any) {
+          notifications.show({
+            title: t('errors.generic'),
+            message: t('financialDocuments.messages.confirmationDeleteError'),
             color: 'red',
             icon: <IconX size={18} />
           });
@@ -693,6 +802,125 @@ const FinancialDocuments = () => {
               color="red"
               leftSection={<IconTrash size={16} />}
               onClick={() => handleDeleteReceipt(receipt.id)}
+            >
+              {t('common.delete')}
+            </Button>
+          </Tooltip>
+        </Group>
+      </Stack>
+    </Card>
+  );
+
+  const ConfirmationCard = ({ confirmation }: { confirmation: ReservationConfirmation }) => (
+    <Card
+      shadow="sm"
+      padding="md"
+      radius="md"
+      withBorder
+      style={{
+        transition: 'all 0.2s ease',
+        borderLeft: `4px solid ${theme.colors.green[6]}`
+      }}
+    >
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-start" wrap="nowrap">
+          <Box style={{ flex: 1 }}>
+            <Button
+              variant="subtle"
+              size="xs"
+              p={0}
+              mb={4}
+              onClick={() => navigate(`/financial-documents/confirmations/${confirmation.id}`)}
+            >
+              <Text fw={700} size="md">
+                {confirmation.confirmation_number}
+              </Text>
+            </Button>
+            {confirmation.property_name && (
+              <Group gap={4}>
+                <IconHome size={14} color={theme.colors.gray[6]} />
+                <Text size="xs" c="dimmed">
+                  {confirmation.property_name}
+                </Text>
+              </Group>
+            )}
+          </Box>
+          <Badge size="sm" color="green" variant="light" leftSection={<IconCheck size={12} />}>
+            Success
+          </Badge>
+        </Group>
+
+        <Divider />
+
+        <SimpleGrid cols={2} spacing="xs">
+          {confirmation.arrival_date && (
+            <Box>
+              <Text size="xs" c="dimmed" mb={4}>
+                {t('financialDocuments.confirmations.arrival')}
+              </Text>
+              <Text size="sm" fw={600}>
+                {dayjs(confirmation.arrival_date).format('DD.MM.YYYY')}
+              </Text>
+            </Box>
+          )}
+          {confirmation.departure_date && (
+            <Box>
+              <Text size="xs" c="dimmed" mb={4}>
+                {t('financialDocuments.confirmations.departure')}
+              </Text>
+              <Text size="sm" fw={600}>
+                {dayjs(confirmation.departure_date).format('DD.MM.YYYY')}
+              </Text>
+            </Box>
+          )}
+        </SimpleGrid>
+
+        {confirmation.guest_names && (
+          <Group gap={4}>
+            <IconUsers size={14} color={theme.colors.gray[6]} />
+            <Text size="xs" c="dimmed" lineClamp={1}>
+              {confirmation.guest_names}
+            </Text>
+          </Group>
+        )}
+
+        <Group gap={4}>
+          <IconCalendar size={14} color={theme.colors.gray[6]} />
+          <Text size="xs" c="dimmed">
+            {t('financialDocuments.confirmations.created')}: {dayjs(confirmation.created_at).format('DD.MM.YYYY')}
+          </Text>
+        </Group>
+
+        {/* Мобильные кнопки действий */}
+        <Group gap="xs" grow>
+          <Tooltip label={t('financialDocuments.actions.view')}>
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={<IconEye size={16} />}
+              onClick={() => navigate(`/financial-documents/confirmations/${confirmation.id}`)}
+            >
+              {t('financialDocuments.actions.view')}
+            </Button>
+          </Tooltip>
+          <Tooltip label={t('financialDocuments.actions.downloadPDF')}>
+            <Button
+              size="xs"
+              variant="light"
+              color="blue"
+              leftSection={<IconDownload size={16} />}
+              onClick={() => handleDownloadConfirmationPDF(confirmation.id, confirmation.confirmation_number)}
+            >
+              PDF
+            </Button>
+          </Tooltip>
+          <Tooltip label={t('common.delete')}>
+            <Button
+              size="xs"
+              variant="light"
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              onClick={() => handleDeleteConfirmation(confirmation.id)}
             >
               {t('common.delete')}
             </Button>
@@ -1303,6 +1531,12 @@ const FinancialDocuments = () => {
               >
                 {t('financialDocuments.tabs.receipts')}
               </Tabs.Tab>
+              <Tabs.Tab 
+                value="confirmations"
+                leftSection={<IconCalendarEvent size={18} />}
+              >
+                {t('financialDocuments.tabs.confirmations')}
+              </Tabs.Tab>
             </Tabs.List>
 
             {/* Инвойсы */}
@@ -1650,6 +1884,163 @@ const FinancialDocuments = () => {
                 )}
               </Stack>
             </Tabs.Panel>
+
+            {/* Confirmations */}
+            <Tabs.Panel value="confirmations" pt="lg">
+              <Stack gap="md">
+                {/* Фильтры и кнопка создания */}
+                <Group justify="space-between" wrap="wrap">
+                  <Group gap="xs" style={{ flex: isMobile ? '1 1 100%' : 'auto' }}>
+                    <TextInput
+                      placeholder={t('financialDocuments.search')}
+                      leftSection={<IconSearch size={18} />}
+                      value={confirmationSearch}
+                      onChange={(e) => setConfirmationSearch(e.target.value)}
+                      style={{ flex: 1, minWidth: isMobile ? '100%' : 200 }}
+                      styles={{ input: { fontSize: '16px' } }}
+                    />
+                  </Group>
+
+                  <Button
+                    leftSection={<IconPlus size={18} />}
+                    onClick={() => setCreateConfirmationModalVisible(true)}
+                    fullWidth={isMobile}
+                  >
+                    {t('financialDocuments.buttons.createConfirmation')}
+                  </Button>
+                </Group>
+
+                {/* Список подтверждений */}
+                {loadingConfirmations ? (
+                  <Center py={60}>
+                    <Stack align="center" gap="md">
+                      <Loader size="lg" />
+                      <Text size="sm" c="dimmed">
+                        {t('financialDocuments.loading')}
+                      </Text>
+                    </Stack>
+                  </Center>
+                ) : confirmations.length === 0 ? (
+                  <Paper p="xl" radius="md" withBorder>
+                    <Center>
+                      <Stack align="center" gap="md">
+                        <ThemeIcon size={60} radius="xl" variant="light" color="gray">
+                          <IconCalendarEvent size={30} />
+                        </ThemeIcon>
+                        <Text size="sm" c="dimmed">
+                          {t('financialDocuments.noConfirmations')}
+                        </Text>
+                      </Stack>
+                    </Center>
+                  </Paper>
+                ) : isMobile ? (
+                  <Stack gap="md">
+                    {confirmations.map((confirmation) => (
+                      <ConfirmationCard key={confirmation.id} confirmation={confirmation} />
+                    ))}
+                  </Stack>
+                ) : (
+                  <Table.ScrollContainer minWidth={800}>
+                    <Table striped highlightOnHover withTableBorder withColumnBorders>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th>{t('financialDocuments.table.confirmations.number')}</Table.Th>
+                          <Table.Th>{t('financialDocuments.table.confirmations.guests')}</Table.Th>
+                          <Table.Th>{t('financialDocuments.table.confirmations.property')}</Table.Th>
+                          <Table.Th w={110}>{t('financialDocuments.table.confirmations.arrival')}</Table.Th>
+                          <Table.Th w={110}>{t('financialDocuments.table.confirmations.departure')}</Table.Th>
+                          <Table.Th w={110}>{t('financialDocuments.table.confirmations.created')}</Table.Th>
+                          <Table.Th w={80}>{t('financialDocuments.table.confirmations.actions')}</Table.Th>
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {confirmations.map((confirmation) => (
+                          <Table.Tr key={confirmation.id}>
+                            <Table.Td>
+                              <Group gap="xs">
+                                <Button
+                                  variant="subtle"
+                                  size="xs"
+                                  p={0}
+                                  onClick={() => navigate(`/financial-documents/confirmations/${confirmation.id}`)}
+                                >
+                                  {confirmation.confirmation_number}
+                                </Button>
+                                <Badge size="xs" color="green" variant="light">
+                                  Success
+                                </Badge>
+                              </Group>
+                            </Table.Td>
+                            <Table.Td>
+                              <Group gap={4}>
+                                <IconUsers size={14} color={theme.colors.gray[6]} />
+                                <Text size="sm" lineClamp={1} maw={200}>
+                                  {confirmation.guest_names || '—'}
+                                </Text>
+                                {confirmation.guests_count && confirmation.guests_count > 0 && (
+                                  <Badge size="xs" variant="light" color="gray">
+                                    {confirmation.guests_count}
+                                  </Badge>
+                                )}
+                              </Group>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm" lineClamp={1}>
+                                {confirmation.property_name || '—'}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm">
+                                {confirmation.arrival_date ? dayjs(confirmation.arrival_date).format('DD.MM.YYYY') : '—'}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm">
+                                {confirmation.departure_date ? dayjs(confirmation.departure_date).format('DD.MM.YYYY') : '—'}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm">{dayjs(confirmation.created_at).format('DD.MM.YYYY')}</Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Menu position="bottom-end" shadow="md">
+                                <Menu.Target>
+                                  <ActionIcon variant="subtle" color="gray">
+                                    <IconDots size={18} />
+                                  </ActionIcon>
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                  <Menu.Item
+                                    leftSection={<IconEye size={16} />}
+                                    onClick={() => navigate(`/financial-documents/confirmations/${confirmation.id}`)}
+                                  >
+                                    {t('financialDocuments.actions.view')}
+                                  </Menu.Item>
+                                  <Menu.Item
+                                    leftSection={<IconDownload size={16} />}
+                                    onClick={() => handleDownloadConfirmationPDF(confirmation.id, confirmation.confirmation_number)}
+                                  >
+                                    {t('financialDocuments.actions.downloadPDF')}
+                                  </Menu.Item>
+                                  <Menu.Divider />
+                                  <Menu.Item
+                                    color="red"
+                                    leftSection={<IconTrash size={16} />}
+                                    onClick={() => handleDeleteConfirmation(confirmation.id)}
+                                  >
+                                    {t('common.delete')}
+                                  </Menu.Item>
+                                </Menu.Dropdown>
+                              </Menu>
+                            </Table.Td>
+                          </Table.Tr>
+                        ))}
+                      </Table.Tbody>
+                    </Table>
+                  </Table.ScrollContainer>
+                )}
+              </Stack>
+            </Tabs.Panel>
           </Tabs>
         </Stack>
       </Card>
@@ -1670,6 +2061,15 @@ const FinancialDocuments = () => {
         onSuccess={() => {
           setCreateReceiptModalVisible(false);
           fetchReceipts();
+        }}
+      />
+
+      <CreateReservationConfirmationModal
+        visible={createConfirmationModalVisible}
+        onCancel={() => setCreateConfirmationModalVisible(false)}
+        onSuccess={() => {
+          setCreateConfirmationModalVisible(false);
+          fetchConfirmations();
         }}
       />
 

@@ -2654,12 +2654,287 @@
       "pdfDownloadError": "Ошибка скачивания PDF"
     }
   },
+    "reservationConfirmation": {
+    "title": "Создать",
+    "titleEdit": "Редактировать",
+    
+    "steps": {
+      "basic": "Основное",
+      "basicDesc": "Даты и договор",
+      "property": "Объект",
+      "propertyDesc": "Информация об объекте",
+      "guests": "Гости",
+      "guestsDesc": "Данные гостей",
+      "details": "Детали",
+      "detailsDesc": "Notice и политики"
+    },
+    
+    "alerts": {
+      "basicInfoTitle": "Основная информация",
+      "basicInfoDesc": "Выберите договор для автоматического заполнения данных или заполните вручную.",
+      "guestsTitle": "Информация о гостях",
+      "guestsDesc": "Добавьте хотя бы одного гостя. Имя обязательно, остальные поля опциональны.",
+      "noticeVariables": "Доступные переменные: {{check_in_time}}, {{check_out_time}}, {{deposit_amount}}, {{electricity_rate}}, {{water_rate}}, {{property_name}}"
+    },
+    
+    "fields": {
+      "agreement": "Договор",
+      "depositAmount": "Депозит",
+      "noticeTemplate": "Шаблон Notice",
+      "confirmationDate": "Дата документа",
+      "arrivalDate": "Дата заезда",
+      "departureDate": "Дата выезда",
+      "nights": "Количество ночей",
+      "arrivalTime": "Время прибытия",
+      "departureTime": "Время отъезда",
+      "propertyName": "Название объекта",
+      "propertyAddress": "Адрес объекта",
+      "roomType": "Тип номера/виллы",
+      "numRooms": "Кол-во комнат",
+      "numGuests": "Кол-во гостей",
+      "rateType": "Тип тарифа",
+      "rateAmount": "Сумма тарифа",
+      "checkInTime": "Время заезда",
+      "checkOutTime": "Время выезда",
+      "electricityRate": "Тариф электричества",
+      "waterRate": "Тариф воды",
+      "fromCompanyName": "Название компании",
+      "fromTelephone": "Телефон",
+      "fromEmail": "Email",
+      "passportNumber": "Номер паспорта",
+      "passportCountry": "Страна паспорта",
+      "guestPhone": "Телефон гостя",
+      "guestEmail": "Email гостя",
+      "pickUpService": "Трансфер из аэропорта",
+      "pickUpServiceDesc": "Встреча гостя в аэропорту",
+      "dropOffService": "Трансфер в аэропорт",
+      "dropOffServiceDesc": "Доставка гостя в аэропорт",
+      "arrivalFlight": "Рейс прилёта",
+      "departureFlight": "Рейс вылета",
+      "noticeContent": "Содержимое Notice",
+      "cancellationPolicy": "Политика отмены",
+      "welcomeMessage": "Приветственное сообщение",
+      "remarks": "Примечания"
+    },
+    
+    "placeholders": {
+      "selectAgreement": "Выберите договор (опционально)",
+      "selectTemplate": "Выберите шаблон Notice",
+      "selectDate": "Выберите дату",
+      "guestName": "Введите имя гостя *",
+      "noticeContent": "Введите текст Notice или выберите шаблон выше...",
+      "welcomeMessage": "Введите приветственное сообщение для гостей...",
+      "remarks": "Дополнительные примечания..."
+    },
+    
+    "sections": {
+      "property": "Информация об объекте",
+      "from": "Отправитель (От кого)",
+      "services": "Услуги трансфера",
+      "notice": "Notice (Уведомление)",
+      "cancellationPolicy": "Политика отмены",
+      "welcomeMessage": "Приветственное сообщение",
+      "remarks": "Примечания",
+      "summary": "Итого"
+    },
+    
+    "guest": {
+      "title": "Гость #{{number}}",
+      "primary": "Основной"
+    },
+    
+    "buttons": {
+      "addGuest": "Добавить гостя",
+      "back": "Назад",
+      "next": "Далее",
+      "create": "Создать подтверждение",
+      "update": "Сохранить изменения"
+    },
+    
+    "rateTypes": {
+      "daily": "Посуточно",
+      "monthly": "Помесячно",
+      "day": "сутки",
+      "month": "месяц"
+    },
+    
+    "validation": {
+      "addAtLeastOneGuest": "Добавьте хотя бы одного гостя с именем"
+    },
+    
+    "messages": {
+      "agreementDataLoaded": "Данные из договора загружены",
+      "agreementDataLoadError": "Ошибка загрузки данных договора",
+      "loaded": "Подтверждение загружено",
+      "loadError": "Ошибка загрузки подтверждения",
+      "updated": "Подтверждение успешно обновлено",
+      "createError": "Ошибка создания подтверждения",
+      "generatingPDF": "Генерация PDF...",
+      "pdfDownloaded": "PDF успешно скачан",
+      "pdfDownloadError": "Ошибка скачивания PDF"
+    },
+    
+    "success": {
+      "title": "Подтверждение создано",
+      "message": "Подтверждение бронирования успешно создано!",
+      "confirmationNumber": "Номер подтверждения",
+      "downloadPDF": "Скачать PDF",
+      "edit": "Редактировать"
+    },
+    
+    "summary": {
+      "property": "Объект",
+      "guests": "Гостей",
+      "dates": "Даты",
+      "nights": "Ночей",
+      "rate": "Тариф",
+      "deposit": "Депозит"
+    }
+  },
+    "confirmationDetail": {
+    "title": "Подтверждение бронирования",
+    "loading": "Загрузка подтверждения...",
+    "notFound": "Подтверждение не найдено",
+    "nightsLabel": "ночей",
+    "buttons": {
+      "back": "Назад",
+      "backToList": "Назад к списку",
+      "edit": "Редактировать",
+      "copyLink": "Скопировать ссылку",
+      "downloadPDF": "Скачать PDF"
+    },
+    "sections": {
+      "property": "Информация об объекте",
+      "contact": "Контактная информация",
+      "timesAndRates": "Время и тарифы",
+      "guests": "Гости",
+      "transfer": "Трансфер",
+      "notice": "Важное уведомление",
+      "cancellationPolicy": "Политика отмены",
+      "welcomeMessage": "Приветственное сообщение",
+      "remarks": "Примечания",
+      "meta": "Метаданные"
+    },
+    "fields": {
+      "arrival": "Заезд",
+      "departure": "Выезд",
+      "nights": "Ночей",
+      "propertyName": "Название объекта",
+      "propertyAddress": "Адрес объекта",
+      "roomType": "Тип номера",
+      "numRooms": "Количество комнат",
+      "numGuests": "Количество гостей",
+      "rate": "Тариф",
+      "companyName": "Компания",
+      "telephone": "Телефон",
+      "email": "Email",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "electricityRate": "Тариф на электричество",
+      "waterRate": "Тариф на воду",
+      "pickUp": "Встреча в аэропорту",
+      "dropOff": "Трансфер в аэропорт",
+      "flight": "Рейс",
+      "passport": "Паспорт",
+      "country": "Страна",
+      "confirmationDate": "Дата подтверждения",
+      "createdBy": "Создал",
+      "createdAt": "Дата создания"
+    },
+    "table": {
+      "guestName": "Имя гостя",
+      "passport": "Паспорт",
+      "country": "Страна",
+      "phone": "Телефон",
+      "email": "Email"
+    },
+    "guest": {
+      "primary": "Основной"
+    },
+    "services": {
+      "included": "Включено",
+      "notIncluded": "Не включено"
+    },
+    "rateTypes": {
+      "day": "день",
+      "month": "месяц"
+    },
+    "confirm": {
+      "deleteTitle": "Удалить подтверждение?",
+      "deleteDescription": "Это действие нельзя отменить. Подтверждение будет удалено безвозвратно."
+    },
+    "messages": {
+      "loadError": "Ошибка загрузки подтверждения",
+      "deleted": "Подтверждение успешно удалено",
+      "deleteError": "Ошибка удаления подтверждения",
+      "linkCopied": "Ссылка скопирована в буфер обмена",
+      "linkCopyError": "Ошибка копирования ссылки",
+      "numberNotFound": "Номер подтверждения не найден",
+      "generatingPDF": "Генерация PDF...",
+      "pdfDownloaded": "PDF успешно скачан",
+      "pdfDownloadError": "Ошибка скачивания PDF"
+    }
+  },
+  "confirmationTemplates": {
+  "title": "Шаблоны подтверждений",
+  "subtitle": "Управление шаблонами для Important Notice",
+  "noTemplates": "Шаблоны не найдены",
+  "createdAt": "Создан",
+  "buttons": {
+    "create": "Создать шаблон",
+    "createFirst": "Создать первый шаблон"
+  },
+  "table": {
+    "name": "Название",
+    "status": "Статус",
+    "createdAt": "Создан",
+    "createdBy": "Автор",
+    "actions": "Действия"
+  },
+  "modal": {
+    "createTitle": "Новый шаблон",
+    "editTitle": "Редактирование шаблона"
+  },
+  "fields": {
+    "name": "Название шаблона",
+    "content": "Содержимое",
+    "isActive": "Активен",
+    "isActiveDesc": "Активные шаблоны отображаются при создании подтверждений"
+  },
+  "placeholders": {
+    "name": "Стандартный шаблон",
+    "content": "Введите текст шаблона..."
+  },
+  "variables": {
+    "title": "Доступные переменные",
+    "description": "Используйте переменные для автоматической подстановки данных:"
+  },
+  "validation": {
+    "nameRequired": "Введите название шаблона",
+    "contentRequired": "Введите содержимое шаблона"
+  },
+  "confirm": {
+    "deleteTitle": "Удалить шаблон?",
+    "deleteMessage": "Шаблон \"{{name}}\" будет удалён. Это действие нельзя отменить."
+  },
+  "messages": {
+    "loadError": "Ошибка загрузки шаблонов",
+    "created": "Шаблон успешно создан",
+    "updated": "Шаблон успешно обновлён",
+    "deleted": "Шаблон успешно удалён",
+    "duplicated": "Шаблон скопирован",
+    "saveError": "Ошибка сохранения шаблона",
+    "deleteError": "Ошибка удаления шаблона",
+    "duplicateError": "Ошибка копирования шаблона"
+  }
+},
   "financialDocuments": {
     "title": "Финансовые документы",
     "loading": "Загрузка...",
     "noInvoices": "Инвойсы не найдены",
     "noReceipts": "Чеки не найдены",
     "search": "Поиск по номеру",
+    "noConfirmations": "Подтверждения бронирования не найдены",
     
         "bankDetails": {
       "simple": {
@@ -2788,7 +3063,8 @@
     },
     "tabs": {
       "invoices": "Инвойсы",
-      "receipts": "Чеки"
+      "receipts": "Чеки",
+      "confirmations": "Подтверждения"
     },
     "stats": {
       "totalInvoices": "Всего инвойсов",
@@ -2837,11 +3113,27 @@
         "paymentMethod": "Способ оплаты",
         "date": "Дата",
         "actions": "Действия"
+      },
+      "confirmations": {
+        "number": "Номер",
+        "guests": "Гости",
+        "property": "Объект",
+        "arrival": "Заезд",
+        "departure": "Выезд",
+        "created": "Создано",
+        "actions": "Действия"
       }
+    },
+        "confirmations": {
+      "arrival": "Заезд",
+      "departure": "Выезд",
+      "created": "Создано"
     },
     "buttons": {
       "createInvoice": "Создать инвойс",
-      "createReceipt": "Создать чек"
+      "createReceipt": "Создать чек",
+      "createConfirmation": "Создать подтверждение",
+      "templates": "Шаблоны"
     },
     "actions": {
       "view": "Просмотр",
@@ -2850,7 +3142,8 @@
     "confirm": {
       "deleteInvoiceTitle": "Удалить инвойс?",
       "deleteReceiptTitle": "Удалить чек?",
-      "deleteDescription": "Это действие нельзя отменить"
+      "deleteDescription": "Это действие нельзя отменить",
+      "deleteConfirmationTitle": "Удалить подтверждение?"
     },
     "messages": {
       "invoicesLoadError": "Ошибка загрузки инвойсов",
@@ -2861,7 +3154,10 @@
       "invoiceDeleted": "Инвойс успешно удалён",
       "receiptDeleted": "Чек успешно удалён",
       "invoiceDeleteError": "Ошибка удаления инвойса",
-      "receiptDeleteError": "Ошибка удаления чека"
+      "receiptDeleteError": "Ошибка удаления чека",
+      "confirmationsLoadError": "Ошибка загрузки подтверждений",
+      "confirmationDeleted": "Подтверждение удалено",
+      "confirmationDeleteError": "Ошибка удаления подтверждения"
     }
     
   },

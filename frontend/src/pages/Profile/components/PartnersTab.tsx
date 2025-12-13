@@ -17,7 +17,8 @@ import {
   LoadingOverlay,
   ColorInput,
   Box,
-  Divider
+  Divider,
+  Tooltip
 } from '@mantine/core';
 import {
   IconPlus,
@@ -27,7 +28,10 @@ import {
   IconAlertCircle,
   IconCheck,
   IconInfoCircle,
-  IconPalette
+  IconPalette,
+  IconPhone,
+  IconMail,
+  IconAddressBook
 } from '@tabler/icons-react';
 import { partnersApi, Partner, CreatePartnerDTO, UpdatePartnerDTO } from '@/api/partners.api';
 import { notifications } from '@mantine/notifications';
@@ -50,6 +54,10 @@ const PartnersTab: React.FC = () => {
   const [primaryColor, setPrimaryColor] = useState('');
   const [secondaryColor, setSecondaryColor] = useState('');
   const [accentColor, setAccentColor] = useState('');
+
+  // Contact state
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
 
   useEffect(() => {
     loadPartners();
@@ -81,6 +89,9 @@ const PartnersTab: React.FC = () => {
       setPrimaryColor(partner.primary_color || '');
       setSecondaryColor(partner.secondary_color || '');
       setAccentColor(partner.accent_color || '');
+      // Загружаем контакты
+      setPhone(partner.phone || '');
+      setEmail(partner.email || '');
     } else {
       setEditingPartner(null);
       setPartnerName('');
@@ -90,6 +101,9 @@ const PartnersTab: React.FC = () => {
       setPrimaryColor('');
       setSecondaryColor('');
       setAccentColor('');
+      // Сбрасываем контакты
+      setPhone('');
+      setEmail('');
     }
     setLogoFile(null);
     setModalOpened(true);
@@ -106,6 +120,9 @@ const PartnersTab: React.FC = () => {
     setPrimaryColor('');
     setSecondaryColor('');
     setAccentColor('');
+    // Сбрасываем контакты
+    setPhone('');
+    setEmail('');
   };
 
   const handleSubmit = async () => {
@@ -120,7 +137,9 @@ const PartnersTab: React.FC = () => {
           is_active: isActive,
           primary_color: primaryColor || undefined,
           secondary_color: secondaryColor || undefined,
-          accent_color: accentColor || undefined
+          accent_color: accentColor || undefined,
+          phone: phone || undefined,
+          email: email || undefined
         };
         if (logoFile) {
           updateData.logo = logoFile;
@@ -140,7 +159,9 @@ const PartnersTab: React.FC = () => {
           is_active: isActive,
           primary_color: primaryColor || undefined,
           secondary_color: secondaryColor || undefined,
-          accent_color: accentColor || undefined
+          accent_color: accentColor || undefined,
+          phone: phone || undefined,
+          email: email || undefined
         };
         if (logoFile) {
           createData.logo = logoFile;
@@ -251,6 +272,7 @@ const PartnersTab: React.FC = () => {
                 <Table.Th>Название</Table.Th>
                 <Table.Th>Домен</Table.Th>
                 <Table.Th>Логотип</Table.Th>
+                <Table.Th>Контакты</Table.Th>
                 <Table.Th>Цвета</Table.Th>
                 <Table.Th>Статус</Table.Th>
                 <Table.Th>Создан</Table.Th>
@@ -279,6 +301,33 @@ const PartnersTab: React.FC = () => {
                         </Text>
                       </Group>
                     )}
+                  </Table.Td>
+                  <Table.Td>
+                    <Stack gap={2}>
+                      {partner.phone && (
+                        <Tooltip label={partner.phone} position="left">
+                          <Group gap={4}>
+                            <IconPhone size={14} style={{ color: 'var(--mantine-color-blue-5)' }} />
+                            <Text size="xs" c="dimmed" lineClamp={1} maw={120}>
+                              {partner.phone}
+                            </Text>
+                          </Group>
+                        </Tooltip>
+                      )}
+                      {partner.email && (
+                        <Tooltip label={partner.email} position="left">
+                          <Group gap={4}>
+                            <IconMail size={14} style={{ color: 'var(--mantine-color-green-5)' }} />
+                            <Text size="xs" c="dimmed" lineClamp={1} maw={120}>
+                              {partner.email}
+                            </Text>
+                          </Group>
+                        </Tooltip>
+                      )}
+                      {!partner.phone && !partner.email && (
+                        <Text size="xs" c="dimmed">-</Text>
+                      )}
+                    </Stack>
                   </Table.Td>
                   <Table.Td>
                     <Stack gap={4}>
@@ -330,7 +379,7 @@ const PartnersTab: React.FC = () => {
         opened={modalOpened}
         onClose={handleCloseModal}
         title={editingPartner ? 'Редактировать партнёра' : 'Добавить партнёра'}
-        size="md"
+        size="lg"
       >
         <Stack gap="md">
           <TextInput
@@ -364,7 +413,53 @@ const PartnersTab: React.FC = () => {
             </Alert>
           )}
 
-          <Divider label={<Group gap={6}><IconPalette size={14} /><Text size="sm">Цветовая схема</Text></Group>} labelPosition="center" />
+          <Divider 
+            label={
+              <Group gap={6}>
+                <IconAddressBook size={14} />
+                <Text size="sm">Контактная информация</Text>
+              </Group>
+            } 
+            labelPosition="center" 
+          />
+
+          <Group grow>
+            <TextInput
+              label="Телефон"
+              placeholder="+6661008937"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              leftSection={<IconPhone size={16} />}
+              description="Телефон для документов и связи"
+            />
+
+            <TextInput
+              label="Email"
+              placeholder="service@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              leftSection={<IconMail size={16} />}
+              description="Email для документов и связи"
+            />
+          </Group>
+
+          <Alert color="gray" icon={<IconInfoCircle size={16} />} variant="light">
+            <Text size="xs">
+              Если телефон и email не указаны, в документах будут использованы значения по умолчанию:
+              <br />
+              Телефон: <strong>+6661008937</strong>, Email: <strong>service@novaestate.company</strong>
+            </Text>
+          </Alert>
+
+          <Divider 
+            label={
+              <Group gap={6}>
+                <IconPalette size={14} />
+                <Text size="sm">Цветовая схема</Text>
+              </Group>
+            } 
+            labelPosition="center" 
+          />
 
           <ColorInput
             label="Основной цвет (Primary)"

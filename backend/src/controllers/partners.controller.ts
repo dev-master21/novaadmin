@@ -15,6 +15,8 @@ interface Partner {
   primary_color: string | null;
   secondary_color: string | null;
   accent_color: string | null;
+  phone: string | null;
+  email: string | null;
   is_active: boolean;
   created_by: number | null;
   created_at: Date;
@@ -182,7 +184,9 @@ class PartnersController {
             partner_name: null,
             primary_color: null,
             secondary_color: null,
-            accent_color: null
+            accent_color: null,
+            phone: null,
+            email: null
           }
         });
         return;
@@ -197,7 +201,9 @@ class PartnersController {
           partner_name: partner.partner_name || null,
           primary_color: partner.primary_color || null,
           secondary_color: partner.secondary_color || null,
-          accent_color: partner.accent_color || null
+          accent_color: partner.accent_color || null,
+          phone: partner.phone || null,
+          email: partner.email || null
         }
       });
     } catch (error) {
@@ -209,7 +215,9 @@ class PartnersController {
           partner_name: null,
           primary_color: null,
           secondary_color: null,
-          accent_color: null
+          accent_color: null,
+          phone: null,
+          email: null
         }
       });
     }
@@ -232,7 +240,7 @@ class PartnersController {
         return;
       }
 
-      const { partner_name, domain, is_active, primary_color, secondary_color, accent_color } = req.body;
+      const { partner_name, domain, is_active, primary_color, secondary_color, accent_color, phone, email } = req.body;
       const userId = req.admin.id;
 
       const logo_filename = req.file ? req.file.filename : null;
@@ -256,8 +264,8 @@ class PartnersController {
       }
 
       const result = await connection.query(
-        `INSERT INTO partners (partner_name, domain, logo_filename, is_active, created_by, primary_color, secondary_color, accent_color)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO partners (partner_name, domain, logo_filename, is_active, created_by, primary_color, secondary_color, accent_color, phone, email)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           partner_name || null,
           cleanDomain,
@@ -266,7 +274,9 @@ class PartnersController {
           userId,
           primary_color || null,
           secondary_color || null,
-          accent_color || null
+          accent_color || null,
+          phone || null,
+          email || null
         ]
       );
 
@@ -327,7 +337,7 @@ class PartnersController {
         return;
       }
 
-      const { partner_name, domain, is_active, primary_color, secondary_color, accent_color } = req.body;
+      const { partner_name, domain, is_active, primary_color, secondary_color, accent_color, phone, email } = req.body;
 
       const existingPartner = await db.queryOne<Partner>(
         'SELECT * FROM partners WHERE id = ?',
@@ -362,7 +372,7 @@ class PartnersController {
         values.push(is_active ? 1 : 0);
       }
 
-      // ✅ НОВОЕ: Обработка цветов
+      // Обработка цветов
       if (primary_color !== undefined) {
         fields.push('primary_color = ?');
         values.push(primary_color || null);
@@ -376,6 +386,17 @@ class PartnersController {
       if (accent_color !== undefined) {
         fields.push('accent_color = ?');
         values.push(accent_color || null);
+      }
+
+      // ✅ НОВОЕ: Обработка phone и email
+      if (phone !== undefined) {
+        fields.push('phone = ?');
+        values.push(phone || null);
+      }
+
+      if (email !== undefined) {
+        fields.push('email = ?');
+        values.push(email || null);
       }
 
       if (req.file) {
@@ -519,6 +540,34 @@ class PartnersController {
       });
     }
   }
+  /**
+ * Получить данные партнёра текущего пользователя
+ * GET /api/partners/current
+ */
+async getCurrentPartner(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.admin!.id;
+
+    const partner = await db.queryOne<Partner>(`
+      SELECT p.id, p.partner_name, p.domain, p.phone, p.email, 
+             p.logo_filename, p.primary_color, p.secondary_color, p.accent_color
+      FROM admin_users au
+      LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
+      WHERE au.id = ?
+    `, [userId]);
+
+    res.json({
+      success: true,
+      data: partner || null
+    });
+  } catch (error) {
+    logger.error('Get current partner error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка получения данных партнёра'
+    });
+  }
+}
 }
 
 export default new PartnersController();
