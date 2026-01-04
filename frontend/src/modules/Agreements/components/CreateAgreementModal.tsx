@@ -14,7 +14,6 @@ import {
   Image,
   Alert,
   Checkbox,
-  Accordion,
   Badge,
   Group,
   Text,
@@ -73,10 +72,13 @@ import {
   IconUserCheck,
   IconQrcode,
   IconCalendarEvent,
-  IconSettings
+  IconSettings,
+  IconCreditCard,
+  IconCurrencyDollar
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { agreementsApi, AgreementTemplate } from '@/api/agreements.api';
+import { financialDocumentsApi, BankDetailsType, SavedBankDetails } from '@/api/financialDocuments.api';
 import { requestsApi, Request } from '@/api/requests.api';
 import { contactsApi } from '@/api/contacts.api';
 import dayjs from 'dayjs';
@@ -175,6 +177,13 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
   const [requestUuid, setRequestUuid] = useState<string | null>(null);
   const [loadingRequest, setLoadingRequest] = useState(false);
 
+  // ✅ НОВОЕ: State для сохранённых банковских реквизитов
+  const [savedBankDetailsList, setSavedBankDetailsList] = useState<SavedBankDetails[]>([]);
+  const [selectedSavedBankDetailsId, setSelectedSavedBankDetailsId] = useState<number | null>(null);
+  const [bankDetailsType, setBankDetailsType] = useState<BankDetailsType>('simple');
+  const [saveBankDetails, setSaveBankDetails] = useState(false);
+  const [bankDetailsName, setBankDetailsName] = useState('');
+
   // Form state
   const [formData, setFormData] = useState<any>({
     template_id: null,
@@ -191,9 +200,16 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
     rent_amount_total: null,
     deposit_amount: null,
     utilities_included: '',
+    // ✅ Расширенные банковские реквизиты
     bank_name: '',
     bank_account_name: '',
     bank_account_number: '',
+    bank_account_address: '',
+    bank_address: '',
+    bank_currency: '',
+    bank_code: '',
+    bank_swift_code: '',
+    bank_custom_details: '',
     upon_signed_pay: null,
     upon_checkin_pay: null,
     upon_checkout_pay: null,
@@ -265,6 +281,7 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
       fetchTemplates();
       fetchProperties();
       fetchSavedContacts();
+      fetchSavedBankDetails(); // ✅ НОВОЕ: Загружаем сохранённые реквизиты
       
       const uuid = searchParams.get('request_uuid');
       if (uuid) {
@@ -275,6 +292,94 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
       }
     }
   }, [visible, searchParams]);
+
+  // ✅ НОВОЕ: Загрузка сохранённых банковских реквизитов
+  const fetchSavedBankDetails = async () => {
+    try {
+      const response = await financialDocumentsApi.getAllSavedBankDetails();
+      setSavedBankDetailsList(response.data.data);
+    } catch (error: any) {
+      console.error('Error loading saved bank details:', error);
+    }
+  };
+
+  // ✅ НОВОЕ: Применение сохранённых реквизитов
+  const loadSavedBankDetails = (id: number) => {
+    const saved = savedBankDetailsList.find(s => s.id === id);
+    if (!saved) return;
+
+    setBankDetailsType(saved.bank_details_type);
+    
+    if (saved.bank_details_type === 'simple') {
+      setFormData((prev: any) => ({
+        ...prev,
+        bank_name: saved.bank_name || '',
+        bank_account_name: saved.bank_account_name || '',
+        bank_account_number: saved.bank_account_number || '',
+        bank_account_address: '',
+        bank_address: '',
+        bank_currency: '',
+        bank_code: '',
+        bank_swift_code: '',
+        bank_custom_details: ''
+      }));
+    } else if (saved.bank_details_type === 'international') {
+      setFormData((prev: any) => ({
+        ...prev,
+        bank_name: saved.bank_name || '',
+        bank_account_name: saved.bank_account_name || '',
+        bank_account_number: saved.bank_account_number || '',
+        bank_account_address: saved.bank_account_address || '',
+        bank_address: saved.bank_address || '',
+        bank_currency: saved.bank_currency || '',
+        bank_code: saved.bank_code || '',
+        bank_swift_code: saved.bank_swift_code || '',
+        bank_custom_details: ''
+      }));
+    } else if (saved.bank_details_type === 'custom') {
+      setFormData((prev: any) => ({
+        ...prev,
+        bank_name: '',
+        bank_account_name: '',
+        bank_account_number: '',
+        bank_account_address: '',
+        bank_address: '',
+        bank_currency: '',
+        bank_code: '',
+        bank_swift_code: '',
+        bank_custom_details: saved.bank_custom_details || ''
+      }));
+    }
+  };
+
+  // ✅ НОВОЕ: Обработчик выбора сохранённых реквизитов
+  const handleSavedBankDetailsChange = (value: string | null) => {
+    if (value) {
+      const id = Number(value);
+      setSelectedSavedBankDetailsId(id);
+      loadSavedBankDetails(id);
+    } else {
+      setSelectedSavedBankDetailsId(null);
+    }
+  };
+
+  // ✅ НОВОЕ: Обработчик смены типа реквизитов
+  const handleBankDetailsTypeChange = (type: BankDetailsType) => {
+    setBankDetailsType(type);
+    setFormData((prev: any) => ({
+      ...prev,
+      bank_name: '',
+      bank_account_name: '',
+      bank_account_number: '',
+      bank_account_address: '',
+      bank_address: '',
+      bank_currency: '',
+      bank_code: '',
+      bank_swift_code: '',
+      bank_custom_details: ''
+    }));
+    setSelectedSavedBankDetailsId(null);
+  };
 
   const fetchSavedContacts = async () => {
     try {
@@ -506,6 +611,11 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
     setSelectedMainValue(null);
     setRequestData(null);
     setRequestUuid(null);
+    // ✅ НОВОЕ: Сброс банковских реквизитов
+    setSelectedSavedBankDetailsId(null);
+    setBankDetailsType('simple');
+    setSaveBankDetails(false);
+    setBankDetailsName('');
     setFormData({
       template_id: null,
       date_from: null,
@@ -524,6 +634,12 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
       bank_name: '',
       bank_account_name: '',
       bank_account_number: '',
+      bank_account_address: '',
+      bank_address: '',
+      bank_currency: '',
+      bank_code: '',
+      bank_swift_code: '',
+      bank_custom_details: '',
       upon_signed_pay: null,
       upon_checkin_pay: null,
       upon_checkout_pay: null,
@@ -572,18 +688,13 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
       setSelectedTemplate(template);
       setFormData((prev: any) => ({ ...prev, template_id: template.id }));
       if (parties.length === 0) {
-        // ✅ ИСПОЛЬЗУЕМ СТОРОНЫ ИЗ ШАБЛОНА ЕСЛИ ОНИ ЕСТЬ
         const defaultParties = getDefaultPartiesFromTemplate(template);
         setParties(defaultParties);
       }
     }
   };
 
-  /**
-   * ✅ НОВАЯ ФУНКЦИЯ: Получить стороны из шаблона или использовать fallback
-   */
   const getDefaultPartiesFromTemplate = (template: AgreementTemplate): PartyData[] => {
-    // Пробуем получить стороны из template.default_parties
     if (template.default_parties) {
       try {
         const templateParties: TemplateParty[] = typeof template.default_parties === 'string'
@@ -604,13 +715,9 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
       }
     }
     
-    // Fallback на захардкоженные значения по типу
     return getDefaultParties(template.type);
   };
 
-  /**
-   * Fallback функция для получения сторон по типу (для обратной совместимости)
-   */
   const getDefaultParties = (type: string): PartyData[] => {
     const partyTemplates: Record<string, PartyData[]> = {
       rent: [
@@ -638,7 +745,6 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
         { role: 'lessor', name: '', passport_country: '', passport_number: '', is_company: false },
         { role: 'tenant', name: '', passport_country: '', passport_number: '', is_company: false }
       ],
-      // ✅ НОВЫЕ ТИПЫ
       reservation: [
         { role: 'landlord', name: '', passport_country: '', passport_number: '', is_company: false },
         { role: 'tenant', name: '', passport_country: '', passport_number: '', is_company: false }
@@ -750,7 +856,7 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
         if (p.is_company) {
           return !p.company_name || !p.company_tax_id || !p.director_name;
         }
-        return !p.name || !p.passport_country || !p.passport_number;
+        return !p.name; // Только имя обязательно
       });
       
       if (hasEmptyParty) {
@@ -812,9 +918,20 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
         rent_amount_total: formData.rent_amount_total,
         deposit_amount: formData.deposit_amount,
         utilities_included: formData.utilities_included,
+        // ✅ НОВОЕ: Расширенные банковские реквизиты
         bank_name: formData.bank_name,
         bank_account_name: formData.bank_account_name,
         bank_account_number: formData.bank_account_number,
+        bank_details_type: bankDetailsType,
+        bank_account_address: formData.bank_account_address,
+        bank_address: formData.bank_address,
+        bank_currency: formData.bank_currency,
+        bank_code: formData.bank_code,
+        bank_swift_code: formData.bank_swift_code,
+        bank_custom_details: formData.bank_custom_details,
+        save_bank_details: saveBankDetails,
+        bank_details_name: bankDetailsName,
+        // ✅ КОНЕЦ НОВЫХ ПОЛЕЙ
         property_address: manualPropertyInput ? formData.property_address_manual : undefined,
         property_address_override: manualPropertyInput ? formData.property_address_manual : formData.property_address_override,
         property_name: manualPropertyInput ? formData.property_name_manual : undefined,
@@ -919,21 +1036,318 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
   const isDark = colorScheme === 'dark';
 
   const steps = [
-    { 
-      icon: <IconFileText size={18} />
-    },
-    { 
-      icon: <IconBuilding size={18} />
-    },
-    { 
-      icon: <IconUsers size={18} />
-    },
-    { 
-      icon: <IconCurrencyBaht size={18} />
-    }
+    { icon: <IconFileText size={18} /> },
+    { icon: <IconBuilding size={18} /> },
+    { icon: <IconUsers size={18} /> },
+    { icon: <IconCurrencyBaht size={18} /> }
   ];
 
   const progress = calculateProgress();
+
+  // ✅ НОВОЕ: Компонент для отображения банковских реквизитов
+  const renderBankDetailsSection = () => (
+    <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Stack gap="md">
+        <Group gap={6}>
+          <ThemeIcon size="lg" color="blue" variant="light">
+            <IconBuildingBank size={20} />
+          </ThemeIcon>
+          <Box>
+            <Text size="md" fw={700}>{t('createAgreementModal.sections.bankDetails')}</Text>
+            <Text size="xs" c="dimmed">{t('createAgreementModal.hints.bankDetailsDesc', 'Реквизиты для получения платежей')}</Text>
+          </Box>
+        </Group>
+
+        {/* Выбор из сохранённых реквизитов */}
+        {savedBankDetailsList.length > 0 && (
+          <Select
+            label={
+              <Group gap={6}>
+                <IconDeviceFloppy size={14} />
+                <Text size="sm">{t('createAgreementModal.fields.savedBankDetails', 'Сохранённые реквизиты')}</Text>
+              </Group>
+            }
+            placeholder={t('createAgreementModal.placeholders.selectSavedBankDetails', 'Выберите из сохранённых')}
+            data={savedBankDetailsList.map(bd => ({
+              value: String(bd.id),
+              label: `${bd.name} (${bd.bank_details_type})`
+            }))}
+            value={selectedSavedBankDetailsId ? String(selectedSavedBankDetailsId) : null}
+            onChange={handleSavedBankDetailsChange}
+            clearable
+            searchable
+            size={isMobile ? 'md' : undefined}
+            styles={mobileInputStyles}
+            leftSection={<IconCreditCard size={16} />}
+          />
+        )}
+
+        <Divider label={t('createAgreementModal.orEnterManually', 'или введите вручную')} labelPosition="center" />
+
+        {/* Выбор типа реквизитов */}
+        <Radio.Group
+          value={bankDetailsType}
+          onChange={(value) => handleBankDetailsTypeChange(value as BankDetailsType)}
+          label={
+            <Group gap={6}>
+              <IconSettings size={14} />
+              <Text size="sm" fw={500}>{t('createAgreementModal.fields.bankDetailsType', 'Тип реквизитов')}</Text>
+            </Group>
+          }
+        >
+          <Group mt="xs" gap="lg">
+            <Radio 
+              value="simple" 
+              label={t('createAgreementModal.bankDetailsTypes.simple', 'Простые')} 
+            />
+            <Radio 
+              value="international" 
+              label={t('createAgreementModal.bankDetailsTypes.international', 'Международные')} 
+            />
+            <Radio 
+              value="custom" 
+              label={t('createAgreementModal.bankDetailsTypes.custom', 'Произвольные')} 
+            />
+          </Group>
+        </Radio.Group>
+
+        {/* Поля в зависимости от типа */}
+        {bankDetailsType === 'simple' && (
+          <Grid gutter="md">
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconBuildingBank size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.bankName')}</Text>
+                  </Group>
+                }
+                placeholder={t('createAgreementModal.placeholders.bankName')}
+                value={formData.bank_name}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_name: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconBuildingBank size={16} />}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconUser size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.accountHolder')}</Text>
+                  </Group>
+                }
+                placeholder={t('createAgreementModal.placeholders.accountHolder')}
+                value={formData.bank_account_name}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_name: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconUser size={16} />}
+              />
+            </Grid.Col>
+            <Grid.Col span={12}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconNumber size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.accountNumber')}</Text>
+                  </Group>
+                }
+                placeholder={t('createAgreementModal.placeholders.accountNumber')}
+                value={formData.bank_account_number}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_number: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconNumber size={16} />}
+              />
+            </Grid.Col>
+          </Grid>
+        )}
+
+        {bankDetailsType === 'international' && (
+          <Grid gutter="md">
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconBuildingBank size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.bankName')}</Text>
+                  </Group>
+                }
+                placeholder={t('createAgreementModal.placeholders.bankName')}
+                value={formData.bank_name}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_name: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconBuildingBank size={16} />}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconUser size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.accountHolder')}</Text>
+                  </Group>
+                }
+                placeholder={t('createAgreementModal.placeholders.accountHolder')}
+                value={formData.bank_account_name}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_name: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconUser size={16} />}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconNumber size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.accountNumber')}</Text>
+                  </Group>
+                }
+                placeholder={t('createAgreementModal.placeholders.accountNumber')}
+                value={formData.bank_account_number}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_number: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconNumber size={16} />}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconMapPin size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.accountAddress', 'Адрес счёта')}</Text>
+                  </Group>
+                }
+                placeholder={t('createAgreementModal.placeholders.accountAddress', 'Адрес владельца счёта')}
+                value={formData.bank_account_address}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_address: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconMapPin size={16} />}
+              />
+            </Grid.Col>
+            <Grid.Col span={12}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconMapPin size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.bankAddress', 'Адрес банка')}</Text>
+                  </Group>
+                }
+                placeholder={t('createAgreementModal.placeholders.bankAddress', 'Полный адрес банка')}
+                value={formData.bank_address}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_address: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconMapPin size={16} />}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconCurrencyDollar size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.currency', 'Валюта')}</Text>
+                  </Group>
+                }
+                placeholder="THB, USD, EUR..."
+                value={formData.bank_currency}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_currency: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconCurrencyDollar size={16} />}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconNumber size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.bankCode', 'Код банка')}</Text>
+                  </Group>
+                }
+                placeholder="Bank Code / Routing Number"
+                value={formData.bank_code}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_code: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconNumber size={16} />}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <TextInput
+                label={
+                  <Group gap={6}>
+                    <IconWorld size={14} />
+                    <Text size="sm">{t('createAgreementModal.fields.swiftCode', 'SWIFT/BIC')}</Text>
+                  </Group>
+                }
+                placeholder="SWIFT / BIC Code"
+                value={formData.bank_swift_code}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_swift_code: e.target.value }))}
+                size={isMobile ? 'md' : undefined}
+                styles={mobileInputStyles}
+                leftSection={<IconWorld size={16} />}
+              />
+            </Grid.Col>
+          </Grid>
+        )}
+
+        {bankDetailsType === 'custom' && (
+          <Textarea
+            label={
+              <Group gap={6}>
+                <IconFileDescription size={14} />
+                <Text size="sm">{t('createAgreementModal.fields.customBankDetails', 'Произвольные реквизиты')}</Text>
+              </Group>
+            }
+            placeholder={t('createAgreementModal.placeholders.customBankDetails', 'Введите банковские реквизиты в произвольном формате...')}
+            rows={6}
+            value={formData.bank_custom_details}
+            onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_custom_details: e.target.value }))}
+            styles={mobileInputStyles}
+          />
+        )}
+
+        {/* Чекбокс для сохранения реквизитов */}
+        <Divider />
+        
+        <Checkbox
+          checked={saveBankDetails}
+          onChange={(e) => setSaveBankDetails(e.currentTarget.checked)}
+          label={
+            <Group gap={6}>
+              <IconDeviceFloppy size={14} />
+              <Text size="sm">{t('createAgreementModal.saveBankDetails', 'Сохранить эти реквизиты для будущего использования')}</Text>
+            </Group>
+          }
+        />
+
+        {saveBankDetails && (
+          <TextInput
+            label={
+              <Group gap={6}>
+                <IconFileText size={14} />
+                <Text size="sm">{t('createAgreementModal.fields.bankDetailsName', 'Название для сохранения')} *</Text>
+              </Group>
+            }
+            placeholder={t('createAgreementModal.placeholders.bankDetailsName', 'Например: Основной счёт Bangkok Bank')}
+            value={bankDetailsName}
+            onChange={(e) => setBankDetailsName(e.target.value)}
+            size={isMobile ? 'md' : undefined}
+            styles={mobileInputStyles}
+            leftSection={<IconFileText size={16} />}
+            required
+          />
+        )}
+      </Stack>
+    </Card>
+  );
 
   return (
     <Modal
@@ -1194,7 +1608,7 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                 </Stack>
               )}
 
-              {/* Шаг 2: Детали договора */}
+              {/* Шаг 2: Детали договора - БЕЗ ИЗМЕНЕНИЙ */}
               {currentStep === 1 && (
                 <Stack gap="lg">
                   <Alert
@@ -1423,7 +1837,6 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                     </Stack>
                   </Card>
 
-                  {/* Визуализация периода аренды */}
                   {formData.date_from && formData.date_to && (
                     <Paper p="md" withBorder radius="md">
                       <Stack gap="md">
@@ -1544,7 +1957,7 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                 </Stack>
               )}
 
-              {/* Шаг 3: Стороны */}
+              {/* Шаг 3: Стороны - БЕЗ ИЗМЕНЕНИЙ (сохраняем полностью как было) */}
               {currentStep === 2 && (
                 <Stack gap={isMobile ? 'md' : 'lg'}>
                   <Alert
@@ -1723,40 +2136,38 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                                 leftSection={<IconUser size={16} />}
                               />
                             </Grid.Col>
-                            <Grid.Col span={{ base: 12, sm: 4 }}>
-                              <TextInput
-                                label={
-                                  <Group gap={6}>
-                                    <IconWorld size={14} />
-                                    <Text size="sm">{t('createAgreementModal.fields.passportCountry')} *</Text>
-                                  </Group>
-                                }
-                                placeholder={t('createAgreementModal.placeholders.passportCountry')}
-                                value={party.passport_country}
-                                onChange={(e) => updateParty(index, 'passport_country', e.target.value)}
-                                size={isMobile ? 'md' : undefined}
-                                styles={mobileInputStyles}
-                                required
-                                leftSection={<IconWorld size={16} />}
-                              />
-                            </Grid.Col>
-                            <Grid.Col span={{ base: 12, sm: 4 }}>
-                              <TextInput
-                                label={
-                                  <Group gap={6}>
-                                    <IconId size={14} />
-                                    <Text size="sm">{t('createAgreementModal.fields.passportNumber')} *</Text>
-                                  </Group>
-                                }
-                                placeholder={t('createAgreementModal.placeholders.passportNumber')}
-                                value={party.passport_number}
-                                onChange={(e) => updateParty(index, 'passport_number', e.target.value)}
-                                size={isMobile ? 'md' : undefined}
-                                styles={mobileInputStyles}
-                                required
-                                leftSection={<IconId size={16} />}
-                              />
-                            </Grid.Col>
+                              <Grid.Col span={{ base: 12, sm: 4 }}>
+                                <TextInput
+                                  label={
+                                    <Group gap={6}>
+                                      <IconWorld size={14} />
+                                      <Text size="sm">{t('createAgreementModal.fields.passportCountry')}</Text>
+                                    </Group>
+                                  }
+                                  placeholder={t('createAgreementModal.placeholders.passportCountry')}
+                                  value={party.passport_country}
+                                  onChange={(e) => updateParty(index, 'passport_country', e.target.value)}
+                                  size={isMobile ? 'md' : undefined}
+                                  styles={mobileInputStyles}
+                                  leftSection={<IconWorld size={16} />}
+                                />
+                              </Grid.Col>
+                                <Grid.Col span={{ base: 12, sm: 4 }}>
+                                  <TextInput
+                                    label={
+                                      <Group gap={6}>
+                                        <IconId size={14} />
+                                        <Text size="sm">{t('createAgreementModal.fields.passportNumber')}</Text>
+                                      </Group>
+                                    }
+                                    placeholder={t('createAgreementModal.placeholders.passportNumber')}
+                                    value={party.passport_number}
+                                    onChange={(e) => updateParty(index, 'passport_number', e.target.value)}
+                                    size={isMobile ? 'md' : undefined}
+                                    styles={mobileInputStyles}
+                                    leftSection={<IconId size={16} />}
+                                  />
+                                </Grid.Col>
                             
                             <Grid.Col span={12}>
                               <Divider 
@@ -2048,7 +2459,7 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                 </Stack>
               )}
 
-              {/* Шаг 4: Финансовая информация */}
+              {/* Шаг 4: Финансовая информация - ОБНОВЛЁННЫЙ С РАСШИРЕННЫМИ БАНКОВСКИМИ РЕКВИЗИТАМИ */}
               {currentStep === 3 && (
                 <Stack gap="lg">
                   <Alert
@@ -2135,7 +2546,6 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                         </Grid.Col>
                       </Grid>
 
-                      {/* Breakdown визуализация */}
                       {(formData.rent_amount_monthly || formData.deposit_amount) && (
                         <Paper p="md" withBorder radius="md">
                           <Stack gap="xs">
@@ -2178,7 +2588,7 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                     </Stack>
                   </Card>
 
-                  {/* ✅ НОВОЕ: Настройки документа с QR-кодом */}
+                  {/* Настройки документа с QR-кодом */}
                   <Card shadow="sm" padding="lg" radius="md" withBorder>
                     <Stack gap="md">
                       <Group gap={6}>
@@ -2204,249 +2614,87 @@ const CreateAgreementModal = ({ visible, onCancel, onSuccess }: CreateAgreementM
                     </Stack>
                   </Card>
 
-                  {isMobile ? (
-                    <Accordion>
-                      <Accordion.Item value="payment-terms">
-                        <Accordion.Control
-                          icon={
-                            <ThemeIcon variant="light" color="violet" size="lg">
-                              <IconCurrencyBaht size={18} />
-                            </ThemeIcon>
-                          }
-                        >
-                          <Text fw={600}>{t('createAgreementModal.paymentTerms.title')}</Text>
-                        </Accordion.Control>
-                        <Accordion.Panel>
-                          <Stack gap="md">
-                            <Alert color="blue" icon={<IconInfoCircle size={16} />} variant="light">
-                              <Text size="xs">{t('createAgreementModal.paymentTerms.description')}</Text>
-                            </Alert>
-                            
-                            <NumberInput
-                              label={t('createAgreementModal.paymentTerms.uponSigned')}
-                              description={t('createAgreementModal.paymentTerms.uponSignedTooltip')}
-                              placeholder="200000"
-                              value={formData.upon_signed_pay}
-                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_signed_pay: value }))}
-                              thousandSeparator=","
-                              suffix=" THB"
-                              min={0}
-                              styles={mobileInputStyles}
-                              leftSection={<IconFileText size={16} />}
-                            />
-                            
-                            <NumberInput
-                              label={t('createAgreementModal.paymentTerms.uponCheckin')}
-                              description={t('createAgreementModal.paymentTerms.uponCheckinTooltip')}
-                              placeholder="200000"
-                              value={formData.upon_checkin_pay}
-                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkin_pay: value }))}
-                              thousandSeparator=","
-                              suffix=" THB"
-                              min={0}
-                              styles={mobileInputStyles}
-                              leftSection={<IconCalendar size={16} />}
-                            />
-                            
-                            <NumberInput
-                              label={t('createAgreementModal.paymentTerms.uponCheckout')}
-                              description={t('createAgreementModal.paymentTerms.uponCheckoutTooltip')}
-                              placeholder="200000"
-                              value={formData.upon_checkout_pay}
-                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkout_pay: value }))}
-                              thousandSeparator=","
-                              suffix=" THB"
-                              min={0}
-                              styles={mobileInputStyles}
-                              leftSection={<IconCalendar size={16} />}
-                            />
-                          </Stack>
-                        </Accordion.Panel>
-                      </Accordion.Item>
-                    </Accordion>
-                  ) : (
-                    <Card shadow="sm" padding="lg" radius="md" withBorder>
-                      <Stack gap="md">
-                        <Group gap={6}>
-                          <ThemeIcon size="lg" color="violet" variant="light">
-                            <IconCurrencyBaht size={20} />
-                          </ThemeIcon>
-                          <Text size="md" fw={700}>{t('createAgreementModal.paymentTerms.title')}</Text>
-                        </Group>
-                        
-                        <Alert color="blue" icon={<IconInfoCircle size={16} />} variant="light">
-                          <Text size="sm">{t('createAgreementModal.paymentTerms.description')}</Text>
-                        </Alert>
-                        
-                        <Grid gutter="md">
-                          <Grid.Col span={{ base: 12, sm: 4 }}>
-                            <NumberInput
-                              label={
-                                <Group gap={6}>
-                                  <IconFileText size={14} />
-                                  <Text size="sm">{t('createAgreementModal.paymentTerms.uponSigned')}</Text>
-                                </Group>
-                              }
-                              description={t('createAgreementModal.paymentTerms.uponSignedTooltip')}
-                              placeholder="200000"
-                              value={formData.upon_signed_pay}
-                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_signed_pay: value }))}
-                              thousandSeparator=","
-                              suffix=" THB"
-                              min={0}
-                              leftSection={<IconFileText size={16} />}
-                            />
-                          </Grid.Col>
-                          <Grid.Col span={{ base: 12, sm: 4 }}>
-                            <NumberInput
-                              label={
-                                <Group gap={6}>
-                                  <IconCalendar size={14} />
-                                  <Text size="sm">{t('createAgreementModal.paymentTerms.uponCheckin')}</Text>
-                                </Group>
-                              }
-                              description={t('createAgreementModal.paymentTerms.uponCheckinTooltip')}
-                              placeholder="200000"
-                              value={formData.upon_checkin_pay}
-                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkin_pay: value }))}
-                              thousandSeparator=","
-                              suffix=" THB"
-                              min={0}
-                              leftSection={<IconCalendar size={16} />}
-                            />
-                          </Grid.Col>
-                          <Grid.Col span={{ base: 12, sm: 4 }}>
-                            <NumberInput
-                              label={
-                                <Group gap={6}>
-                                  <IconCalendar size={14} />
-                                  <Text size="sm">{t('createAgreementModal.paymentTerms.uponCheckout')}</Text>
-                                </Group>
-                              }
-                              description={t('createAgreementModal.paymentTerms.uponCheckoutTooltip')}
-                              placeholder="200000"
-                              value={formData.upon_checkout_pay}
-                              onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkout_pay: value }))}
-                              thousandSeparator=","
-                              suffix=" THB"
-                              min={0}
-                              leftSection={<IconCalendar size={16} />}
-                            />
-                          </Grid.Col>
-                        </Grid>
-                      </Stack>
-                    </Card>
-                  )}
+                  {/* Payment Terms */}
+                  <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Stack gap="md">
+                      <Group gap={6}>
+                        <ThemeIcon size="lg" color="violet" variant="light">
+                          <IconCurrencyBaht size={20} />
+                        </ThemeIcon>
+                        <Text size="md" fw={700}>{t('createAgreementModal.paymentTerms.title')}</Text>
+                      </Group>
+                      
+                      <Alert color="blue" icon={<IconInfoCircle size={16} />} variant="light">
+                        <Text size="sm">{t('createAgreementModal.paymentTerms.description')}</Text>
+                      </Alert>
+                      
+                      <Grid gutter="md">
+                        <Grid.Col span={{ base: 12, sm: 4 }}>
+                          <NumberInput
+                            label={
+                              <Group gap={6}>
+                                <IconFileText size={14} />
+                                <Text size="sm">{t('createAgreementModal.paymentTerms.uponSigned')}</Text>
+                              </Group>
+                            }
+                            description={t('createAgreementModal.paymentTerms.uponSignedTooltip')}
+                            placeholder="200000"
+                            value={formData.upon_signed_pay}
+                            onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_signed_pay: value }))}
+                            thousandSeparator=","
+                            suffix=" THB"
+                            min={0}
+                            size={isMobile ? 'md' : undefined}
+                            styles={mobileInputStyles}
+                            leftSection={<IconFileText size={16} />}
+                          />
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, sm: 4 }}>
+                          <NumberInput
+                            label={
+                              <Group gap={6}>
+                                <IconCalendar size={14} />
+                                <Text size="sm">{t('createAgreementModal.paymentTerms.uponCheckin')}</Text>
+                              </Group>
+                            }
+                            description={t('createAgreementModal.paymentTerms.uponCheckinTooltip')}
+                            placeholder="200000"
+                            value={formData.upon_checkin_pay}
+                            onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkin_pay: value }))}
+                            thousandSeparator=","
+                            suffix=" THB"
+                            min={0}
+                            size={isMobile ? 'md' : undefined}
+                            styles={mobileInputStyles}
+                            leftSection={<IconCalendar size={16} />}
+                          />
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, sm: 4 }}>
+                          <NumberInput
+                            label={
+                              <Group gap={6}>
+                                <IconCalendar size={14} />
+                                <Text size="sm">{t('createAgreementModal.paymentTerms.uponCheckout')}</Text>
+                              </Group>
+                            }
+                            description={t('createAgreementModal.paymentTerms.uponCheckoutTooltip')}
+                            placeholder="200000"
+                            value={formData.upon_checkout_pay}
+                            onChange={(value) => setFormData((prev: any) => ({ ...prev, upon_checkout_pay: value }))}
+                            thousandSeparator=","
+                            suffix=" THB"
+                            min={0}
+                            size={isMobile ? 'md' : undefined}
+                            styles={mobileInputStyles}
+                            leftSection={<IconCalendar size={16} />}
+                          />
+                        </Grid.Col>
+                      </Grid>
+                    </Stack>
+                  </Card>
 
-                  {isMobile ? (
-                    <Accordion>
-                      <Accordion.Item value="bank-details">
-                        <Accordion.Control
-                          icon={
-                            <ThemeIcon variant="light" color="blue" size="lg">
-                              <IconBuildingBank size={18} />
-                            </ThemeIcon>
-                          }
-                        >
-                          <Text fw={600}>{t('createAgreementModal.sections.bankDetails')}</Text>
-                        </Accordion.Control>
-                        <Accordion.Panel>
-                          <Stack gap="md">
-                            <TextInput
-                              label={
-                                <Group gap={6}>
-                                  <IconBuildingBank size={14} />
-                                  <Text size="sm">{t('createAgreementModal.fields.bankName')}</Text>
-                                </Group>
-                              }
-                              placeholder={t('createAgreementModal.placeholders.bankName')}
-                              value={formData.bank_name}
-                              onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_name: e.target.value }))}
-                              styles={mobileInputStyles}
-                              leftSection={<IconBuildingBank size={16} />}
-                            />
-                            <TextInput
-                              label={
-                                <Group gap={6}>
-                                  <IconUser size={14} />
-                                  <Text size="sm">{t('createAgreementModal.fields.accountHolder')}</Text>
-                                </Group>
-                              }
-                              placeholder={t('createAgreementModal.placeholders.accountHolder')}
-                              value={formData.bank_account_name}
-                              onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_name: e.target.value }))}
-                              styles={mobileInputStyles}
-                              leftSection={<IconUser size={16} />}
-                            />
-                            <TextInput
-                              label={
-                                <Group gap={6}>
-                                  <IconNumber size={14} />
-                                  <Text size="sm">{t('createAgreementModal.fields.accountNumber')}</Text>
-                                </Group>
-                              }
-                              placeholder={t('createAgreementModal.placeholders.accountNumber')}
-                              value={formData.bank_account_number}
-                              onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_number: e.target.value }))}
-                              styles={mobileInputStyles}
-                              leftSection={<IconNumber size={16} />}
-                            />
-                          </Stack>
-                        </Accordion.Panel>
-                      </Accordion.Item>
-                    </Accordion>
-                  ) : (
-                    <Card shadow="sm" padding="lg" radius="md" withBorder>
-                      <Stack gap="md">
-                        <Group gap={6}>
-                          <ThemeIcon size="lg" color="blue" variant="light">
-                            <IconBuildingBank size={20} />
-                          </ThemeIcon>
-                          <Text size="md" fw={700}>{t('createAgreementModal.sections.bankDetails')}</Text>
-                        </Group>
-                        
-                        <TextInput
-                          label={
-                            <Group gap={6}>
-                              <IconBuildingBank size={14} />
-                              <Text size="sm">{t('createAgreementModal.fields.bankName')}</Text>
-                            </Group>
-                          }
-                          placeholder={t('createAgreementModal.placeholders.bankName')}
-                          value={formData.bank_name}
-                          onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_name: e.target.value }))}
-                          leftSection={<IconBuildingBank size={16} />}
-                          description={t('createAgreementModal.hints.bankName')}
-                        />
-                        <TextInput
-                          label={
-                            <Group gap={6}>
-                              <IconUser size={14} />
-                              <Text size="sm">{t('createAgreementModal.fields.accountHolder')}</Text>
-                            </Group>
-                          }
-                          placeholder={t('createAgreementModal.placeholders.accountHolder')}
-                          value={formData.bank_account_name}
-                          onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_name: e.target.value }))}
-                          leftSection={<IconUser size={16} />}
-                          description={t('createAgreementModal.hints.accountHolder')}
-                        />
-                        <TextInput
-                          label={
-                            <Group gap={6}>
-                              <IconNumber size={14} />
-                              <Text size="sm">{t('createAgreementModal.fields.accountNumber')}</Text>
-                            </Group>
-                          }
-                          placeholder={t('createAgreementModal.placeholders.accountNumber')}
-                          value={formData.bank_account_number}
-                          onChange={(e) => setFormData((prev: any) => ({ ...prev, bank_account_number: e.target.value }))}
-                          leftSection={<IconNumber size={16} />}
-                          description={t('createAgreementModal.hints.accountNumber')}
-                        />
-                      </Stack>
-                    </Card>
-                  )}
+                  {/* ✅ НОВОЕ: Расширенные банковские реквизиты */}
+                  {renderBankDetailsSection()}
                 </Stack>
               )}
             </div>

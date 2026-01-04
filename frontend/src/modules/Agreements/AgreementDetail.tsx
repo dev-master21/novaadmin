@@ -11,7 +11,6 @@ import {
   Tabs,
   Table,
   Drawer,
-  Switch,
   Menu,
   Grid,
   ActionIcon,
@@ -39,9 +38,6 @@ import {
   IconDeviceFloppy,
   IconX,
   IconFileText,
-  IconCode,
-  IconDeviceMobile,
-  IconDeviceDesktop,
   IconCheck,
   IconRefresh,
   IconCopy,
@@ -87,23 +83,6 @@ const AgreementDetail = () => {
   const [aiEditorVisible, setAiEditorVisible] = useState(false);
   const [signatureDetailsModal, setSignatureDetailsModal] = useState(false);
   const [selectedSignature, setSelectedSignature] = useState<AgreementSignature | null>(null);
-  const [viewMode, setViewMode] = useState<'formatted' | 'simple'>('formatted');
-  const [deviceType, setDeviceType] = useState<'mobile' | 'desktop'>('desktop');
-
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth <= 768;
-      setDeviceType(mobile ? 'mobile' : 'desktop');
-      if (mobile && !isEditing) {
-        setViewMode('simple');
-      }
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [isEditing]);
 
   useEffect(() => {
     if (id) {
@@ -248,13 +227,6 @@ const AgreementDetail = () => {
         color: 'red',
         icon: <IconX size={18} />
       });
-    }
-  };
-
-  const handleContentChange = (content: string, structure?: string) => {
-    setEditedContent(content);
-    if (structure) {
-      setEditedStructure(structure);
     }
   };
 
@@ -440,17 +412,6 @@ const AgreementDetail = () => {
     });
   };
 
-  const toggleViewMode = () => {
-    setViewMode(prev => prev === 'formatted' ? 'simple' : 'formatted');
-    notifications.show({
-      message: viewMode === 'formatted' 
-        ? t('agreementDetail.viewModes.simple') 
-        : t('agreementDetail.viewModes.formatted'),
-      color: 'blue',
-      icon: <IconInfoCircle size={18} />
-    });
-  };
-
   const handleSignatureDetailsClick = (record: AgreementSignature) => {
     if (isMobile) {
       setSelectedSignature(record);
@@ -458,7 +419,8 @@ const AgreementDetail = () => {
     }
   };
 
-  const modules = {
+  // Модули для режима редактирования
+  const editorModules = {
     toolbar: [
       [{ header: [1, 2, 3, false] }],
       ['bold', 'italic', 'underline', 'strike'],
@@ -467,6 +429,11 @@ const AgreementDetail = () => {
       ['link'],
       ['clean']
     ]
+  };
+
+  // Модули для режима просмотра (без тулбара)
+  const viewModules = {
+    toolbar: false
   };
 
   if (loading) {
@@ -1054,31 +1021,7 @@ const AgreementDetail = () => {
             )}
 
             <Card shadow="sm" padding="md" radius="md" withBorder>
-              <Group justify="space-between" mb="md">
-                <Group gap="xs">
-                  {deviceType === 'mobile' ? <IconDeviceMobile size={18} /> : <IconDeviceDesktop size={18} />}
-                  <Text size="xs" c="dimmed">
-                    {deviceType === 'mobile' 
-                      ? t('agreementDetail.deviceTypes.mobile') 
-                      : t('agreementDetail.deviceTypes.desktop')}
-                  </Text>
-                </Group>
-
-                <Group gap="xs">
-                  <Text size="xs" c="dimmed">
-                    {viewMode === 'formatted' 
-                      ? t('agreementDetail.viewModes.formatted') 
-                      : t('agreementDetail.viewModes.simple')}
-                  </Text>
-                  <Switch
-                    checked={viewMode === 'formatted'}
-                    onChange={toggleViewMode}
-                    onLabel={<IconFileText size={12} />}
-                    offLabel={<IconCode size={12} />}
-                  />
-                </Group>
-              </Group>
-
+              {/* Скрытый DocumentEditor только для печати */}
               <div style={{ display: 'none' }}>
                 <div ref={printRef}>
                   <DocumentEditor
@@ -1089,51 +1032,28 @@ const AgreementDetail = () => {
                 </div>
               </div>
 
-              {isEditing ? (
-                viewMode === 'formatted' ? (
-                  <DocumentEditor
-                    agreement={agreement}
-                    isEditing={true}
-                    onContentChange={handleContentChange}
-                    logoUrl="/nova-logo.svg"
+              {/* ReactQuill с уникальными ключами для корректного переключения режимов */}
+              <Box style={{ minHeight: 500 }}>
+                {isEditing ? (
+                  <ReactQuill
+                    key="quill-editor-mode"
+                    value={editedContent}
+                    onChange={handleSimpleContentChange}
+                    modules={editorModules}
+                    theme="snow"
+                    style={{ height: '600px', marginBottom: '50px' }}
                   />
                 ) : (
-                  <Box style={{ minHeight: 600 }}>
-                    <ReactQuill
-                      value={editedContent}
-                      onChange={handleSimpleContentChange}
-                      modules={modules}
-                      theme="snow"
-                      style={{ height: '600px', marginBottom: '50px' }}
-                    />
-                  </Box>
-                )
-              ) : (
-                viewMode === 'formatted' ? (
-                  <Box style={deviceType === 'mobile' ? { 
-                    transform: 'scale(0.7)', 
-                    transformOrigin: 'top left',
-                    width: '142.85%',
-                    marginBottom: '-100px'
-                  } : {}}>
-                    <DocumentEditor
-                      agreement={agreement}
-                      isEditing={false}
-                      logoUrl="/nova-logo.svg"
-                    />
-                  </Box>
-                ) : (
-                  <Box>
-                    <ReactQuill
-                      value={agreement.content}
-                      readOnly={true}
-                      theme="snow"
-                      modules={{ toolbar: false }}
-                      style={{ minHeight: 400 }}
-                    />
-                  </Box>
-                )
-              )}
+                  <ReactQuill
+                    key="quill-view-mode"
+                    value={agreement.content || ''}
+                    readOnly={true}
+                    theme="snow"
+                    modules={viewModules}
+                    style={{ minHeight: 400 }}
+                  />
+                )}
+              </Box>
             </Card>
           </Stack>
         </Tabs.Panel>

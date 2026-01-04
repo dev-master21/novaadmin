@@ -58,7 +58,7 @@ import {
   SavedBankDetails
 } from '@/api/financialDocuments.api';
 import { agreementsApi, Agreement } from '@/api/agreements.api';
-import SelectInvoiceItemsModal from './SelectInvoiceItemsModal'; // ✅ ДОБАВЛЕНО
+import SelectInvoiceItemsModal from './SelectInvoiceItemsModal';
 import dayjs from 'dayjs';
 
 interface CreateInvoiceModalProps {
@@ -141,20 +141,20 @@ const CreateInvoiceModal = ({
 
   const [taxAmount, setTaxAmount] = useState<number>(0);
 
-  // ✅ QR Code toggle
+  // QR Code toggle
   const [showQrCode, setShowQrCode] = useState<boolean>(true);
 
   // Duplicate warning
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [existingInvoiceId, setExistingInvoiceId] = useState<number | null>(null);
 
-  // 🆕 SUCCESS MODAL
+  // SUCCESS MODAL
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdInvoiceId, setCreatedInvoiceId] = useState<number | null>(null);
-  const [createdInvoiceData, setCreatedInvoiceData] = useState<any>(null); // ✅ ДОБАВЛЕНО
+  const [createdInvoiceData, setCreatedInvoiceData] = useState<any>(null);
 
-  // 🆕 PDF SELECTION MODAL
-  const [pdfSelectionModalVisible, setPdfSelectionModalVisible] = useState(false); // ✅ ДОБАВЛЕНО
+  // PDF SELECTION MODAL
+  const [pdfSelectionModalVisible, setPdfSelectionModalVisible] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -241,7 +241,7 @@ const CreateInvoiceModal = ({
         }
       }
 
-      // ✅ QR Code setting
+      // QR Code setting
       setShowQrCode(invoice.show_qr_code === 1);
 
       notifications.show({
@@ -299,7 +299,7 @@ const CreateInvoiceModal = ({
       setBankAccountName(saved.bank_account_name || '');
       setBankAccountNumber(saved.bank_account_number || '');
       setBankAccountAddress(saved.bank_account_address || '');
-      setBankAddress(saved.bank_address || ''); // ✅ ДОБАВИТЬ ЭТУ СТРОКУ
+      setBankAddress(saved.bank_address || '');
       setBankCurrency(saved.bank_currency || '');
       setBankCode(saved.bank_code || '');
       setBankSwiftCode(saved.bank_swift_code || '');
@@ -324,7 +324,7 @@ const CreateInvoiceModal = ({
     setBankAccountName('');
     setBankAccountNumber('');
     setBankAccountAddress('');
-    setBankAddress(''); // ✅ ДОБАВИТЬ ЭТУ СТРОКУ
+    setBankAddress('');
     setBankCurrency('');
     setBankCode('');
     setBankSwiftCode('');
@@ -616,7 +616,7 @@ const resetForm = () => {
         bank_account_number: bankDetailsType !== 'custom' ? bankAccountNumber : undefined,
         
         bank_account_address: bankDetailsType === 'international' ? bankAccountAddress : undefined,
-        bank_address: bankDetailsType === 'international' ? bankAddress : undefined, // ✅ ДОБАВИТЬ ЭТУ СТРОКУ
+        bank_address: bankDetailsType === 'international' ? bankAddress : undefined,
         bank_currency: bankDetailsType === 'international' ? bankCurrency : undefined,
         bank_code: bankDetailsType === 'international' ? bankCode : undefined,
         bank_swift_code: bankDetailsType === 'international' ? bankSwiftCode : undefined,
@@ -634,6 +634,18 @@ const resetForm = () => {
 
       if (mode === 'edit' && invoiceId) {
         await financialDocumentsApi.updateInvoice(invoiceId, invoiceData);
+        
+        // ✅ ОБНОВЛЯЕМ СПИСОК СОХРАНЁННЫХ РЕКВИЗИТОВ ПОСЛЕ РЕДАКТИРОВАНИЯ
+        if (saveBankDetails && bankDetailsName) {
+          await fetchSavedBankDetails();
+          notifications.show({
+            title: t('common.success'),
+            message: t('financialDocuments.savedBankDetails.savedSuccess'),
+            color: 'teal',
+            icon: <IconDeviceFloppy size={18} />
+          });
+        }
+        
         notifications.show({
           title: t('common.success'),
           message: t('createInvoiceModal.messages.updated'),
@@ -646,12 +658,23 @@ const resetForm = () => {
         const response = await financialDocumentsApi.createInvoice(invoiceData);
         const newInvoiceId = response.data.data.id;
         
-        // 🆕 ЗАГРУЖАЕМ ПОЛНЫЙ ИНВОЙС С ITEMS
+        // ✅ ОБНОВЛЯЕМ СПИСОК СОХРАНЁННЫХ РЕКВИЗИТОВ ПОСЛЕ СОЗДАНИЯ
+        if (saveBankDetails && bankDetailsName) {
+          await fetchSavedBankDetails();
+          notifications.show({
+            title: t('common.success'),
+            message: t('financialDocuments.savedBankDetails.savedSuccess'),
+            color: 'teal',
+            icon: <IconDeviceFloppy size={18} />
+          });
+        }
+        
+        // ЗАГРУЖАЕМ ПОЛНЫЙ ИНВОЙС С ITEMS
         const fullInvoiceResponse = await financialDocumentsApi.getInvoiceById(newInvoiceId);
         const fullInvoice = fullInvoiceResponse.data.data;
         
         setCreatedInvoiceId(newInvoiceId);
-        setCreatedInvoiceData(fullInvoice); // ✅ ДОБАВЛЕНО
+        setCreatedInvoiceData(fullInvoice);
         setShowSuccessModal(true);
       }
     } catch (error: any) {
@@ -667,7 +690,7 @@ const resetForm = () => {
     }
   };
 
-  // 🆕 СКАЧИВАНИЕ PDF С ВЫБРАННЫМИ ПОЗИЦИЯМИ ИЗ SUCCESS MODAL
+  // СКАЧИВАНИЕ PDF С ВЫБРАННЫМИ ПОЗИЦИЯМИ ИЗ SUCCESS MODAL
   const handleDownloadPDFFromSuccess = async (selectedIds: number[]) => {
     try {
       setPdfSelectionModalVisible(false);
@@ -718,7 +741,7 @@ const resetForm = () => {
     }
   };
 
-  // 🆕 ПОЛУЧАЕМ СПИСОК НЕОПЛАЧЕННЫХ ПОЗИЦИЙ ПО УМОЛЧАНИЮ
+  // ПОЛУЧАЕМ СПИСОК НЕОПЛАЧЕННЫХ ПОЗИЦИЙ ПО УМОЛЧАНИЮ
   const getDefaultSelectedItemsForPDF = (): number[] => {
     if (!createdInvoiceData?.items) return [];
     return createdInvoiceData.items
@@ -734,7 +757,7 @@ const resetForm = () => {
 
   return (
     <>
-      {/* 🆕 МОДАЛЬНОЕ ОКНО ПРЕДУПРЕЖДЕНИЯ О ДУБЛИКАТЕ С zIndex */}
+      {/* МОДАЛЬНОЕ ОКНО ПРЕДУПРЕЖДЕНИЯ О ДУБЛИКАТЕ С zIndex */}
       <Modal
         opened={showDuplicateWarning}
         onClose={() => setShowDuplicateWarning(false)}
@@ -781,7 +804,7 @@ const resetForm = () => {
         </Stack>
       </Modal>
 
-      {/* 🆕 SUCCESS MODAL */}
+      {/* SUCCESS MODAL */}
       <Modal
         opened={showSuccessModal}
         onClose={() => {
@@ -813,7 +836,7 @@ const resetForm = () => {
               variant="light"
               color="blue"
               leftSection={<IconDownload size={18} />}
-              onClick={() => setPdfSelectionModalVisible(true)} // ✅ ИЗМЕНЕНО: открывает модальное окно выбора позиций
+              onClick={() => setPdfSelectionModalVisible(true)}
             >
               {t('createInvoiceModal.success.downloadPDF')}
             </Button>
@@ -962,7 +985,7 @@ const resetForm = () => {
             </Stack>
           )}
 
-          {/* Шаг 2: Стороны - БЕЗ ИЗМЕНЕНИЙ */}
+          {/* Шаг 2: Стороны */}
           {currentStep === 1 && (
             <Stack gap="md">
               {/* От кого (From) */}
@@ -1245,7 +1268,7 @@ const resetForm = () => {
             </Stack>
           )}
 
-          {/* Шаг 3: Позиции инвойса БЕЗ ЧЕКБОКСОВ */}
+          {/* Шаг 3: Позиции инвойса */}
           {currentStep === 2 && (
             <Stack gap="md">
               <Alert
@@ -1629,7 +1652,7 @@ const resetForm = () => {
                 </Stack>
               </Card>
 
-              {/* ✅ НАСТРОЙКИ ДОКУМЕНТА */}
+              {/* НАСТРОЙКИ ДОКУМЕНТА */}
               <Card shadow="sm" padding="lg" radius="md" withBorder>
                 <Stack gap="md">
                   <Group gap="sm">
@@ -1741,7 +1764,7 @@ const resetForm = () => {
         </Stack>
       </Modal>
 
-      {/* 🆕 МОДАЛЬНОЕ ОКНО ВЫБОРА ПОЗИЦИЙ ДЛЯ PDF */}
+      {/* МОДАЛЬНОЕ ОКНО ВЫБОРА ПОЗИЦИЙ ДЛЯ PDF */}
       {createdInvoiceData && (
         <SelectInvoiceItemsModal
           opened={pdfSelectionModalVisible}

@@ -14,7 +14,7 @@ class FinancialDocumentsController {
   
   // ==================== SAVED BANK DETAILS ====================
   
-  /**
+/**
    * Получить все сохраненные банковские реквизиты
    * GET /api/financial-documents/saved-bank-details
    */
@@ -24,9 +24,9 @@ class FinancialDocumentsController {
       const whereConditions: string[] = [];
       const queryParams: any[] = [];
 
-      // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ
+      // ✅ ФИЛЬТРАЦИЯ ПО ПАРТНЁРУ (с алиасом таблицы!)
       if (userPartnerId !== null && userPartnerId !== undefined) {
-        whereConditions.push('partner_id = ?');
+        whereConditions.push('sbd.partner_id = ?');
         queryParams.push(userPartnerId);
       }
 
@@ -58,7 +58,6 @@ class FinancialDocumentsController {
       });
     }
   }
-
   /**
    * Получить сохраненные реквизиты по ID
    * GET /api/financial-documents/saved-bank-details/:id

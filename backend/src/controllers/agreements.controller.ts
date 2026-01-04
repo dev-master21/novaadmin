@@ -320,13 +320,23 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       bank_name,
       bank_account_name,
       bank_account_number,
+      // ✅ НОВЫЕ ПОЛЯ ДЛЯ РАСШИРЕННЫХ БАНКОВСКИХ РЕКВИЗИТОВ
+      bank_details_type,
+      bank_account_address,
+      bank_address,
+      bank_currency,
+      bank_code,
+      bank_swift_code,
+      bank_custom_details,
+      save_bank_details,
+      bank_details_name,
+      // ✅ КОНЕЦ НОВЫХ ПОЛЕЙ
       property_address_override,
       property_name_manual,
       property_number_manual,
       upon_signed_pay,
       upon_checkin_pay,
       upon_checkout_pay,
-      // ✅ НОВОЕ ПОЛЕ
       show_qr_code
     } = req.body;
 
@@ -334,16 +344,20 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     console.log('🎯 Extracted template_id:', template_id);
     console.log('🎯 Extracted request_uuid:', request_uuid);
     console.log('🎯 Extracted show_qr_code:', show_qr_code);
+    console.log('🎯 Extracted bank_details_type:', bank_details_type);
+    console.log('🎯 Extracted save_bank_details:', save_bank_details);
     
     const userId = req.admin!.id;
 
-    // ✅ ПОЛУЧАЕМ ДОМЕН ПАРТНЁРА ПОЛЬЗОВАТЕЛЯ
+    // ✅ ПОЛУЧАЕМ ДОМЕН ПАРТНЁРА И partner_id ПОЛЬЗОВАТЕЛЯ
     const userPartner = await db.queryOne<any>(`
-      SELECT p.domain, p.partner_name
+      SELECT au.partner_id, p.domain, p.partner_name
       FROM admin_users au
       LEFT JOIN partners p ON au.partner_id = p.id AND p.is_active = 1
       WHERE au.id = ?
     `, [userId]);
+
+    const userPartnerId = userPartner?.partner_id || null;
 
     // Определяем базовый домен для ссылок
     const baseDomain = userPartner?.domain || 'novaestate.company';
@@ -408,7 +422,7 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     const public_link = `https://agreement.${baseDomain}/agreement/${public_link_uuid}`;
     const verify_link = uuidv4();
 
-// Подготавливаем переменные для замены в шаблоне
+    // Подготавливаем переменные для замены в шаблоне
     const variables: any = {
       agreement_number,
       city: city || 'Phuket',
@@ -428,7 +442,14 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       utilities_included: utilities_included || '',
       bank_name: bank_name || '',
       bank_account_name: bank_account_name || '',
-      bank_account_number: bank_account_number || ''
+      bank_account_number: bank_account_number || '',
+      // ✅ НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ РАСШИРЕННЫХ БАНКОВСКИХ РЕКВИЗИТОВ
+      bank_account_address: bank_account_address || '',
+      bank_address: bank_address || '',
+      bank_currency: bank_currency || '',
+      bank_code: bank_code || '',
+      bank_swift_code: bank_swift_code || '',
+      bank_custom_details: bank_custom_details || ''
     };
 
     // ✅ ДОБАВЛЯЕМ КОМПОНЕНТЫ ДАТ
@@ -532,16 +553,18 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       }
     }
 
-    // ✅ Создаем договор с новым полем show_qr_code
+    // ✅ Создаем договор с расширенными банковскими реквизитами
     const result = await connection.query(`
       INSERT INTO agreements (
         agreement_number, template_id, property_id, request_uuid, type, content, structure,
         description, date_from, date_to, status, public_link, verify_link, created_by,
         city, rent_amount_monthly, rent_amount_total, deposit_amount,
         utilities_included, bank_name, bank_account_name, bank_account_number,
+        bank_details_type, bank_account_address, bank_address, bank_currency,
+        bank_code, bank_swift_code, bank_custom_details,
         property_address_override, property_name_override, property_number_override,
         upon_signed_pay, upon_checkin_pay, upon_checkout_pay, show_qr_code
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       agreement_number,
       template_id,
@@ -565,6 +588,13 @@ async create(req: AuthRequest, res: Response): Promise<void> {
       bank_name || null,
       bank_account_name || null,
       bank_account_number || null,
+      bank_details_type || 'simple',
+      bank_account_address || null,
+      bank_address || null,
+      bank_currency || null,
+      bank_code || null,
+      bank_swift_code || null,
+      bank_custom_details || null,
       property_address_override || null,
       property_name_manual || null,
       property_number_manual || null,
@@ -575,6 +605,42 @@ async create(req: AuthRequest, res: Response): Promise<void> {
     ]);
 
     const agreementId = (result as any)[0].insertId;
+
+    // ✅ СОХРАНЕНИЕ БАНКОВСКИХ РЕКВИЗИТОВ В saved_bank_details
+    if (save_bank_details && bank_details_name) {
+      try {
+        console.log(`💾 Saving bank details: ${bank_details_name}`);
+        
+        await connection.query(`
+          INSERT INTO saved_bank_details (
+            name, bank_details_type, bank_name, bank_account_name, bank_account_number,
+            bank_account_address, bank_address, bank_currency, bank_code, bank_swift_code,
+            bank_custom_details, created_by, partner_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          bank_details_name,
+          bank_details_type || 'simple',
+          bank_name || null,
+          bank_account_name || null,
+          bank_account_number || null,
+          bank_account_address || null,
+          bank_address || null,
+          bank_currency || null,
+          bank_code || null,
+          bank_swift_code || null,
+          bank_custom_details || null,
+          userId,
+          userPartnerId
+        ]);
+        
+        console.log(`✅ Bank details saved: ${bank_details_name} for agreement ${agreementId}`);
+        logger.info(`Bank details saved: ${bank_details_name} for agreement ${agreementId}`);
+      } catch (bankError) {
+        console.error('❌ Error saving bank details:', bankError);
+        logger.error('Error saving bank details:', bankError);
+        // Не прерываем создание договора если сохранение реквизитов не удалось
+      }
+    }
 
     // Сохраняем стороны договора
     const createdPartiesMap: Map<string, number> = new Map();

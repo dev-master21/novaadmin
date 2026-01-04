@@ -122,7 +122,7 @@ const CreateReceiptModal = ({
   const [saveBankDetails, setSaveBankDetails] = useState(false);
   const [bankDetailsName, setBankDetailsName] = useState('');
 
-  // ✅ QR Code toggle
+  // QR Code toggle
   const [showQrCode, setShowQrCode] = useState<boolean>(true);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -135,7 +135,7 @@ const CreateReceiptModal = ({
       if (mode === 'create') {
         resetForm();
         if (invoiceId) {
-          loadInvoiceData(invoiceId, false); // ✅ НЕ загружать реквизиты при первичной загрузке
+          loadInvoiceData(invoiceId, false);
         }
       } else if (mode === 'edit' && receiptId) {
         loadReceiptForEdit(receiptId);
@@ -143,7 +143,7 @@ const CreateReceiptModal = ({
     }
   }, [visible, invoiceId, mode, receiptId]);
 
-  // ✅ ЗАГРУЗКА ЧЕКА ДЛЯ РЕДАКТИРОВАНИЯ
+  // ЗАГРУЗКА ЧЕКА ДЛЯ РЕДАКТИРОВАНИЯ
   const loadReceiptForEdit = async (id: number) => {
     try {
       setLoading(true);
@@ -158,9 +158,9 @@ const CreateReceiptModal = ({
       setPaymentMethod(receipt.payment_method);
       setNotes(receipt.notes || '');
 
-      // ✅ Загружаем инвойс если есть (БЕЗ перезаписи банковских реквизитов)
+      // Загружаем инвойс если есть (БЕЗ перезаписи банковских реквизитов)
       if (receipt.invoice_id) {
-        await loadInvoiceData(receipt.invoice_id, true); // ✅ skipBankDetails = true
+        await loadInvoiceData(receipt.invoice_id, true);
       }
 
       // Выбранные позиции
@@ -168,7 +168,7 @@ const CreateReceiptModal = ({
         setSelectedItems(receipt.items.map((item: any) => item.id));
       }
 
-      // ✅ Банковские реквизиты ИЗ ЧЕКА (приоритет над реквизитами invoice)
+      // Банковские реквизиты ИЗ ЧЕКА (приоритет над реквизитами invoice)
       if (receipt.bank_details_type) {
         setBankDetailsType(receipt.bank_details_type);
         
@@ -189,7 +189,7 @@ const CreateReceiptModal = ({
         }
       }
 
-      // ✅ QR Code setting
+      // QR Code setting
       setShowQrCode(receipt.show_qr_code === 1);
 
       notifications.show({
@@ -280,7 +280,7 @@ const CreateReceiptModal = ({
     }
   };
 
-  // ✅ УЛУЧШЕННАЯ ФУНКЦИЯ: добавлен параметр skipBankDetails
+  // УЛУЧШЕННАЯ ФУНКЦИЯ: добавлен параметр skipBankDetails
   const loadInvoiceData = async (id: number, skipBankDetails: boolean = false) => {
     try {
       const response = await financialDocumentsApi.getInvoiceById(id);
@@ -298,7 +298,7 @@ const CreateReceiptModal = ({
       const remaining = invoice.total_amount - invoice.amount_paid;
       setAmountPaid(remaining);
 
-      // ✅ АВТОМАТИЧЕСКАЯ ПОДСТАНОВКА БАНКОВСКИХ РЕКВИЗИТОВ ИЗ INVOICE
+      // АВТОМАТИЧЕСКАЯ ПОДСТАНОВКА БАНКОВСКИХ РЕКВИЗИТОВ ИЗ INVOICE
       // (только если skipBankDetails = false)
       if (!skipBankDetails && invoice.bank_details_type) {
         console.log('📋 Загружаю банковские реквизиты из invoice:', invoice.bank_details_type);
@@ -332,7 +332,7 @@ const CreateReceiptModal = ({
           console.log('✅ Загружены пользовательские реквизиты');
         }
 
-        // ✅ Показываем уведомление о загрузке реквизитов
+        // Показываем уведомление о загрузке реквизитов
         notifications.show({
           title: t('common.success'),
           message: t('createReceiptModal.messages.bankDetailsLoaded'),
@@ -389,7 +389,7 @@ const CreateReceiptModal = ({
     }
 
     setInvoiceIdState(value);
-    // ✅ При выборе invoice загружаем и подставляем банковские реквизиты
+    // При выборе invoice загружаем и подставляем банковские реквизиты
     await loadInvoiceData(Number(value), false);
   };
 
@@ -566,6 +566,18 @@ const CreateReceiptModal = ({
       if (mode === 'edit' && receiptId) {
         await financialDocumentsApi.updateReceipt(receiptId, receiptData);
         receiptIdForFiles = receiptId;
+        
+        // ✅ ОБНОВЛЯЕМ СПИСОК СОХРАНЁННЫХ РЕКВИЗИТОВ ПОСЛЕ РЕДАКТИРОВАНИЯ
+        if (saveBankDetails && bankDetailsName) {
+          await fetchSavedBankDetails();
+          notifications.show({
+            title: t('common.success'),
+            message: t('financialDocuments.savedBankDetails.savedSuccess'),
+            color: 'teal',
+            icon: <IconDeviceFloppy size={18} />
+          });
+        }
+        
         notifications.show({
           title: t('common.success'),
           message: t('createReceiptModal.messages.updated'),
@@ -575,6 +587,18 @@ const CreateReceiptModal = ({
       } else {
         const response = await financialDocumentsApi.createReceipt(receiptData);
         receiptIdForFiles = response.data.data.id;
+        
+        // ✅ ОБНОВЛЯЕМ СПИСОК СОХРАНЁННЫХ РЕКВИЗИТОВ ПОСЛЕ СОЗДАНИЯ
+        if (saveBankDetails && bankDetailsName) {
+          await fetchSavedBankDetails();
+          notifications.show({
+            title: t('common.success'),
+            message: t('financialDocuments.savedBankDetails.savedSuccess'),
+            color: 'teal',
+            icon: <IconDeviceFloppy size={18} />
+          });
+        }
+        
         notifications.show({
           title: t('common.success'),
           message: t('createReceiptModal.messages.created'),
@@ -897,7 +921,7 @@ const CreateReceiptModal = ({
         {/* Шаг 2: Банковские реквизиты */}
         {currentStep === 1 && (
           <Stack gap="md">
-            {/* ✅ ИНФОРМАЦИОННЫЙ БЛОК О ЗАГРУЖЕННЫХ РЕКВИЗИТАХ */}
+            {/* ИНФОРМАЦИОННЫЙ БЛОК О ЗАГРУЖЕННЫХ РЕКВИЗИТАХ */}
             {(bankName || bankAccountName || bankAccountNumber || bankCustomDetails) && (
               <Alert
                 icon={<IconBuildingBank size={18} />}
@@ -1111,7 +1135,7 @@ const CreateReceiptModal = ({
               </Stack>
             </Card>
 
-            {/* ✅ НАСТРОЙКИ ДОКУМЕНТА */}
+            {/* НАСТРОЙКИ ДОКУМЕНТА */}
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Stack gap="md">
                 <Group gap="sm">
