@@ -2,6 +2,8 @@
 # ГЛОБАЛЬНЫЙ МУСОР — НАХУЙ
 ##########################################
 node_modules/
+logs/
+*.zip
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
